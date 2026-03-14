@@ -39,16 +39,15 @@ export function ScorePage() {
           New Analysis
         </button>
 
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-6 rounded-[20px] border-2 border-[#5b5959] bg-[#323232] py-8 px-5">
           <ScoreGauge score={analysis.overallScore} />
           <div className="text-center">
-            <h2 className="text-h2 text-text-primary">{analysis.scoreLabel}</h2>
-            <p className="mt-1 text-body-16 text-text-secondary">
+            <p className="text-body text-text-secondary">
               {analysis.scoreDescription}
             </p>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 rounded-[41px] border border-bg-500 bg-bg-500 py-3 px-[31px]">
             <span className="flex items-center gap-1.5 text-body-16 text-green">
               <span className="inline-block w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-current" />
               {analysis.totalPassed} passed
@@ -60,10 +59,7 @@ export function ScorePage() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3">
-          <h3 className="text-body-12 uppercase tracking-wider text-text-secondary">
-            Analysis Results
-          </h3>
+        <div className="mt-6 flex flex-col gap-6">
           {analysis.categories.map((cat) => (
             <SummaryCard
               key={cat.category}

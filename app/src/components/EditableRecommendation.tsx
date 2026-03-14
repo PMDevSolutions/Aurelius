@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Copy, RefreshCw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,18 @@ export function EditableRecommendation({
   const [text, setText] = useState(initialValue);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, []);
+
+  useEffect(() => {
+    autoResize();
+  }, [text, autoResize]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text);
@@ -34,7 +46,8 @@ export function EditableRecommendation({
       const newText = await onRegenerate();
       setText(newText);
       onToast("Recommendation regenerated");
-    } catch {
+    } catch (err) {
+      console.error("[EditableRecommendation] Regenerate failed:", err);
       onToast("Failed to regenerate");
     } finally {
       setLoading(false);
@@ -77,10 +90,10 @@ export function EditableRecommendation({
         </div>
       </div>
       <textarea
+        ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={2}
-        className="w-full rounded-input bg-bg-700 px-3 py-2 text-body-16 text-text-primary placeholder:text-bg-300 outline-none focus:ring-1 focus:ring-accent-blue transition-shadow resize-none"
+        className="w-full rounded-input bg-bg-700 px-3 py-2 text-body-16 text-text-primary placeholder:text-bg-300 outline-none focus:ring-1 focus:ring-accent-blue transition-shadow overflow-hidden resize-none"
       />
     </div>
   );

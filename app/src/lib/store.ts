@@ -50,9 +50,10 @@ export const useStore = create<Store>((set) => ({
     set((state) => ({ settings: { ...state.settings, ...partial } })),
   setActiveCategory: (category) =>
     set({ activeCategory: category, view: category ? "subscores" : "score" }),
-  setApiKey: async (key) => {
-    await setStorageItem("openai_api_key", key);
+  setApiKey: (key) => {
     set({ apiKey: key });
+    // Persist in background — don't block state update
+    setStorageItem("openai_api_key", key.trim());
   },
   setError: (error) => set({ error }),
   showToast: (message) => set({ toast: { visible: true, message } }),

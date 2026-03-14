@@ -15,11 +15,11 @@ export function Select({
 }: SelectProps) {
   const selectId = id || label?.toLowerCase().replace(/\s+/g, "-");
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-3">
       {label && (
         <label
           htmlFor={selectId}
-          className="text-body-12 uppercase tracking-wider text-text-secondary"
+          className="text-h2 text-text-primary"
         >
           {label}
         </label>
@@ -28,7 +28,7 @@ export function Select({
         <select
           id={selectId}
           className={cn(
-            "w-full appearance-none rounded-input bg-bg-500 px-4 py-3 pr-10 text-body-16 text-text-primary outline-none focus:ring-1 focus:ring-accent-blue transition-shadow",
+            "w-full appearance-none rounded-[10px] border border-[#717171] bg-bg-500 p-[14px] pr-10 text-body-16 text-text-primary outline-none focus:ring-1 focus:ring-accent-blue transition-shadow shadow-[0px_1px_2px_0px_rgba(10,13,20,0.03)]",
             className,
           )}
           {...props}

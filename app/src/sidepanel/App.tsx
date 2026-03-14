@@ -314,7 +314,8 @@ export default function App() {
       setAnalysis(analysis);
 
       // Auto-generate AI recommendations in background (non-blocking)
-      const { apiKey } = useStore.getState();
+      const { apiKey: rawKey } = useStore.getState();
+      const apiKey = rawKey?.trim();
       if (apiKey) {
         const advancedOptions = settings.advancedMode
           ? {

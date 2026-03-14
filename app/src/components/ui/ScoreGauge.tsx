@@ -65,7 +65,7 @@ export function ScoreGauge({
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-h1 text-text-primary">{displayScore}</span>
-        <span className="text-body-12 text-text-secondary">/ 100</span>
+        <span className="text-body-16 font-semibold text-text-primary">SEO Score</span>
       </div>
     </div>
   );

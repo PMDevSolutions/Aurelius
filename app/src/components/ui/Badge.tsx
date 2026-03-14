@@ -12,26 +12,20 @@ export function Badge({ status, priority, className }: BadgeProps) {
     status === "pass"
       ? "Passed"
       : priority === "high"
-        ? "High Priority"
+        ? "High"
         : priority === "medium"
           ? "Medium"
-          : "Low Priority";
+          : "Low";
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-0.5 text-body-12 font-medium",
-        status === "pass" && "bg-green/20 text-green",
-        status === "fail" &&
-          priority === "high" &&
-          "bg-red/20 text-red",
-        status === "fail" &&
-          priority === "medium" &&
-          "bg-yellow/20 text-yellow",
-        status === "fail" &&
-          priority === "low" &&
-          "bg-yellow/20 text-yellow",
-        status === "warning" && "bg-yellow/20 text-yellow",
+        "inline-flex items-center rounded-[27px] border border-white/40 px-2 py-1 text-body-12 font-medium text-black",
+        status === "pass" && "bg-[#A2FFB4]",
+        status === "fail" && priority === "high" && "bg-[#FF8484]",
+        status === "fail" && priority === "medium" && "bg-[#FFEA9E]",
+        status === "fail" && priority === "low" && "bg-[#FFEA9E]",
+        status === "warning" && "bg-[#FFEA9E]",
         className,
       )}
     >

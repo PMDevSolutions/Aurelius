@@ -21,7 +21,7 @@ export function Toggle({ checked, onChange, label, id }: ToggleProps) {
         />
         <div
           className={cn(
-            "h-6 w-11 rounded-full transition-colors",
+            "h-6 w-11 rounded-full border border-white/40 shadow-[0px_2px_6.6px_0px_rgba(72,201,175,0.3)] transition-colors",
             checked ? "bg-green" : "bg-bg-500",
           )}
         />

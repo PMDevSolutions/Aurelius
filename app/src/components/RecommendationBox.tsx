@@ -34,7 +34,8 @@ export function RecommendationBox({
       const newText = await onRegenerate();
       setText(newText);
       onToast("Recommendation regenerated");
-    } catch {
+    } catch (err) {
+      console.error("[RecommendationBox] Regenerate failed:", err);
       onToast("Failed to regenerate");
     } finally {
       setLoading(false);
