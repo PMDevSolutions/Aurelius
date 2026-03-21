@@ -74,6 +74,41 @@ Since you work from screenshots, some layout decisions require judgment:
 - Use the locked tokens — never hardcode approximate values
 - If a component's structure is truly ambiguous, check the `confidence` field in build-spec.json
 
+### 3a. Grouped & Nested Element Strategy
+
+Canva designs frequently use deeply nested groups, overlapping layers, and positioned elements that don't map cleanly to DOM hierarchy. Use this strategy for complex multi-layer designs:
+
+**Flattening rules (depth-first):**
+1. **Single-child groups** → unwrap (skip the wrapper, promote the child)
+2. **Groups where all children share the same axis** → flatten to a single flex container
+3. **Groups with mixed axes** → keep the group as a container, use CSS Grid
+4. **Nested groups 3+ levels deep** → flatten intermediate wrappers unless they have distinct styling (background, border, shadow)
+
+**Overlapping / absolutely-positioned elements:**
+- Detect overlapping regions in the screenshot (elements sharing the same bounding area)
+- Use `relative` parent + `absolute` children only when elements truly overlap visually
+- For slight overlaps (badges, avatars on cards), prefer `relative` with negative margin over absolute positioning
+- Never use absolute positioning for main layout — only decorative overlays
+
+**Z-order inference:**
+- Visually foreground elements (brighter, sharper, with shadow) get higher z-index
+- Background decorative elements (blurred, muted) get lower z-index
+- Default stacking: text > interactive elements > images > decorative shapes
+
+**Multi-layer composition patterns:**
+| Visual Pattern | Implementation |
+|---------------|---------------|
+| Card with badge overlay | `relative` card, `absolute -top-2 -right-2` badge |
+| Hero with background image + text | `relative` container, `bg-cover`, text with `relative z-10` |
+| Overlapping avatar stack | `flex` with negative margin `-ml-3` on subsequent items |
+| Floating action button | `fixed bottom-4 right-4` or `sticky` depending on context |
+| Decorative shapes behind content | `absolute inset-0 -z-10` with overflow-hidden parent |
+
+**Error recovery for ambiguous groups:**
+- If a group has > 8 direct children with no clear layout pattern, split into logical sub-groups based on visual proximity
+- If nesting exceeds 4 levels, log a warning and flatten aggressively
+- Always prefer fewer DOM nodes — measure twice, nest once
+
 ### 4. Component Mapping Strategy
 
 | Detected Component | React Implementation |
@@ -88,6 +123,43 @@ Since you work from screenshots, some layout decisions require judgment:
 | Accordions | Disclosure component with state management |
 | Modals/Dialogs | Portal-based component with focus trap |
 | Tabs | Tab group with active state management |
+
+### 4a. Advanced CSS Generation
+
+Canva designs use styling patterns that need careful translation to Tailwind CSS:
+
+**Gradient handling:**
+- Linear gradients → `bg-gradient-to-{direction}` with `from-{color}` / `via-{color}` / `to-{color}`
+- If gradient has > 3 stops, use arbitrary value: `bg-[linear-gradient(...)]`
+- Radial gradients → arbitrary value: `bg-[radial-gradient(...)]`
+- Always extract gradient colors into the lockfile as token values
+
+**Background effects:**
+- Blurred backgrounds → `backdrop-blur-{size}` + semi-transparent background
+- Image overlays → pseudo-element or `bg-blend-{mode}`
+- Pattern fills → CSS `background-image` with token-referenced colors
+
+**Text effects:**
+- Text shadows → use lockfile shadow tokens, apply via `[text-shadow:...]` arbitrary
+- Letter spacing → map to Tailwind tracking scale (`tracking-tight`, `tracking-wide`)
+- Text decoration → `underline`, `decoration-{color}`, `underline-offset-{n}`
+- Text gradient → `bg-clip-text text-transparent bg-gradient-to-r`
+
+**Border and outline patterns:**
+- Double borders → `ring-{width} ring-{color}` + `border-{width} border-{color}`
+- Dashed/dotted → `border-dashed` or `border-dotted`
+- Inner borders → `shadow-[inset_0_0_0_Npx_color]`
+- Focus rings → `focus:ring-2 focus:ring-{color} focus:ring-offset-2`
+
+**Opacity and blend modes:**
+- Layer opacity → `opacity-{value}` (never use rgba alpha for structural opacity)
+- Blend modes → `mix-blend-{mode}` for overlapping elements
+- Semi-transparent backgrounds → `bg-{color}/{opacity}` (e.g., `bg-black/50`)
+
+**Animation hints from static designs:**
+- Elements with visual "motion" cues (arrows, progress indicators) → add subtle CSS transitions
+- Hover states → infer from button styling (darker shade = hover, lighter = active)
+- Don't over-animate — only add transitions for interactive elements
 
 ### 5. Framework Adaptability
 

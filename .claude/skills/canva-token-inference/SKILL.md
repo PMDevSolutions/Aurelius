@@ -102,14 +102,29 @@ Analyze the screenshots for spacing patterns:
 Estimate px values. Map to Tailwind spacing scale where possible.
 ```
 
-**Pass 4 — Effects:**
+**Pass 4 — Effects & Advanced Styling:**
 ```
-Extract visual effects:
+Extract ALL visual effects and advanced styling:
 
-1. Border radius values (per component type)
-2. Box shadows (subtle, medium, large)
-3. Border styles (width, color)
-4. Opacity values
+1. Border radius values (per component type: buttons, cards, inputs, avatars)
+2. Box shadows (subtle, medium, large — note direction and spread)
+3. Border styles (width, color, style: solid/dashed/dotted)
+4. Opacity values (structural vs decorative)
+5. Gradients:
+   - Direction (top-to-bottom, left-to-right, diagonal)
+   - Color stops with positions
+   - Type (linear, radial)
+6. Backdrop effects:
+   - Blur radius estimates
+   - Background opacity behind blur
+7. Text effects:
+   - Letter spacing (tight, normal, wide)
+   - Text shadows (color, offset, blur)
+8. Transitions/motion hints:
+   - Elements that appear to have hover states
+   - Progress indicators or animated elements
+
+For each, provide confidence level and specific Tailwind mapping suggestion.
 ```
 
 ### Step 3: Confidence Scoring
