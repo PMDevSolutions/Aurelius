@@ -265,7 +265,20 @@
       "quality": 100
     },
     "mcpServer": "canva",
-    "restApiFallback": false
+    "restApiFallback": false,
+    "retry": {
+      "maxAttempts": 3,
+      "initialDelayMs": 2000,
+      "backoffMultiplier": 2,
+      "maxDelayMs": 30000,
+      "retryableErrors": [
+        "rate_limit",
+        "timeout",
+        "server_error",
+        "export_failed",
+        "mcp_connection_lost"
+      ]
+    }
   },
   "screenshot": {
     "enabled": true,

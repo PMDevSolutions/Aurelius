@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "source": "canva",
+  "outputTarget": "react",
+  "createdAt": "2026-03-21T00:00:00Z",
+  "canva": {
+    "designId": "DAGtest-landing",
+    "designName": "Landing Page Template",
+    "url": "https://www.canva.com/design/DAGtest-landing/test",
+    "exportedScreenshots": []
+  },
+  "appType": "web-app",
+  "framework": { "type": "vite", "version": "6.0.0", "outputDir": "src" },
+  "styling": { "approach": "tailwind", "uiLibrary": null, "existingTokens": false },
+  "pages": [
+    {
+      "canvaPageIndex": 0,
+      "screenshotPath": "",
+      "name": "Home",
+      "route": "/",
+      "sections": ["hero", "features", "testimonials", "pricing", "cta", "footer"]
+    }
+  ],
+  "components": [
+    { "detectedName": "Hero Section", "confidence": "high", "reactName": "HeroSection", "category": "sections", "action": "generate", "existingPath": null, "variants": [], "props": ["title", "subtitle", "ctaText", "backgroundImage"] },
+    { "detectedName": "Feature Card", "confidence": "high", "reactName": "FeatureCard", "category": "ui", "action": "generate", "existingPath": null, "variants": [], "props": ["icon", "title", "description"] },
+    { "detectedName": "Testimonial Card", "confidence": "medium", "reactName": "TestimonialCard", "category": "ui", "action": "generate", "existingPath": null, "variants": [], "props": ["quote", "author", "avatar", "role"] },
+    { "detectedName": "Pricing Card", "confidence": "high", "reactName": "PricingCard", "category": "ui", "action": "generate", "existingPath": null, "variants": ["basic", "pro", "enterprise"], "props": ["plan", "price", "features", "highlighted"] },
+    { "detectedName": "Navigation Bar", "confidence": "high", "reactName": "Navbar", "category": "layout", "action": "generate", "existingPath": null, "variants": [], "props": ["logo", "links", "cta"] },
+    { "detectedName": "Footer", "confidence": "high", "reactName": "Footer", "category": "layout", "action": "generate", "existingPath": null, "variants": [], "props": ["columns", "copyright"] }
+  ],
+  "textContent": { "hero-heading": "Build Something Great", "hero-subheading": "Start your journey today", "cta-primary": "Get Started" },
+  "businessLogic": { "forms": [], "apiCalls": [], "auth": null, "stateManagement": null },
+  "e2e": { "strategy": "navigate-interact-verify", "flows": [] },
+  "testStrategy": { "unit": true, "e2e": true, "visual": true, "crossBrowser": false, "coverageThreshold": 80 },
+  "options": { "componentReuse": "generate", "integration": "standalone" }
+}

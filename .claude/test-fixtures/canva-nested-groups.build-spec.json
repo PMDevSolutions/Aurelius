@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "source": "canva",
+  "outputTarget": "react",
+  "createdAt": "2026-03-21T00:00:00Z",
+  "canva": {
+    "designId": "DAGtest-nested",
+    "designName": "Complex Nested Layout",
+    "url": "https://www.canva.com/design/DAGtest-nested/test",
+    "exportedScreenshots": []
+  },
+  "appType": "web-app",
+  "framework": { "type": "vite", "version": "6.0.0", "outputDir": "src" },
+  "styling": { "approach": "tailwind", "uiLibrary": null, "existingTokens": false },
+  "pages": [
+    { "canvaPageIndex": 0, "screenshotPath": "", "name": "Portfolio", "route": "/", "sections": ["hero-with-overlay", "project-grid", "team-overlapping", "contact-form"] }
+  ],
+  "components": [
+    { "detectedName": "Hero with Background Overlay", "confidence": "medium", "reactName": "HeroOverlay", "category": "sections", "action": "generate", "existingPath": null, "variants": [], "props": ["backgroundImage", "overlayOpacity", "title", "subtitle"], "nested": true, "nestingDepth": 3, "hasOverlap": true },
+    { "detectedName": "Project Card with Badge", "confidence": "high", "reactName": "ProjectCard", "category": "ui", "action": "generate", "existingPath": null, "variants": [], "props": ["image", "title", "category", "badgeText"], "nested": true, "nestingDepth": 2, "hasOverlap": true },
+    { "detectedName": "Overlapping Avatar Stack", "confidence": "medium", "reactName": "AvatarStack", "category": "ui", "action": "generate", "existingPath": null, "variants": [], "props": ["avatars", "maxVisible", "size"], "nested": false, "nestingDepth": 1, "hasOverlap": true },
+    { "detectedName": "Floating Contact Button", "confidence": "high", "reactName": "FloatingButton", "category": "ui", "action": "generate", "existingPath": null, "variants": [], "props": ["icon", "label", "onClick"], "nested": false, "nestingDepth": 1, "hasOverlap": false },
+    { "detectedName": "Multi-column Form with Grouped Fields", "confidence": "medium", "reactName": "ContactForm", "category": "sections", "action": "generate", "existingPath": null, "variants": [], "props": ["fields", "onSubmit"], "nested": true, "nestingDepth": 4, "hasOverlap": false }
+  ],
+  "textContent": {},
+  "businessLogic": { "forms": ["contact"], "apiCalls": [], "auth": null, "stateManagement": null },
+  "e2e": { "strategy": "navigate-interact-verify", "flows": [] },
+  "testStrategy": { "unit": true, "e2e": true, "visual": true, "crossBrowser": false, "coverageThreshold": 80 },
+  "options": { "componentReuse": "generate", "integration": "standalone" }
+}
