@@ -295,6 +295,8 @@ Wait for user confirmation before the pipeline continues.
 - **Export fails:** Fall back to asking user to export PNGs from Canva and provide file paths.
 - **Low confidence on most components:** Warn user that vision-based detection has limitations. Ask for more details or suggest exporting to Figma for higher accuracy.
 - **Multi-page design ambiguity:** Show all pages and ask user to specify which to build.
+- **Rate limited by Canva API:** Apply retry protocol from `pipeline.config.json > canva.retry`. Log each retry attempt. If all retries fail, ask user to wait 2 minutes and re-invoke Phase 1.
+- **MCP timeout during export:** Retry up to 3 times with exponential backoff. If persistent, reduce export scale to 1x and retry. Fall back to manual export as last resort.
 
 ## Integration
 

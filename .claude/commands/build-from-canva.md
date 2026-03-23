@@ -175,9 +175,38 @@ The build report should note `Source: Canva` and include the token inference con
 
 ## Error Recovery
 
-- **Canva MCP unavailable:** Ask user to check Canva AI Connector configuration. Offer to proceed with manually exported PNGs.
+### Retry Protocol
+
+For transient failures (rate limits, timeouts, MCP disconnects), apply exponential backoff from `pipeline.config.json > canva.retry`:
+
+```
+FOR attempt IN 1..maxAttempts:
+  TRY operation
+  ON SUCCESS: continue pipeline
+  ON FAILURE:
+    IF error type IN retryableErrors:
+      delay = min(initialDelayMs * backoffMultiplier^(attempt-1), maxDelayMs)
+      WAIT delay
+      LOG: "Retry {attempt}/{maxAttempts} after {delay}ms — {error type}"
+      CONTINUE
+    ELSE:
+      FALL THROUGH to manual recovery below
+AFTER maxAttempts exhausted:
+  LOG: "All {maxAttempts} retries failed for {operation}"
+  FALL THROUGH to manual recovery
+```
+
+### Canva MCP Failures
+- **Rate limited:** Automatic retry with exponential backoff (see protocol above). If all retries fail, pause 60 seconds and retry once more. If still failing, ask user to wait and retry later.
+- **MCP connection lost:** Retry connection 3 times. If it fails, ask user to restart Canva AI Connector and re-run the current phase.
+- **Export timeout:** Retry with backoff. On persistent failure, reduce export scale to 1x and retry. If still failing, ask user to manually export.
+
+### Content Failures
 - **Export fails:** Ask user to manually export design pages as PNG from Canva and provide file paths.
 - **Token inference low confidence:** Present all tokens with detailed confidence breakdown. Offer to accept user-provided brand guidelines as override.
+- **Complex nested groups fail to parse:** Flatten aggressively (see canva-react-converter § 3a), log skipped layers, continue.
+
+### Environment Failures
 - **Dev server won't start:** Check for port conflicts, missing dependencies. Run `pnpm install` if needed.
 - **Tests won't pass after 3 attempts:** Mark component as needing manual intervention, continue with remaining.
 - **Build fails:** Check TypeScript errors first, then dependency issues. Report blockers.
