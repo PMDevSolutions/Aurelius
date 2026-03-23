@@ -1,8 +1,8 @@
 # Contributing to Aurelius
 
-Welcome, and thank you for your interest in contributing to Aurelius. Named after the Roman Emperor Marcus Aurelius — a leader known for discipline, thoughtful decision-making, and principled action — this project strives to bring those same qualities to modern app development. Aurelius is a Claude Code-integrated multi-framework app development framework built by PMDevSolutions, and contributions from the community are what make it better.
+Welcome, and thank you for your interest in contributing to Aurelius. Named after the Roman Emperor Marcus Aurelius — a leader known for discipline, thoughtful decision-making, and principled action — this project strives to bring those same qualities to modern app development. Aurelius is a Claude Code-integrated multi-framework app development framework built and maintained by [Paul Mulligan](https://github.com/PMDevSolutions), and contributions from the community are what make it better.
 
-Whether you are fixing a bug, adding a feature, improving documentation, or suggesting an idea, we appreciate your time and effort.
+Whether you are fixing a bug, adding a feature, improving documentation, or suggesting an idea, I appreciate your time and effort.
 
 ---
 
@@ -98,9 +98,9 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
    chore: update Playwright to v1.50
    ```
 
-7. **All CI checks must pass.** Pull requests with failing tests, lint errors, or type errors will not be merged until resolved.
+7. **All CI checks must pass.** Pull requests with failing tests, lint errors, or type errors will not be reviewed until resolved.
 
-8. **Be responsive to review feedback.** Reviewers may request changes — this is a normal and constructive part of the process.
+8. **Wait for review.** I review all external contributor PRs personally before merging. I may request changes — this is a normal and constructive part of the process. Please be responsive to feedback so we can get your contribution merged promptly.
 
 ---
 
@@ -123,21 +123,21 @@ Contributors are encouraged to leverage these tools, but they are not required. 
 
 The project roadmap is maintained publicly on the GitHub project board. You can view upcoming features, planned improvements, and known issues there.
 
-Community members are encouraged to vote on priorities and propose new ideas via GitHub Discussions. If you are considering a large contribution, please open a discussion first so we can align on scope and approach before significant work begins.
+Community members are encouraged to vote on priorities and propose new ideas via GitHub Discussions. If you are considering a large contribution, please open a discussion first so I can align with you on scope and approach before significant work begins.
 
 ---
 
 ## Code of Conduct
 
-We follow standard open source etiquette. All contributors are expected to:
+This project follows the [Contributor Covenant v2.1](CODE_OF_CONDUCT.md). All contributors are expected to:
 
 - Be respectful and constructive in all interactions.
 - Provide clear, actionable feedback in code reviews.
 - Assume good intent from other contributors.
 - Keep discussions focused on the project and its goals.
 
-Harassment, discrimination, and disruptive behavior will not be tolerated. Maintainers reserve the right to remove content or restrict access for anyone who violates these principles.
+Unacceptable behavior can be reported to **paul@pmds.info**. I reserve the right to remove content or restrict access for anyone who violates the Code of Conduct.
 
 ---
 
-Thank you for contributing to Aurelius. Your work helps make multi-framework development more accessible, reliable, and efficient for everyone.
+Thank you for contributing to Aurelius. Your work helps make multi-framework development more accessible, reliable, and efficient for everyone. If you have questions, feel free to open a [discussion](https://github.com/PMDevSolutions/Aurelius/discussions).
