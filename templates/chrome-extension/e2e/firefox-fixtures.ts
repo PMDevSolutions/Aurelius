@@ -58,18 +58,17 @@ export const test = base.extend<FirefoxExtensionFixtures>({
     const page = await firefoxContext.newPage();
     await page.goto("about:debugging#/runtime/this-firefox");
 
-    // Click "Load Temporary Add-on"
-    await page.getByText("Load Temporary Add-on").click();
-
-    // Use file chooser to select the manifest
+    // Use file chooser to load the extension as a temporary add-on
     const [fileChooser] = await Promise.all([
       page.waitForEvent("filechooser"),
       page.getByText("Load Temporary Add-on").click(),
     ]);
     await fileChooser.setFiles(resolve(EXTENSION_DIR, "manifest.json"));
 
-    // Wait for extension to load and extract its ID
-    await page.waitForTimeout(2000);
+    // Wait for extension to appear on the debugging page
+    await page.waitForSelector(".qa-debug-target-item .qa-extension-id", {
+      timeout: 10_000,
+    });
 
     // Extract extension ID from the debugging page
     const extensionId = await page.evaluate(() => {

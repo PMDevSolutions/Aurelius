@@ -13,17 +13,20 @@
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SEARCH_DIR="${1:-$PROJECT_ROOT/src}"
 JSON_OUTPUT=false
+SEARCH_DIR=""
 ISSUES=0
 
-# Check for --json flag
+# Parse arguments: flags first, then positional
 for arg in "$@"; do
   if [ "$arg" = "--json" ]; then
     JSON_OUTPUT=true
-    break
+  elif [ -z "$SEARCH_DIR" ] && [ "${arg#-}" = "$arg" ]; then
+    SEARCH_DIR="$arg"
   fi
 done
+
+SEARCH_DIR="${SEARCH_DIR:-$PROJECT_ROOT/src}"
 
 echo "=== Cross-Browser CSS Audit ==="
 echo "Scanning: $SEARCH_DIR"

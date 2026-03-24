@@ -1,6 +1,13 @@
 /**
  * Cross-browser CSS reset for consistent rendering across Chromium, Firefox, and WebKit.
  *
+ * REQUIREMENT: This file uses Tailwind's theme() function and must be processed
+ * by Tailwind's PostCSS plugin. Import it in your main CSS file after @tailwind directives:
+ *   @tailwind base;
+ *   @tailwind components;
+ *   @tailwind utilities;
+ *   @import "./cross-browser-reset.css";
+ *
  * Addresses known rendering differences:
  * - Font rendering / anti-aliasing
  * - Scrollbar width and styling

@@ -478,4 +478,4 @@ gh issue create               # Create issue
 ---
 
 **Last Updated:** 2026-03-24
-**Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 18 scripts, 7 hooks
+**Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 19 scripts, 7 hooks
