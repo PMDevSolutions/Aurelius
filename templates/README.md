@@ -1,6 +1,6 @@
 # Templates Reference
 
-**Last Updated:** 2026-03-18
+**Last Updated:** 2026-03-24
 
 Starter configuration files for new projects. These are copied by `scripts/setup-project.sh` or referenced directly when scaffolding a new app.
 
@@ -14,7 +14,8 @@ templates/
 ├── vue/                 # Vue 3 + Vite configs
 ├── sveltekit/           # SvelteKit configs
 ├── expo/                # Expo + React Native configs
-└── chrome-extension/    # Chrome extension E2E testing templates
+├── chrome-extension/    # Chrome extension E2E testing templates
+└── pwa/                 # PWA E2E testing templates (offline, SW lifecycle)
 ```
 
 ## Shared Templates (`shared/`)
@@ -28,6 +29,8 @@ These configs apply to any React project regardless of framework:
 | `tailwind.config.ts` | Base Tailwind config with design token structure |
 | `tsconfig.json` | TypeScript strict mode with path aliases |
 | `vitest.config.template.ts.tpl` | Vitest config with jsdom, RTL setup, and coverage thresholds |
+| `playwright.config.ts` | Shared cross-browser Playwright config (chromium, firefox, webkit, mobile) |
+| `css/cross-browser-reset.css` | Cross-browser CSS normalization (fonts, scrollbars, forms, focus) |
 
 ### Usage
 
@@ -124,6 +127,43 @@ Copies shared templates plus SvelteKit-specific configs. Sets up a SvelteKit + T
 
 Sets up an Expo + NativeWind + Jest project with TypeScript. Uses Expo Router for navigation and NativeWind for Tailwind CSS-style styling in React Native.
 
+## PWA Templates (`pwa/`)
+
+Playwright E2E testing infrastructure for Progressive Web Apps. These are used by the `e2e-test-generator` skill (Phase 6 of `/build-from-figma`) for PWA app types.
+
+| File | Purpose |
+|------|---------|
+| `playwright.pwa.config.ts` | Playwright config with offline + cross-browser projects (10 total) |
+| `e2e/pwa-install.e2e.ts` | Manifest validation and service worker registration tests |
+| `e2e/pwa-offline.e2e.ts` | Offline fallback, cached navigation, and network recovery tests |
+| `e2e/sw-lifecycle.e2e.ts` | Full SW lifecycle: install, activate, fetch, update, cache strategy |
+
+### How PWA E2E Works
+
+PWA tests run across all browsers with additional offline-specific projects:
+
+1. **Standard tests** (chromium, firefox, webkit, mobile): Page navigation, forms, responsive
+2. **Offline tests** (pwa-offline, pwa-offline-firefox, pwa-offline-webkit): Service worker caching, offline fallback, network recovery
+3. **SW lifecycle tests** (sw-lifecycle, Chrome only): Deep service worker install/activate/fetch/update testing
+
+### Usage
+
+```bash
+# Copy templates into your PWA project
+cp templates/pwa/playwright.pwa.config.ts playwright.config.ts
+cp -r templates/pwa/e2e ./e2e
+
+# Install Playwright (all browsers)
+pnpm add -D @playwright/test
+pnpm exec playwright install
+
+# Run tests
+pnpm exec playwright test
+
+# Offline tests only
+pnpm exec playwright test --project=pwa-offline
+```
+
 ## Chrome Extension Templates (`chrome-extension/`)
 
 Playwright E2E testing infrastructure for Chrome extensions. These are used by the `e2e-test-generator` skill (Phase 6 of `/build-from-figma`) and can be copied manually for any Chrome extension project.
@@ -133,6 +173,9 @@ Playwright E2E testing infrastructure for Chrome extensions. These are used by t
 | `playwright.chrome-ext.config.ts` | Playwright config for extension testing (non-headless, single worker) |
 | `e2e/fixtures.ts` | Custom Playwright fixtures: `extensionContext`, `extensionId`, `extensionPopup`, `extensionServiceWorker` |
 | `e2e/extension.e2e.ts` | Example E2E tests: extension loading, popup rendering, Chrome storage, content scripts, message passing, visual regression |
+| `e2e/manifest-v3.e2e.ts` | MV3 manifest structure validation + runtime API checks |
+| `e2e/firefox-fixtures.ts` | Firefox WebExtension test fixtures (`firefoxContext`, `firefoxExtensionId`, `firefoxExtensionPopup`) |
+| `e2e/firefox-webext.e2e.ts` | Firefox-specific extension loading, API, and visual regression tests |
 
 ### How Chrome Extension E2E Works
 

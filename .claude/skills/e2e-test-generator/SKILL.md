@@ -11,7 +11,7 @@ Generate comprehensive Playwright E2E tests based on the build specification. Re
 
 ## When to Use
 
-- Phase 5.5 of the `/build-from-figma` pipeline (after Visual QA, before Quality Gate)
+- Phase 6 of the `/build-from-figma` pipeline (after Visual QA, before Quality Gate)
 - When adding E2E coverage to an existing Figma-derived app
 - When the user asks for E2E tests for any React application
 - After component build is complete and unit tests pass
@@ -40,38 +40,15 @@ Generate comprehensive Playwright E2E tests based on the build specification. Re
 
 #### For Web Apps (appType: "web-app")
 
-Generate `playwright.config.ts`:
-```typescript
-import { defineConfig, devices } from "@playwright/test";
+Copy the shared Playwright config template and customize:
 
-export default defineConfig({
-  testDir: "./e2e",
-  testMatch: "**/*.e2e.ts",
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: [["html", { open: "never" }], ["list"]],
-  use: {
-    baseURL: "http://localhost:3000",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-  },
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-    { name: "mobile-chrome", use: { ...devices["Pixel 5"] } },
-    { name: "mobile-safari", use: { ...devices["iPhone 13"] } },
-  ],
-});
-```
+1. Copy `templates/shared/playwright.config.ts` → project root `playwright.config.ts`
+2. Adjust `baseURL` and `webServer.command` based on framework:
+   - **Next.js:** `baseURL: "http://localhost:3000"`, `command: "pnpm dev"`
+   - **Vite:** `baseURL: "http://localhost:5173"`, `command: "pnpm dev"`
+3. The template includes 5 browser projects by default:
+   - Desktop: `chromium`, `firefox`, `webkit`
+   - Mobile: `mobile-chrome` (Pixel 5), `mobile-safari` (iPhone 13)
 
 #### For Chrome Extensions (appType: "chrome-extension")
 
@@ -81,19 +58,28 @@ Copy the template from `templates/chrome-extension/`:
 
 Then generate app-specific tests (see Step 3).
 
+For MV3 compatibility and Firefox support, also copy:
+- `templates/chrome-extension/e2e/manifest-v3.e2e.ts` → `e2e/manifest-v3.e2e.ts`
+- `templates/chrome-extension/e2e/firefox-fixtures.ts` → `e2e/firefox-fixtures.ts`
+- `templates/chrome-extension/e2e/firefox-webext.e2e.ts` → `e2e/firefox-webext.e2e.ts`
+
+The `playwright.chrome-ext.config.ts` includes two projects:
+- `chrome-extension` — Chromium tests (ignores Firefox test files)
+- `firefox-extension` — Firefox WebExtension tests
+
 #### For PWAs (appType: "pwa")
 
-Generate `playwright.config.ts` like web-app, plus add:
-```typescript
-// Additional PWA project for offline testing
-{
-  name: "pwa-offline",
-  use: {
-    ...devices["Desktop Chrome"],
-    // Service worker will be tested with network interception
-  },
-},
-```
+Copy `templates/pwa/playwright.pwa.config.ts` → project root `playwright.config.ts`.
+
+This config extends the shared config with PWA-specific projects:
+- Standard browsers: `chromium`, `firefox`, `webkit`, `mobile-chrome`, `mobile-safari`
+- PWA offline projects: `pwa-offline`, `pwa-offline-firefox`, `pwa-offline-webkit`
+- SW lifecycle project: `sw-lifecycle` (Chrome only)
+
+Also copy the PWA E2E test templates:
+- `templates/pwa/e2e/pwa-install.e2e.ts` → `e2e/pwa-install.e2e.ts`
+- `templates/pwa/e2e/pwa-offline.e2e.ts` → `e2e/pwa-offline.e2e.ts`
+- `templates/pwa/e2e/sw-lifecycle.e2e.ts` → `e2e/sw-lifecycle.e2e.ts`
 
 ### Step 3: Generate Test Files
 
@@ -298,16 +284,32 @@ test.describe("Offline Behavior", () => {
 ### Step 4: Run E2E Tests
 
 ```bash
-# Web app
+# Web app — all browsers
 pnpm exec playwright test
 
-# Chrome extension (must build first)
-pnpm build && pnpm exec playwright test --config=playwright.chrome-ext.config.ts
-
-# With specific browser
+# Web app — specific browser
 pnpm exec playwright test --project=chromium
+pnpm exec playwright test --project=firefox
+pnpm exec playwright test --project=webkit
 
-# With visual report
+# Chrome extension — Chromium (primary)
+pnpm build && pnpm exec playwright test --config=playwright.chrome-ext.config.ts --project=chrome-extension
+
+# Chrome extension — Firefox
+pnpm build && pnpm exec playwright test --config=playwright.chrome-ext.config.ts --project=firefox-extension
+
+# PWA — all browsers including offline
+pnpm exec playwright test
+
+# PWA — offline tests only
+pnpm exec playwright test --project=pwa-offline
+pnpm exec playwright test --project=pwa-offline-firefox
+pnpm exec playwright test --project=pwa-offline-webkit
+
+# Service worker lifecycle tests
+pnpm exec playwright test --project=sw-lifecycle
+
+# Visual report
 pnpm exec playwright test --reporter=html
 ```
 
@@ -337,6 +339,19 @@ Write E2E results to `.claude/visual-qa/e2e-report.md`:
 - Screenshots saved to: e2e/screenshots/
 - Baseline comparison: {pass/fail}
 ```
+
+### Cross-Browser Test Matrix
+
+| Test Category | Chromium | Firefox | WebKit | Mobile Chrome | Mobile Safari |
+|---------------|----------|---------|--------|---------------|---------------|
+| **Web App** page load, nav, forms | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Web App** visual regression | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Chrome Ext** loading + popup | ✅ | ✅ (WebExt) | ❌ | ❌ | ❌ |
+| **Chrome Ext** MV3 manifest + runtime | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Chrome Ext** storage + messaging | ✅ | ✅ (WebExt) | ❌ | ❌ | ❌ |
+| **PWA** manifest + SW registration | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **PWA** offline fallback | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **PWA** SW lifecycle (deep) | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ## Test Generation Rules
 
@@ -374,10 +389,10 @@ Write E2E results to `.claude/visual-qa/e2e-report.md`:
 
 - **Reads from:** `build-spec.json` (pages, components, e2e flows, appType), `pipeline.config.json` (thresholds)
 - **Depends on:** All unit tests passing, components built, app builds successfully
-- **Used by:** `/build-from-figma` Phase 5.5 (between Visual QA and Quality Gate)
+- **Used by:** `/build-from-figma` Phase 6 (between Visual QA and Quality Gate)
 - **References:** `templates/chrome-extension/` for extension testing boilerplate
 
 ---
 
-**Skill Version:** 1.0.0
-**Last Updated:** 2026-03-17
+**Skill Version:** 2.0.0
+**Last Updated:** 2026-03-24
