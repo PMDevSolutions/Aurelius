@@ -68,3 +68,17 @@ jobs:
               fi
             fi
           done
+
+  token-verification:
+    name: Verify Design Tokens
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run token verification
+        run: |
+          if [ -f "scripts/verify-tokens.sh" ] && [ -d "app/src" ]; then
+            cd app && bash ../scripts/verify-tokens.sh
+          else
+            echo "No app source found — skipping token check"
+          fi
