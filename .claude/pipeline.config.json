@@ -54,16 +54,23 @@
     "enabled": true,
     "conditionalOnAppType": true,
     "browsers": [
-      "chromium"
+      "chromium",
+      "firefox",
+      "webkit"
     ],
     "crossBrowserBrowsers": [
       "chromium",
       "firefox",
       "webkit"
     ],
-    "crossBrowserRequired": false,
+    "crossBrowserRequired": true,
     "timeoutMs": 30000,
-    "retries": 1
+    "retries": 2,
+    "mobileBrowsers": [
+      "mobile-chrome",
+      "mobile-safari"
+    ],
+    "crossBrowserDiffThreshold": 0.03
   },
   "qualityGate": {
     "testsRequired": true,
@@ -98,6 +105,15 @@
       ],
       "testHarness": "playwright",
       "devServer": true,
+      "browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "mobileBrowsers": [
+        "mobile-chrome",
+        "mobile-safari"
+      ],
       "browserContextOptions": {}
     },
     "chrome-extension": {
@@ -107,10 +123,15 @@
         "extension-load",
         "popup-open",
         "popup-interact",
-        "content-script-inject"
+        "content-script-inject",
+        "manifest-v3-compat"
       ],
       "testHarness": "playwright-chromium-persistent",
       "devServer": false,
+      "browsers": [
+        "chromium"
+      ],
+      "firefoxWebExtSupport": true,
       "browserContextOptions": {
         "headless": false,
         "args": [
@@ -128,10 +149,20 @@
         "page-navigation",
         "install-prompt",
         "offline-fallback",
-        "push-notification"
+        "push-notification",
+        "sw-lifecycle"
       ],
       "testHarness": "playwright",
       "devServer": true,
+      "browsers": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "mobileBrowsers": [
+        "mobile-chrome",
+        "mobile-safari"
+      ],
       "browserContextOptions": {}
     },
     "react-native": {
