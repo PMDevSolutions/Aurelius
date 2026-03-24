@@ -37,12 +37,21 @@ export default defineConfig({
   projects: [
     {
       name: "chrome-extension",
+      testIgnore: "**/firefox-*.e2e.ts",
       use: {
         // Extension testing requires launchPersistentContext
         // which is configured in the test fixtures, not here.
         // These are defaults for the context.
         viewport: { width: 400, height: 600 }, // Popup dimensions
         baseURL: `chrome-extension://`, // Placeholder — real ID resolved at runtime
+      },
+    },
+    {
+      name: "firefox-extension",
+      testMatch: "**/firefox-*.e2e.ts",
+      use: {
+        viewport: { width: 400, height: 600 }, // Popup dimensions
+        baseURL: `moz-extension://`, // Placeholder — real ID resolved at runtime
       },
     },
   ],
