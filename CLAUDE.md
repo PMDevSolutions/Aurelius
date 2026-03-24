@@ -23,7 +23,7 @@ project-root/
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
 ├── scripts/              # Development automation scripts
-├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, etc.)
+├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
 ├── docs/                 # Documentation
 │   ├── figma-to-react/   # Figma conversion pipeline docs
 │   ├── canva-to-react/   # Canva conversion pipeline docs
@@ -95,6 +95,9 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 
 # Responsive screenshots at all breakpoints
 ./scripts/check-responsive.sh [url] [output-dir]
+
+# Cross-browser CSS audit
+./scripts/audit-cross-browser-css.sh [--json]
 ```
 
 ## Development Commands
@@ -469,9 +472,10 @@ gh issue create               # Create issue
 ./scripts/check-security.sh             # Security audit
 ./scripts/generate-api-client.sh        # OpenAPI → typed client
 ./scripts/check-responsive.sh           # Responsive screenshots
+./scripts/audit-cross-browser-css.sh   # Cross-browser CSS audit
 ```
 
 ---
 
-**Last Updated:** 2026-03-18
+**Last Updated:** 2026-03-24
 **Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 18 scripts, 7 hooks
