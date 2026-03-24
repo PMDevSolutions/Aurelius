@@ -1,0 +1,99 @@
+/**
+ * Cross-browser CSS reset for consistent rendering across Chromium, Firefox, and WebKit.
+ *
+ * REQUIREMENT: This file uses Tailwind's theme() function and must be processed
+ * by Tailwind's PostCSS plugin. Import it in your main CSS file after @tailwind directives:
+ *   @tailwind base;
+ *   @tailwind components;
+ *   @tailwind utilities;
+ *   @import "./cross-browser-reset.css";
+ *
+ * Addresses known rendering differences:
+ * - Font rendering / anti-aliasing
+ * - Scrollbar width and styling
+ * - Form element appearance
+ * - Focus ring styling
+ * - Flexbox/Grid gap behavior
+ */
+
+/* --- Font Rendering Normalization --- */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- Scrollbar Normalization --- */
+/* Firefox scrollbar styling (thin, minimal) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.gray.400") transparent;
+}
+
+/* WebKit/Chromium scrollbar styling to match Firefox thin scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: theme("colors.gray.400");
+  border-radius: 3px;
+}
+
+/* --- Form Element Reset --- */
+/* Remove native appearance differences across browsers */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Firefox inner focus ring removal (handled by custom focus styles) */
+::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* --- Focus Ring Consistency --- */
+/* Unified focus-visible style across all browsers */
+:focus-visible {
+  outline: 2px solid theme("colors.blue.500");
+  outline-offset: 2px;
+}
+
+/* Remove default focus ring (replaced by :focus-visible above) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* --- Button Reset --- */
+button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+/* --- Safari-specific fixes --- */
+/* Prevent auto-zoom on input focus in iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Safari flexbox gap fallback (Safari < 14.1) */
+@supports not (gap: 1px) {
+  .flex > * + * {
+    margin-left: var(--flex-gap, 0);
+  }
+}
