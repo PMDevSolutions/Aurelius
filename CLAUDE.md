@@ -18,7 +18,7 @@ The framework is designed for:
 project-root/
 ├── .claude/              # Claude Code configuration
 │   ├── agents/           # 51 specialized agents
-│   ├── skills/           # 18 React-specific skills
+│   ├── skills/           # 19 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
@@ -188,7 +188,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (18 Total)
+### Skills (19 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -210,6 +210,7 @@ Agents are invoked automatically based on task context.
 | auth-flows | Auth.js, Clerk, Supabase Auth, RBAC, protected routes | "auth", "login", "session", "OAuth" |
 | animation-motion | Framer Motion, CSS transitions, reduced-motion a11y | "animation", "framer motion", "transition" |
 | seo-metadata | Next.js Metadata API, JSON-LD, OG images, sitemaps | "SEO", "metadata", "open graph" |
+| parallel-orchestration | Concurrent phase runner for pipeline parallelization | Invoked by pipeline commands after Phase 3 |
 
 **Full catalog:** `.claude/skills/README.md`
 
@@ -228,16 +229,17 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
   [1] INTAKE        → figma-intake skill → build-spec.json (with appType)
   [2] TOKEN LOCK    → design-token-lock skill → design-tokens.lock.json
   [3] TDD (HARD GATE) → tdd-from-figma skill → failing tests (Red)
+  ─── PARALLEL ORCHESTRATION (phases 4-9, max 3 concurrent) ───
   [4] BUILD         → figma-to-react-workflow → components pass tests (Green)
-  [4.5] STORYBOOK   → generate-stories.sh → auto-generated stories (non-blocking)
-  [5] VISUAL DIFF   → pixelmatch loop → max 5 iterations, 2% threshold
-  [5.5] DARK MODE   → check-dark-mode.sh → dark mode verification (non-blocking)
-  [6] E2E TESTS     → e2e-test-generator skill → Playwright tests (app-type-aware)
-  [7] CROSS-BROWSER → Firefox/WebKit screenshots (non-blocking)
-  [7.5] REGRESSION  → regression-test.sh → compare against baselines (non-blocking)
-  [8] QUALITY GATE  → coverage + types + build + tokens + Lighthouse + mutation score (opt-in)
-  [8.5] RESPONSIVE  → check-responsive.sh → screenshots at 5 breakpoints (non-blocking)
-  [9] REPORT        → .claude/visual-qa/build-report.md (with diff images + docs)
+      ├─ [4.5] STORYBOOK   → generate-stories.sh (non-blocking)
+      ├─ [5]   VISUAL DIFF  → pixelmatch loop → max 5 iterations
+      │   └─ [6] E2E TESTS  → e2e-test-generator skill
+      ├─ [5.5] DARK MODE   → check-dark-mode.sh (non-blocking)
+      ├─ [7]   CROSS-BROWSER → Firefox/WebKit screenshots (non-blocking)
+      ├─ [7.5] REGRESSION  → regression-test.sh (non-blocking)
+      ├─ [8]   QUALITY GATE → [coverage|types|build|tokens|lighthouse] in parallel
+      └─ [8.5] RESPONSIVE  → check-responsive.sh (non-blocking)
+  [9] REPORT        → build-report.md (after quality-gate + e2e complete)
 ```
 
 **Key artifacts:**
@@ -269,6 +271,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
 - **Responsive verification** — automated screenshots at 5 breakpoints (320-1920px)
 - **Error monitoring** — Sentry integration configured via pipeline.config.json
 - **Deploy previews** — Vercel auto-deploy with visual QA on PRs
+- **Parallel orchestration** — concurrent phase execution with dependency graph, resource tagging, and configurable concurrency pool
 
 **Documentation:** `docs/figma-to-react/README.md`
 
@@ -331,6 +334,20 @@ Framework auto-detection: if `outputTarget` is not specified, the pipeline detec
 - **Chrome DevTools MCP** - Screenshots, Lighthouse audits, DOM inspection
 - **Canva AI Connector** - Search, export, and interact with Canva designs
 - **Sentry** - Error monitoring (configured via pipeline.config.json, setup by error-boundary-architect agent)
+
+---
+
+### Parallel Orchestration
+
+Pipeline phases 4-9 run concurrently via the `parallel-orchestration` skill:
+- **Dependency graph** defined in `pipeline.config.json` → `orchestration.phases`
+- **Concurrency pool** with configurable `maxConcurrent` (default: 3)
+- **Resource tagging** prevents write conflicts between phases
+- **Streaming results** report each phase as it completes
+- **Batch summary** with wall time, speedup factor, and execution timeline
+- **Fallback** to sequential execution when `orchestration.enabled` is `false`
+
+Quality gate subtasks (coverage, typecheck, build, token-verify, lighthouse) also run in parallel.
 
 ---
 
@@ -488,4 +505,4 @@ gh issue create               # Create issue
 ---
 
 **Last Updated:** 2026-03-25
-**Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
+**Architecture:** 51 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
