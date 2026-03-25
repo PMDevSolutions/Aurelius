@@ -104,6 +104,7 @@ experiments/
 !.claude/visual-qa/baselines/
 .claude/visual-qa/screenshots/regression/**/*.png
 .claude/visual-qa/diffs/regression/**/*.png
+.claude/visual-qa/regression-report.md
 
 # Taskmaster Files
 .taskmaster/tasks/*.json.bak

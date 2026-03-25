@@ -188,37 +188,36 @@ while IFS= read -r baseline_file; do
   # Run visual-diff.js
   DIFF_OUTPUT=$(node scripts/visual-diff.js "$current_file" "$baseline_file" --output "$diff_file" --threshold "$THRESHOLD" --json 2>&1) || true
 
-  # Parse mismatch from JSON output
-  MISMATCH=$(echo "$DIFF_OUTPUT" | node -e "
+  # Parse mismatch and status from visual-diff.js JSON output
+  # Fields: mismatchPct (number), status ("PASS"/"FAIL"), pass (boolean)
+  PARSED=$(echo "$DIFF_OUTPUT" | node -e "
     let data='';
     process.stdin.on('data',d=>data+=d);
     process.stdin.on('end',()=>{
-      try { const j=JSON.parse(data); console.log(j.mismatchPercentage||'?'); }
-      catch { console.log('?'); }
+      try {
+        const j=JSON.parse(data);
+        const pct = j.mismatchPct ?? '?';
+        const status = (j.status || 'UNKNOWN').toUpperCase();
+        console.log(pct + '|' + status);
+      } catch { console.log('?|UNKNOWN'); }
     });
-  " 2>/dev/null || echo "?")
+  " 2>/dev/null || echo "?|UNKNOWN")
 
-  STATUS=$(echo "$DIFF_OUTPUT" | node -e "
-    let data='';
-    process.stdin.on('data',d=>data+=d);
-    process.stdin.on('end',()=>{
-      try { const j=JSON.parse(data); console.log(j.status||'unknown'); }
-      catch { console.log('unknown'); }
-    });
-  " 2>/dev/null || echo "unknown")
+  MISMATCH="${PARSED%%|*}"
+  STATUS="${PARSED##*|}"
 
-  if [ "$STATUS" = "pass" ]; then
+  if [ "$STATUS" = "PASS" ]; then
     echo "PASS: $rel_path (${MISMATCH}%)"
     PASS_COUNT=$((PASS_COUNT + 1))
     RESULTS="$RESULTS\n| $rel_path | PASS | ${MISMATCH}% | - |"
-  elif [ "$STATUS" = "warn" ]; then
-    echo "WARN: $rel_path (${MISMATCH}%)"
-    WARN_COUNT=$((WARN_COUNT + 1))
-    RESULTS="$RESULTS\n| $rel_path | WARN | ${MISMATCH}% | Close to threshold |"
-  else
+  elif [ "$STATUS" = "FAIL" ]; then
     echo "FAIL: $rel_path (${MISMATCH}%)"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     RESULTS="$RESULTS\n| $rel_path | FAIL | ${MISMATCH}% | Exceeds ${THRESHOLD} threshold |"
+  else
+    echo "WARN: $rel_path (${MISMATCH}%)"
+    WARN_COUNT=$((WARN_COUNT + 1))
+    RESULTS="$RESULTS\n| $rel_path | WARN | ${MISMATCH}% | Unable to determine status |"
   fi
 
 done < <(find "$BASELINE_DIR" -name "*.png" -type f | sort)
