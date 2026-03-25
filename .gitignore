@@ -99,8 +99,11 @@ notes/
 sandbox/
 experiments/
 
-# Visual QA screenshots
-.claude/visual-qa/
+# Visual QA — track baselines, ignore transient captures
+!.claude/visual-qa/
+!.claude/visual-qa/baselines/
+.claude/visual-qa/screenshots/regression/*.png
+.claude/visual-qa/diffs/regression/*.png
 
 # Taskmaster Files
 .taskmaster/tasks/*.json.bak
