@@ -111,6 +111,32 @@ This phase:
 
 Process components in dependency order: UI primitives → Layout → Sections → Pages
 
+## Phases 4-9: Parallel Execution
+
+After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
+
+**Invoke the `parallel-orchestration` skill with:**
+- Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
+- Context:
+  - Build spec: `.claude/plans/build-spec.json`
+  - Lockfile: `src/styles/design-tokens.lock.json`
+  - Test files: `src/components/**/*.test.tsx`
+  - Pipeline source: `"figma"`
+  - Figma screenshots: `.claude/visual-qa/screenshots/figma/`
+- Config: `.claude/pipeline.config.json` → `orchestration` section
+
+The parallel orchestration skill will:
+1. Start `component-build` first (all other phases depend on it)
+2. After build completes, fan out independent phases in parallel (max 3 concurrent)
+3. Run `e2e-tests` after `visual-diff` completes
+4. Run `report` after both `quality-gate` and `e2e-tests` complete
+5. Stream results as each phase completes
+6. Produce a batch summary with speedup metrics
+
+**Fallback:** If `orchestration.enabled` is `false` in pipeline.config.json, execute phases 4-9 sequentially as documented below.
+
+The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
+
 ## Phase 4: Component Build
 
 Invoke the `figma-to-react-workflow` skill (which detects build-spec.json and lockfile automatically).
