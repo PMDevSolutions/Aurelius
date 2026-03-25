@@ -91,7 +91,8 @@ echo "--- Capturing current screenshots ---"
 echo ""
 
 # Clean previous regression screenshots
-rm -rf "$SCREENSHOT_DIR"/*.png 2>/dev/null || true
+rm -rf "$SCREENSHOT_DIR" 2>/dev/null || true
+mkdir -p "$SCREENSHOT_DIR"
 
 TEMP_SCRIPT=$(mktemp /tmp/regression-capture-XXXXXX.mjs)
 cat > "$TEMP_SCRIPT" << 'SCRIPT_EOF'
@@ -186,7 +187,6 @@ while IFS= read -r baseline_file; do
 
   # Run visual-diff.js
   DIFF_OUTPUT=$(node scripts/visual-diff.js "$current_file" "$baseline_file" --output "$diff_file" --threshold "$THRESHOLD" --json 2>&1) || true
-  DIFF_EXIT=$?
 
   # Parse mismatch from JSON output
   MISMATCH=$(echo "$DIFF_OUTPUT" | node -e "
@@ -236,7 +236,7 @@ cat > "$REPORT_PATH" << REPORT_EOF
 
 **Date:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 **URL:** $URL
-**Threshold:** $THRESHOLD ($(echo "$THRESHOLD * 100" | bc)%)
+**Threshold:** $THRESHOLD ($(node -e "console.log($THRESHOLD * 100)")%)
 **Browsers:** $(echo "$BROWSERS_JSON" | tr -d '[]"')
 
 ## Summary
@@ -253,7 +253,7 @@ cat > "$REPORT_PATH" << REPORT_EOF
 
 | Screenshot | Status | Mismatch | Notes |
 |-----------|--------|----------|-------|
-$(echo -e "$RESULTS")
+$(printf '%b\n' "$RESULTS")
 
 ## Diff Images
 
