@@ -1,7 +1,7 @@
 # Custom Agents Guide
 
-**Last Updated:** 2026-03-18
-**Total Agents:** 48
+**Last Updated:** 2026-03-25
+**Total Agents:** 53
 **Location:** `.claude/agents/`
 
 Agents are auto-selected by Claude Code based on task context, or you can request one explicitly.
@@ -21,7 +21,9 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 | test-writer-fixer | Write tests, run them, fix failures iteratively | Unit tests, integration tests, increasing coverage, fixing flaky tests |
 | error-boundary-architect | Error handling strategy, React error boundaries, fallback UIs, Sentry integration | Making React apps resilient to runtime failures, graceful degradation |
 | migration-specialist | Framework upgrades, dependency migrations, codemods | Upgrading React/Next.js versions, CRA to Vite, Redux to Zustand, Jest to Vitest |
-| i18n-engineer | Internationalization setup, translation management, RTL support | Adding i18n (next-intl, react-i18next), locale formatting, RTL layouts |
+| i18n-engineer | Internationalization setup, translation management, RTL support | Adding i18n (next-intl, react-i18next, vue-i18n, svelte-i18n, expo-localization), locale formatting, RTL layouts |
+| animation-optimizer | Animation performance profiling, jank elimination, reduced-motion compliance | Optimizing animations for 60fps, motion design systems, framework-specific animation patterns |
+| bundle-analyzer | Bundle size analysis, tree-shaking audits, code splitting optimization | Analyzing bundle composition, finding oversized dependencies, enforcing bundle budgets |
 
 ## Design
 
@@ -51,7 +53,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 | tool-evaluator | Evaluate libraries, frameworks, and tools | Comparing NPM packages, assessing dependencies, tech stack decisions |
 | workflow-optimizer | Development process improvement | Streamlining build pipelines, reducing dev friction, automation gaps |
 | visual-qa-agent | Visual regression testing and cross-browser verification | Comparing rendered output against Figma designs, screenshot diffing |
-| accessibility-auditor | WCAG 2.1 AA compliance auditing | Color contrast, ARIA labels, keyboard navigation, Lighthouse a11y |
+| accessibility-auditor | WCAG 2.1 AA compliance auditing (React, Vue, Svelte, React Native) | Color contrast, ARIA labels, keyboard navigation, Lighthouse a11y, framework-specific a11y |
 
 ## Product
 
@@ -137,7 +139,7 @@ User: "Use the accessibility-auditor agent to check this page"
 
 ## Agent + Skill Integration
 
-Agents work alongside the 17 custom skills in `.claude/skills/`:
+Agents work alongside the 19 custom skills in `.claude/skills/`:
 
 | Agent | Complementary Skill |
 |-------|-------------------|
@@ -150,6 +152,8 @@ Agents work alongside the 17 custom skills in `.claude/skills/`:
 | error-boundary-architect | (works with Sentry integration in pipeline.config.json) |
 | migration-specialist | (uses WebSearch for changelog/codemod lookup) |
 | i18n-engineer | (works with frontend-developer for component i18n) |
+| animation-optimizer | animation-motion |
+| bundle-analyzer | react-performance-optimization |
 | canva-react-converter | canva-token-inference |
 
 **Skills Documentation:** `.claude/skills/README.md`
@@ -163,7 +167,8 @@ Agents work alongside the 17 custom skills in `.claude/skills/`:
 | Build a React component | frontend-developer |
 | Convert Figma to React | figma-react-converter |
 | Write unit tests | test-writer-fixer |
-| Optimize bundle size | performance-benchmarker |
+| Optimize bundle size | bundle-analyzer |
+| Optimize animations | animation-optimizer |
 | WCAG compliance audit | accessibility-auditor |
 | Visual regression check | visual-qa-agent |
 | Map exported assets | asset-cataloger |

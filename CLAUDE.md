@@ -164,13 +164,13 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (51 Total)
+### Custom Agents (53 Total)
 
-51 specialized agents covering the full product lifecycle:
+53 specialized agents covering the full product lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
-| Engineering | 10 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer |
+| Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
 | Design-to-Code | 6 | figma-react-converter, canva-react-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
@@ -505,4 +505,4 @@ gh issue create               # Create issue
 ---
 
 **Last Updated:** 2026-03-25
-**Architecture:** 51 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
+**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
