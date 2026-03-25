@@ -38,6 +38,11 @@
             "type": "command",
             "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"vitest\" && echo \"$TOOL_OUTPUT\" | grep -qE \"Tests\\s+[0-9]+ passed\"; then CONFIG=\".claude/pipeline.config.json\"; REMINDER=$(node -e \"const c=require(\\\"./\\\" + process.argv[1]); console.log(c.mutationTesting?.reminder ?? false)\" \"$CONFIG\" 2>/dev/null || echo false); if [ \"$REMINDER\" = \"true\" ]; then echo \"[mutation-test] All tests passed. Consider running mutation tests to validate test quality: npx stryker run\"; fi; fi'",
             "description": "Suggest mutation testing after all tests pass"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/regression-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
+            "description": "Reminds to run visual regression tests after successful builds"
           }
         ]
       }

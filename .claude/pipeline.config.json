@@ -271,6 +271,24 @@
     "diffThreshold": 0.03,
     "blocking": false
   },
+  "regressionTesting": {
+    "enabled": true,
+    "baselineDir": ".claude/visual-qa/baselines",
+    "screenshotDir": ".claude/visual-qa/screenshots/regression",
+    "diffDir": ".claude/visual-qa/diffs/regression",
+    "threshold": 0.02,
+    "failOnMissingBaseline": false,
+    "updateBaselinesOnPass": false,
+    "breakpoints": {
+      "mobile": 375,
+      "desktop": 1440
+    },
+    "waitAfterLoadMs": 1500,
+    "fullPage": true,
+    "routes": ["/"],
+    "browsers": ["chromium"],
+    "reportFile": "regression-report.md"
+  },
   "deadCode": {
     "enabled": true,
     "tool": "knip",
