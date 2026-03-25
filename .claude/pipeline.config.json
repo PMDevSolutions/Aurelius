@@ -359,5 +359,117 @@
         }
       ]
     }
+  },
+  "orchestration": {
+    "enabled": true,
+    "maxConcurrent": 3,
+    "phases": {
+      "token-sync": {
+        "depends": [],
+        "resources": ["filesystem:tokens"],
+        "blocking": true,
+        "description": "Check for token drift against lockfile"
+      },
+      "intake": {
+        "depends": ["token-sync"],
+        "resources": ["filesystem:build-spec"],
+        "blocking": true,
+        "description": "Discover design structure and create build spec"
+      },
+      "token-lock": {
+        "depends": ["intake"],
+        "resources": ["filesystem:tokens"],
+        "blocking": true,
+        "description": "Extract and lock design tokens"
+      },
+      "tdd-scaffold": {
+        "depends": ["token-lock"],
+        "resources": ["filesystem:src", "filesystem:tests"],
+        "blocking": true,
+        "description": "Write failing tests for all components (RED phase)"
+      },
+      "component-build": {
+        "depends": ["tdd-scaffold"],
+        "resources": ["filesystem:src", { "name": "port:dev-server", "mode": "shared" }],
+        "blocking": true,
+        "description": "Build components to pass tests (GREEN phase)"
+      },
+      "storybook": {
+        "depends": ["component-build"],
+        "resources": ["filesystem:stories"],
+        "blocking": false,
+        "description": "Auto-generate Storybook stories"
+      },
+      "visual-diff": {
+        "depends": ["component-build"],
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+        "blocking": true,
+        "description": "Pixel-diff visual verification loop"
+      },
+      "dark-mode": {
+        "depends": ["component-build"],
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+        "blocking": false,
+        "description": "Dark mode screenshot comparison"
+      },
+      "e2e-tests": {
+        "depends": ["visual-diff"],
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+        "blocking": true,
+        "description": "Generate and run Playwright E2E tests"
+      },
+      "cross-browser": {
+        "depends": ["component-build"],
+        "resources": [],
+        "blocking": false,
+        "description": "Firefox and WebKit screenshot comparison"
+      },
+      "quality-gate": {
+        "depends": ["component-build"],
+        "resources": [],
+        "blocking": true,
+        "description": "Coverage, types, build, tokens, Lighthouse checks"
+      },
+      "responsive": {
+        "depends": ["component-build"],
+        "resources": [],
+        "blocking": false,
+        "description": "Responsive screenshots at 5 breakpoints"
+      },
+      "report": {
+        "depends": ["quality-gate", "e2e-tests"],
+        "resources": ["filesystem:report"],
+        "blocking": true,
+        "description": "Generate build report with all results"
+      }
+    },
+    "qualityGateSubtasks": {
+      "coverage": {
+        "resources": [],
+        "description": "Run vitest with coverage, check 80% threshold"
+      },
+      "typecheck": {
+        "resources": [],
+        "description": "Run tsc --noEmit"
+      },
+      "build": {
+        "resources": [{ "name": "port:build", "mode": "shared" }],
+        "description": "Run pnpm build"
+      },
+      "token-verify": {
+        "resources": ["filesystem:tokens"],
+        "description": "Run verify-tokens.sh"
+      },
+      "lighthouse": {
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+        "description": "Run Lighthouse audit per page"
+      }
+    },
+    "reporting": {
+      "showStreamingResults": true,
+      "showBatchSummary": true,
+      "showSpeedupEstimate": true,
+      "includeTimeline": true
+    }
   }
 }
