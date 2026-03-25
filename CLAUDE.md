@@ -98,6 +98,12 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 
 # Cross-browser CSS audit
 ./scripts/audit-cross-browser-css.sh [--json]
+
+# Capture baseline screenshots for visual regression
+./scripts/capture-baselines.sh [url] [--routes /,/about]
+
+# Run visual regression tests against baselines
+./scripts/regression-test.sh [url] [--update-baselines] [--json]
 ```
 
 ## Development Commands
@@ -228,6 +234,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
   [5.5] DARK MODE   → check-dark-mode.sh → dark mode verification (non-blocking)
   [6] E2E TESTS     → e2e-test-generator skill → Playwright tests (app-type-aware)
   [7] CROSS-BROWSER → Firefox/WebKit screenshots (non-blocking)
+  [7.5] REGRESSION  → regression-test.sh → compare against baselines (non-blocking)
   [8] QUALITY GATE  → coverage + types + build + tokens + Lighthouse + mutation score (opt-in)
   [8.5] RESPONSIVE  → check-responsive.sh → screenshots at 5 breakpoints (non-blocking)
   [9] REPORT        → .claude/visual-qa/build-report.md (with diff images + docs)
@@ -327,7 +334,7 @@ Framework auto-detection: if `outputTarget` is not specified, the pipeline detec
 
 ---
 
-### Automated Hooks (7 Total)
+### Automated Hooks (8 Total)
 
 Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` matcher:
 
@@ -340,6 +347,7 @@ Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` match
 | Lighthouse CI | `pnpm build` succeeds | Suggests Lighthouse audit with threshold targets from config |
 | Bundle size guard | `git commit` detected | Warns if build output exceeds maxSizeKb from config |
 | Mutation testing reminder | `vitest` all tests pass | Suggests running Stryker for test quality validation |
+| Regression reminder | `pnpm build` succeeds | Suggests running `./scripts/regression-test.sh` if baselines exist |
 
 ---
 
@@ -473,9 +481,11 @@ gh issue create               # Create issue
 ./scripts/generate-api-client.sh        # OpenAPI → typed client
 ./scripts/check-responsive.sh           # Responsive screenshots
 ./scripts/audit-cross-browser-css.sh   # Cross-browser CSS audit
+./scripts/capture-baselines.sh          # Capture regression baselines
+./scripts/regression-test.sh            # Visual regression testing
 ```
 
 ---
 
-**Last Updated:** 2026-03-24
-**Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 19 scripts, 7 hooks
+**Last Updated:** 2026-03-25
+**Architecture:** 51 agents, 18 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
