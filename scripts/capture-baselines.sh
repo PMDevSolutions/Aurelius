@@ -75,7 +75,7 @@ fi
 TEMP_SCRIPT=$(mktemp /tmp/capture-baselines-XXXXXX.mjs)
 cat > "$TEMP_SCRIPT" << 'SCRIPT_EOF'
 import { chromium, firefox, webkit } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { join } from 'path';
 
 const url = process.argv[2];
