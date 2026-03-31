@@ -3,3 +3,11 @@ contact_links:
   - name: Questions & Discussions
     url: https://github.com/PMDevSolutions/Aurelius/discussions
     about: Ask questions and discuss ideas in GitHub Discussions
+
+  - name: Documentation
+    url: https://github.com/PMDevSolutions/Aurelius/tree/main/docs
+    about: Check the documentation before opening an issue
+
+  - name: Security Vulnerabilities
+    url: https://github.com/PMDevSolutions/Aurelius/security/advisories/new
+    about: Report security vulnerabilities privately via GitHub Security Advisories

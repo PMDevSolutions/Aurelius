@@ -1,0 +1,233 @@
+name: Pipeline Issue
+description: Report an issue with the design-to-code conversion pipelines
+title: "[Pipeline]: "
+labels: ["pipeline", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report issues specific to the design-to-code conversion pipelines (Figma, Canva, or Screenshot/URL).
+
+  - type: dropdown
+    id: pipeline-type
+    attributes:
+      label: Pipeline Type
+      description: Which pipeline are you using?
+      options:
+        - Figma-to-React (/build-from-figma)
+        - Canva-to-React (/build-from-canva)
+        - Screenshot-to-App (/build-from-screenshot)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: output-target
+    attributes:
+      label: Output Target Framework
+      description: What framework are you generating code for?
+      options:
+        - React (Next.js)
+        - React (Vite)
+        - React (Remix)
+        - Vue 3
+        - Svelte / SvelteKit
+        - React Native (Expo)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pipeline-phase
+    attributes:
+      label: Pipeline Phase
+      description: At which phase did the issue occur?
+      options:
+        - "Phase 0: Token Sync (sync-tokens.sh)"
+        - "Phase 1: Intake (figma-intake / canva-intake / screenshot-intake)"
+        - "Phase 2: Token Lock (design-token-lock / canva-token-inference)"
+        - "Phase 3: TDD (tdd-from-figma)"
+        - "Phase 4: Build (component generation)"
+        - "Phase 4.5: Storybook Generation"
+        - "Phase 5: Visual Diff (pixelmatch)"
+        - "Phase 5.5: Dark Mode Verification"
+        - "Phase 6: E2E Tests"
+        - "Phase 7: Cross-Browser Testing"
+        - "Phase 7.5: Visual Regression"
+        - "Phase 8: Quality Gate"
+        - "Phase 8.5: Responsive Verification"
+        - "Phase 9: Report Generation"
+        - "Unknown / Multiple Phases"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: app-type
+    attributes:
+      label: App Type
+      description: What type of application are you building?
+      options:
+        - Web App (Standard)
+        - Chrome Extension
+        - PWA (Progressive Web App)
+        - React Native Mobile App
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: A clear and concise description of the issue.
+      placeholder: Describe what went wrong during the pipeline execution...
+    validations:
+      required: true
+
+  - type: input
+    id: design-url
+    attributes:
+      label: Design Source URL
+      description: The Figma/Canva URL or indicate if using screenshots.
+      placeholder: https://figma.com/file/... or "Local screenshots"
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the issue.
+      value: |
+        1. Run command: `/build-from-figma <URL>`
+        2.
+        3.
+        4.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected the pipeline to do.
+      placeholder: I expected the pipeline to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened.
+      placeholder: Instead, the pipeline...
+    validations:
+      required: true
+
+  - type: textarea
+    id: build-spec
+    attributes:
+      label: build-spec.json (if available)
+      description: Paste the contents of your build-spec.json file if it was generated.
+      render: json
+      placeholder: |
+        {
+          "appType": "...",
+          "outputTarget": "...",
+          ...
+        }
+    validations:
+      required: false
+
+  - type: textarea
+    id: token-lockfile
+    attributes:
+      label: design-tokens.lock.json Issues
+      description: If the issue is token-related, describe any problems with the design token lockfile.
+      placeholder: |
+        Describe any issues with:
+        - Missing tokens
+        - Incorrect values
+        - Token drift detected
+    validations:
+      required: false
+
+  - type: textarea
+    id: visual-diff
+    attributes:
+      label: Visual Diff Details
+      description: If the issue is related to visual QA, describe the visual differences or provide diff images.
+      placeholder: |
+        - Diff percentage: X%
+        - Affected regions: ...
+        - Number of iterations attempted: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Logs / Pipeline Output
+      description: Paste relevant error messages or pipeline output.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g., Windows 11, macOS 14.3, Ubuntu 22.04
+      placeholder: Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Output of `node --version`
+      placeholder: v20.11.0
+    validations:
+      required: true
+
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code Version
+      description: Output of `claude --version`
+      placeholder: claude-code v1.0.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: mcp-status
+    attributes:
+      label: MCP Server Status
+      description: Are all required MCP servers connected? (Figma, Playwright, Chrome DevTools)
+      placeholder: |
+        - Figma MCP: Connected / Not connected
+        - Playwright MCP: Connected / Not connected
+        - Chrome DevTools MCP: Connected / Not connected
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Visual Evidence
+      description: Attach screenshots of design, generated output, visual diffs, etc.
+      placeholder: Drag and drop images here...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting.
+      options:
+        - label: I have searched existing issues to ensure this hasn't been reported already.
+          required: true
+        - label: I have verified that required MCP servers are properly configured.
+          required: true
+        - label: I have included the relevant build-spec.json or error output.
+          required: false
