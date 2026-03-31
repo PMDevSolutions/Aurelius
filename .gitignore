@@ -109,3 +109,6 @@ experiments/
 # Taskmaster Files
 .taskmaster/tasks/*.json.bak
 .taskmaster/logs/
+
+# Release artifacts
+RELEASE_NOTES.md
