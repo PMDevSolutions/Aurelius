@@ -1,5 +1,5 @@
 {
-  "header": "# Changelog\n\nAll notable changes to the Claude Code React Framework template will be documented in this file.\n",
+  "header": "# Changelog\n\nAll notable changes to the Aurelius framework will be documented in this file.\n\nThis changelog is automatically generated from [Conventional Commits](https://www.conventionalcommits.org/).\n",
   "types": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
@@ -14,5 +14,8 @@
   ],
   "commitUrlFormat": "{{host}}/{{owner}}/{{repository}}/commit/{{hash}}",
   "compareUrlFormat": "{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
-  "tagPrefix": "template-v"
+  "tagPrefix": "v",
+  "scripts": {
+    "postchangelog": "node scripts/extract-release-notes.js"
+  }
 }

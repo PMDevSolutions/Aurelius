@@ -1,0 +1,4 @@
+# Pre-commit hook: run token verification if app source exists
+if [ -f "scripts/verify-tokens.sh" ] && [ -d "app/src" ]; then
+  bash scripts/verify-tokens.sh
+fi
