@@ -1,17 +1,50 @@
 name: Feature Request
 description: Suggest a new feature or improvement
 title: "[Feature]: "
-labels: ["enhancement"]
+labels: ["enhancement", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting a feature! Please fill out the form below.
+        Thanks for suggesting a feature! Please fill out the form below to help us understand your request.
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature is this?
+      options:
+        - New Feature (Something that doesn't exist yet)
+        - Enhancement (Improve existing functionality)
+        - Integration (Add support for new tool/service)
+        - Developer Experience (Improve workflow/usability)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target-component
+    attributes:
+      label: Target Component
+      description: Which part of the framework would this feature affect?
+      options:
+        - Agents (Custom Claude Code agents)
+        - Skills (Slash command skills)
+        - Scripts (Development automation scripts)
+        - Pipeline - Figma-to-React
+        - Pipeline - Canva-to-React
+        - Pipeline - Screenshot-to-App
+        - Templates (Starter configs)
+        - MCP Integration (Figma, Playwright, Chrome DevTools)
+        - Documentation
+        - Multiple Components
+        - New Component
+    validations:
+      required: true
 
   - type: textarea
     id: description
     attributes:
-      label: Description
+      label: Feature Description
       description: A clear and concise description of the feature you'd like.
       placeholder: Describe the feature...
     validations:
@@ -21,8 +54,11 @@ body:
     id: use-case
     attributes:
       label: Use Case
-      description: Describe the problem this feature would solve or the use case it enables.
-      placeholder: I want this feature because...
+      description: Describe the problem this feature would solve or the use case it enables. Help us understand the "why" behind this request.
+      placeholder: |
+        As a [type of user], I want to [do something] so that [benefit/value].
+
+        Currently, I have to... which is problematic because...
     validations:
       required: true
 
@@ -30,8 +66,12 @@ body:
     id: proposed-solution
     attributes:
       label: Proposed Solution
-      description: Describe how you'd like this feature to work.
-      placeholder: The feature should...
+      description: Describe how you'd like this feature to work. Be as specific as possible.
+      placeholder: |
+        The feature should:
+        1. ...
+        2. ...
+        3. ...
     validations:
       required: true
 
@@ -39,7 +79,63 @@ body:
     id: alternatives
     attributes:
       label: Alternatives Considered
-      description: Describe any alternative solutions or workarounds you've considered.
+      description: Describe any alternative solutions, workarounds, or approaches you've considered.
       placeholder: I've also considered...
     validations:
       required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope / Effort Estimate
+      description: How big of a change do you think this would be? (Your best guess)
+      options:
+        - Small (Minor change, few files)
+        - Medium (Moderate change, multiple files/components)
+        - Large (Significant change, new system/major refactor)
+        - Unknown (Not sure)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What would need to be true for this feature to be considered complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, examples, or references about the feature request.
+      placeholder: Additional context, links, or screenshots...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Interest
+      description: Would you be interested in contributing to this feature?
+      options:
+        - label: I would be willing to submit a PR for this feature
+          required: false
+        - label: I would be willing to help test this feature
+          required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting.
+      options:
+        - label: I have searched existing issues and discussions to ensure this hasn't been requested already.
+          required: true
+        - label: I have read the project documentation and this feature is not already available.
+          required: true
