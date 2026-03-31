@@ -1,0 +1,36 @@
+# Snyk (https://snyk.io) policy file
+# https://snyk.io/docs/snyk-policy-file/
+version: v1.25.0
+
+# Ignores are used to ignore specific vulnerabilities
+# Example:
+# ignore:
+#   SNYK-JS-LODASH-567746:
+#     - '*':
+#         reason: 'Low severity, no fix available'
+#         expires: 2026-06-30T00:00:00.000Z
+
+# Patches are automatic fixes
+patch: {}
+
+# Exclude paths from scanning
+exclude:
+  global:
+    - node_modules
+    - .git
+    - dist
+    - build
+    - coverage
+    - .claude/visual-qa
+
+# Severity threshold for failing builds
+# Options: low, medium, high, critical
+severity-threshold: high
+
+# Fail only on fixable issues
+fail-on: upgradable
+
+# Language settings
+language-settings:
+  javascript:
+    package-manager: pnpm

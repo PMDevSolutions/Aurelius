@@ -230,7 +230,29 @@
     "enabled": true,
     "auditLevel": "moderate",
     "failOnVulnerability": true,
-    "checkLockfile": true
+    "checkLockfile": true,
+    "snyk": {
+      "enabled": true,
+      "severityThreshold": "high",
+      "failOnIssues": false
+    },
+    "csp": {
+      "enabled": true,
+      "reportOnly": false,
+      "reportUri": "/api/csp-report"
+    },
+    "inputSanitization": {
+      "enabled": true,
+      "blockPrivateUrls": true,
+      "allowLocalhostInDev": true
+    },
+    "headers": {
+      "hsts": true,
+      "noSniff": true,
+      "frameOptions": "SAMEORIGIN",
+      "xssProtection": true,
+      "referrerPolicy": "strict-origin-when-cross-origin"
+    }
   },
   "bundleSize": {
     "enabled": true,
