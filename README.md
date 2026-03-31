@@ -260,12 +260,17 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 
 | Document | Location | Description |
 |----------|----------|-------------|
+| **Developer onboarding** | `docs/onboarding/README.md` | Start here -- quickstart, architecture, configuration, troubleshooting |
+| Quickstart guide | `docs/onboarding/quickstart.md` | Clone to running project in 10 minutes |
+| Architecture overview | `docs/onboarding/architecture.md` | All 53 agents, 19 skills, 3 pipelines, and how they connect |
+| Pipeline configuration | `docs/onboarding/pipeline-configuration.md` | Every setting in pipeline.config.json explained |
+| Troubleshooting FAQ | `docs/onboarding/troubleshooting.md` | Common issues and solutions |
 | Project instructions | `CLAUDE.md` | Full project config for Claude Code |
 | Figma pipeline guide | `docs/figma-to-react/README.md` | Pipeline overview and troubleshooting |
 | React standards | `docs/react-development/README.md` | TypeScript, Tailwind, testing conventions |
 | Canva pipeline guide | `docs/canva-to-react/README.md` | Canva pipeline overview and troubleshooting |
-| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 48 agents with use cases |
-| Skills catalog | `.claude/skills/README.md` | All 17 skills with triggers |
+| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 53 agents with use cases |
+| Skills catalog | `.claude/skills/README.md` | All 19 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |
 | Templates reference | `templates/README.md` | Starter configs and how to use them |
