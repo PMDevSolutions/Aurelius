@@ -493,5 +493,67 @@
       "showSpeedupEstimate": true,
       "includeTimeline": true
     }
+  },
+  "caching": {
+    "enabled": true,
+    "strategy": "content-hash",
+    "directory": ".claude/pipeline-cache",
+    "maxAgedays": 7,
+    "inputCategories": {
+      "source": ["src/**/*.{ts,tsx,js,jsx}", "components/**/*.{ts,tsx}"],
+      "styles": ["src/**/*.css", "styles/**/*.css", "tailwind.config.*"],
+      "tests": ["**/*.test.{ts,tsx,js,jsx}", "**/*.spec.{ts,tsx}"],
+      "config": ["package.json", "tsconfig.json", "vite.config.*", "next.config.*"],
+      "tokens": ["design-tokens.lock.json", "tailwind.config.*"],
+      "figma": ["build-spec.json", "design-tokens.lock.json"]
+    },
+    "phaseInputs": {
+      "token-sync": ["tokens", "config"],
+      "intake": ["figma"],
+      "token-lock": ["figma", "tokens"],
+      "tdd-scaffold": ["figma", "tokens", "tests"],
+      "component-build": ["source", "styles", "tokens", "tests", "config"],
+      "storybook": ["source", "styles"],
+      "visual-diff": ["source", "styles"],
+      "dark-mode": ["source", "styles"],
+      "e2e-tests": ["source", "tests", "config"],
+      "cross-browser": ["source", "styles"],
+      "quality-gate": ["source", "tests", "config"],
+      "responsive": ["source", "styles"]
+    },
+    "invalidateOnConfigChange": true
+  },
+  "profiling": {
+    "enabled": true,
+    "metricsDirectory": ".claude/pipeline-cache/metrics",
+    "historyLimit": 50,
+    "slowStageThresholdMs": 30000,
+    "alerts": {
+      "enabled": true,
+      "slowStageWarning": true,
+      "memoryThresholdMb": 1024,
+      "trendDegradationPercent": 20
+    },
+    "reporting": {
+      "generateOnComplete": true,
+      "formats": ["md", "json"],
+      "includeMemoryMetrics": true,
+      "includeTimeline": true
+    }
+  },
+  "incrementalBuild": {
+    "enabled": true,
+    "parallelPhases": true,
+    "skipCachedPhases": true,
+    "forceRebuildOn": ["package.json", "pnpm-lock.yaml", "pipeline.config.json"],
+    "maxParallelPhases": 4
+  },
+  "dashboard": {
+    "enabled": true,
+    "outputDirectory": ".claude/visual-qa/dashboard",
+    "formats": ["html", "md"],
+    "autoGenerateAfterBuild": true,
+    "includeCharts": true,
+    "retentionDays": 30
   }
 }

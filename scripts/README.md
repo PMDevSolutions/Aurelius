@@ -1,6 +1,6 @@
 # Scripts Reference
 
-**Last Updated:** 2026-03-17
+**Last Updated:** 2026-03-30
 
 All scripts live in `scripts/` and are designed to run from the project root.
 
@@ -78,6 +78,64 @@ All scripts live in `scripts/` and are designed to run from the project root.
   - `--antialiasing` -- Enable anti-aliasing detection
 - **Exit codes**: 0 = pass, 1 = fail (above threshold), 2 = error
 - **Config**: Reads defaults from `.claude/pipeline.config.json`
+
+## Build Performance & Caching
+
+### Incremental Build (`incremental-build.sh`)
+- **Purpose**: Run pipeline phases with intelligent caching and profiling
+- **Usage**:
+  ```bash
+  ./scripts/incremental-build.sh              # Run all quality checks
+  ./scripts/incremental-build.sh lint         # Run specific phase
+  ./scripts/incremental-build.sh quality      # Run full quality gate
+  ./scripts/incremental-build.sh --force      # Ignore cache, force rebuild
+  ./scripts/incremental-build.sh --parallel   # Run independent phases in parallel
+  ./scripts/incremental-build.sh --no-cache   # Disable caching
+  ```
+- **Phases**: lint, types, tests, build, bundle, a11y, tokens, quality, all
+- **Features**: Hash-based caching, automatic phase skipping, stage profiling
+
+### Pipeline Cache (`pipeline-cache.js`)
+- **Purpose**: Content-addressable caching for pipeline phases using SHA-256 hashing
+- **Usage**:
+  ```bash
+  node scripts/pipeline-cache.js status               # Show cache status
+  node scripts/pipeline-cache.js check <phase>        # Check if phase cache is valid
+  node scripts/pipeline-cache.js hash <file|dir>      # Hash a file or directory
+  node scripts/pipeline-cache.js invalidate <phase>   # Invalidate a phase cache
+  node scripts/pipeline-cache.js invalidate all       # Invalidate all caches
+  node scripts/pipeline-cache.js clean --max-age 7    # Clean old entries
+  ```
+- **Features**: Phase-level cache, file hash tracking, cache metrics
+
+### Stage Profiler (`stage-profiler.js`)
+- **Purpose**: Track timing and performance metrics for each pipeline stage
+- **Usage**:
+  ```bash
+  node scripts/stage-profiler.js start <stage>        # Start timing a stage
+  node scripts/stage-profiler.js end <stage>          # End timing a stage
+  node scripts/stage-profiler.js complete             # Archive current run
+  node scripts/stage-profiler.js report               # Generate performance report
+  node scripts/stage-profiler.js report --format md   # Markdown report
+  node scripts/stage-profiler.js history --last 10    # Show recent runs
+  node scripts/stage-profiler.js analyze              # Analyze performance trends
+  node scripts/stage-profiler.js status               # Show current run status
+  ```
+- **Features**: Sub-second timing, memory tracking, slow stage detection, trend analysis
+
+### Metrics Dashboard (`metrics-dashboard.js`)
+- **Purpose**: Generate visual build performance dashboards
+- **Usage**:
+  ```bash
+  node scripts/metrics-dashboard.js generate          # Generate HTML dashboard
+  node scripts/metrics-dashboard.js generate --format md  # Markdown dashboard
+  node scripts/metrics-dashboard.js summary           # Show performance summary
+  node scripts/metrics-dashboard.js trends            # Show 7-day trends
+  node scripts/metrics-dashboard.js trends --period 30d   # 30-day trends
+  node scripts/metrics-dashboard.js compare <id1> <id2>   # Compare two runs
+  ```
+- **Output**: HTML/Markdown dashboards in `.claude/visual-qa/dashboard/`
+- **Features**: Cache efficiency tracking, stage breakdown, historical trends
 
 ## Project Setup
 
