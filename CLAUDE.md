@@ -104,6 +104,24 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 
 # Run visual regression tests against baselines
 ./scripts/regression-test.sh [url] [--update-baselines] [--json]
+
+# Incremental build with caching and profiling
+./scripts/incremental-build.sh [phase|all] [--force] [--parallel]
+
+# Pipeline cache management
+node scripts/pipeline-cache.js status               # Show cache status
+node scripts/pipeline-cache.js check <phase>        # Check cache validity
+node scripts/pipeline-cache.js invalidate <phase>   # Invalidate cache
+
+# Stage profiling and performance analysis
+node scripts/stage-profiler.js report               # Generate performance report
+node scripts/stage-profiler.js analyze              # Analyze slow stages
+node scripts/stage-profiler.js history              # View build history
+
+# Build performance dashboard
+node scripts/metrics-dashboard.js generate          # Generate HTML dashboard
+node scripts/metrics-dashboard.js summary           # Show metrics summary
+node scripts/metrics-dashboard.js trends            # Show performance trends
 ```
 
 ## Development Commands
@@ -502,7 +520,19 @@ gh issue create               # Create issue
 ./scripts/regression-test.sh            # Visual regression testing
 ```
 
+**Build Performance & Caching:**
+```bash
+./scripts/incremental-build.sh          # Incremental build with caching
+./scripts/incremental-build.sh --parallel # Parallel execution
+./scripts/incremental-build.sh --force  # Force rebuild (ignore cache)
+node scripts/pipeline-cache.js status   # Cache status
+node scripts/stage-profiler.js report   # Performance report
+node scripts/stage-profiler.js analyze  # Slow stage analysis
+node scripts/metrics-dashboard.js generate # HTML dashboard
+node scripts/metrics-dashboard.js summary  # Quick metrics summary
+```
+
 ---
 
-**Last Updated:** 2026-03-25
-**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 21 scripts, 8 hooks
+**Last Updated:** 2026-03-30
+**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 25 scripts, 8 hooks
