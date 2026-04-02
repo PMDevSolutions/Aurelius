@@ -2,16 +2,21 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { tmpdir } from "os";
 import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "verify-test-coverage.sh");
 
+// Use os.tmpdir() so fixtures are NOT under a __tests__/ path.
+// The script's find command excludes */__tests__/* which would hide all fixtures
+// if they lived inside scripts/__tests__/fixtures/.
+const TMP_ROOT = join(tmpdir(), "verify-coverage-tests");
 let counter = 0;
 
 function createTmpDir() {
   counter++;
-  const dir = join(__dirname, "fixtures", `verify-coverage-${counter}-${Date.now()}`);
+  const dir = join(TMP_ROOT, `run-${counter}-${Date.now()}`);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -34,14 +39,9 @@ function run(dir) {
 }
 
 afterAll(() => {
-  const fixturesDir = join(__dirname, "fixtures");
-  if (existsSync(fixturesDir)) {
+  if (existsSync(TMP_ROOT)) {
     try {
-      for (const entry of readdirSync(fixturesDir)) {
-        if (entry.startsWith("verify-coverage-")) {
-          rmSync(join(fixturesDir, entry), { recursive: true, force: true });
-        }
-      }
+      rmSync(TMP_ROOT, { recursive: true, force: true });
     } catch {
       // Ignore cleanup errors
     }
