@@ -30,9 +30,5 @@
     "typescript": "^5.7.0",
     "eslint": "^9.0.0",
     "prettier": "^3.4.0"
-  },
-  "jest": {
-    "preset": "jest-expo",
-    "setupFilesAfterSetup": ["@testing-library/react-native/extend-expect"]
   }
 }
