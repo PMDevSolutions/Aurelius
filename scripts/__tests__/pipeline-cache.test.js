@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -57,11 +57,7 @@ function runJSON(args) {
   const adjusted = [...args];
   const cmd = adjusted[0];
   // If this is a no-target command and --json is in position 1, insert placeholder
-  if (
-    NO_TARGET_COMMANDS.has(cmd) &&
-    adjusted.length >= 2 &&
-    adjusted[1] === "--json"
-  ) {
+  if (NO_TARGET_COMMANDS.has(cmd) && adjusted.length >= 2 && adjusted[1] === "--json") {
     adjusted.splice(1, 0, "_");
   }
   const result = run(adjusted);

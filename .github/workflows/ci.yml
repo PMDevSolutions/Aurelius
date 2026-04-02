@@ -201,7 +201,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run script tests
-        run: pnpm vitest run scripts/__tests__/ --reporter=verbose
+        run: pnpm vitest run --config scripts/__tests__/vitest.config.js scripts/__tests__/ --reporter=verbose
 
   # ── Lint & format check (needs Node + project with eslint/prettier) ───
   lint:

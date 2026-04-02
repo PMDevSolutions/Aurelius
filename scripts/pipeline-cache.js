@@ -24,12 +24,10 @@ import {
   readdirSync,
   statSync,
   mkdirSync,
-  unlinkSync,
   rmSync,
 } from "fs";
-import { join, relative, resolve, extname, basename, dirname } from "path";
+import { join, relative, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,7 +36,6 @@ const PROJECT_ROOT = resolve(__dirname, "..");
 // Default paths
 const CACHE_DIR = join(PROJECT_ROOT, ".claude", "pipeline-cache");
 const CACHE_MANIFEST = join(CACHE_DIR, "cache-manifest.json");
-const METRICS_FILE = join(CACHE_DIR, "build-metrics.json");
 
 // File patterns for different input categories
 const INPUT_PATTERNS = {
@@ -118,7 +115,7 @@ function hashFile(filepath) {
 }
 
 // Compute hash of directory (combination of all file hashes)
-function hashDirectory(dirpath, patterns = ["**/*"]) {
+function hashDirectory(dirpath, _patterns = ["**/*"]) {
   const hashes = [];
 
   function walkDir(dir) {

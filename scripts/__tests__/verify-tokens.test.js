@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "verify-tokens.sh");
@@ -14,7 +14,6 @@ const SCRIPT = join(__dirname, "..", "verify-tokens.sh");
  * then run the script from that directory.
  */
 
-let tmpDir;
 let counter = 0;
 
 function createTmpDir() {
@@ -59,7 +58,7 @@ afterAll(() => {
   const fixturesDir = join(__dirname, "fixtures");
   if (existsSync(fixturesDir)) {
     try {
-      const entries = require("fs").readdirSync(fixturesDir);
+      const entries = readdirSync(fixturesDir);
       for (const entry of entries) {
         if (entry.startsWith("verify-tokens-")) {
           rmSync(join(fixturesDir, entry), { recursive: true, force: true });
@@ -171,15 +170,9 @@ describe("verify-tokens.sh — CSS hex colors", () => {
     dir = createTmpDir();
     mkdirSync(join(dir, "src"), { recursive: true });
     // Clean tsx
-    writeFileSync(
-      join(dir, "src", "App.tsx"),
-      `export const App = () => <div>Hello</div>;`,
-    );
+    writeFileSync(join(dir, "src", "App.tsx"), `export const App = () => <div>Hello</div>;`);
     // CSS with hardcoded color (not in tokens.css or globals.css)
-    writeFileSync(
-      join(dir, "src", "custom.css"),
-      `.highlight { color: #ff5733; }`,
-    );
+    writeFileSync(join(dir, "src", "custom.css"), `.highlight { color: #ff5733; }`);
   });
 
   it("detects hardcoded hex colors in CSS files", () => {

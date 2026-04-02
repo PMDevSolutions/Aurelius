@@ -209,9 +209,7 @@ describe("metrics-dashboard.js summary", () => {
 
     expect(slowestStages.length).toBeGreaterThan(0);
     for (let i = 1; i < slowestStages.length; i++) {
-      expect(slowestStages[i - 1].avgDuration).toBeGreaterThanOrEqual(
-        slowestStages[i].avgDuration,
-      );
+      expect(slowestStages[i - 1].avgDuration).toBeGreaterThanOrEqual(slowestStages[i].avgDuration);
     }
   });
 

@@ -186,7 +186,10 @@ describe("verify-test-coverage.sh — no component files", () => {
     dir = createTmpDir();
     mkdirSync(join(dir, "src"), { recursive: true });
     // Empty src dir, no .tsx files
-    writeFileSync(join(dir, "src", "utils.ts"), `export const add = (a: number, b: number) => a + b;`);
+    writeFileSync(
+      join(dir, "src", "utils.ts"),
+      `export const add = (a: number, b: number) => a + b;`,
+    );
   });
 
   it("handles no component files gracefully", () => {

@@ -17,7 +17,7 @@
  *   - Build performance reports
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -30,7 +30,6 @@ const PROJECT_ROOT = join(__dirname, "..");
 const METRICS_DIR = join(PROJECT_ROOT, ".claude", "pipeline-cache", "metrics");
 const CURRENT_RUN = join(METRICS_DIR, "current-run.json");
 const HISTORY_FILE = join(METRICS_DIR, "history.json");
-const REPORT_DIR = join(PROJECT_ROOT, ".claude", "visual-qa");
 
 // Ensure directories exist
 function ensureDirs() {
