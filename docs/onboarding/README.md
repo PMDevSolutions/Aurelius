@@ -14,6 +14,7 @@ This guide will get you productive with the framework quickly, whether you are b
 | [Architecture Overview](architecture.md) | How the 53 agents, 19 skills, 3 pipelines, and 8 hooks fit together |
 | [Pipeline Configuration](pipeline-configuration.md) | Every setting in `pipeline.config.json` explained, with examples |
 | [Troubleshooting FAQ](troubleshooting.md) | Common issues, error messages, and how to resolve them |
+| [Framework Guides](../guides/README.md) | Deep dives into design tokens, visual QA, caching, hooks, error recovery, agent creation, and framework-specific workflows |
 
 ---
 

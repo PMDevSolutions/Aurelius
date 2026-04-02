@@ -213,6 +213,7 @@ Aurelius/
 
 ## Next Steps
 
+- Browse the [Framework Guides](../guides/README.md) for deep dives into design tokens, visual QA, caching, hooks, and more
 - Read the [Architecture Overview](architecture.md) to understand how agents, skills, and pipelines connect
 - Explore [Pipeline Configuration](pipeline-configuration.md) if you need to customize thresholds
 - Check the [Troubleshooting FAQ](troubleshooting.md) if you run into issues
