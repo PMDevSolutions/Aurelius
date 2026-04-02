@@ -16,12 +16,7 @@
  *   - Actionable optimization recommendations
  */
 
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  mkdirSync,
-} from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -71,24 +66,24 @@ function calculateSummary() {
 
   // Duration stats
   const durations = runs.filter((r) => r.totalDuration).map((r) => r.totalDuration);
-  const avgDuration = durations.length > 0
-    ? durations.reduce((a, b) => a + b, 0) / durations.length
-    : 0;
+  const avgDuration =
+    durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
   const minDuration = durations.length > 0 ? Math.min(...durations) : 0;
   const maxDuration = durations.length > 0 ? Math.max(...durations) : 0;
 
   // Recent trend (last 7 runs)
   const recentRuns = runs.slice(-7);
-  const recentAvg = recentRuns.length > 0
-    ? recentRuns.filter((r) => r.totalDuration).reduce((a, r) => a + r.totalDuration, 0) / recentRuns.length
-    : 0;
+  const recentAvg =
+    recentRuns.length > 0
+      ? recentRuns.filter((r) => r.totalDuration).reduce((a, r) => a + r.totalDuration, 0) /
+        recentRuns.length
+      : 0;
 
   // Cache efficiency
   const cacheMetrics = cache.metrics || {};
   const totalCacheOps = (cacheMetrics.cacheHits || 0) + (cacheMetrics.cacheMisses || 0);
-  const cacheHitRate = totalCacheOps > 0
-    ? ((cacheMetrics.cacheHits || 0) / totalCacheOps) * 100
-    : 0;
+  const cacheHitRate =
+    totalCacheOps > 0 ? ((cacheMetrics.cacheHits || 0) / totalCacheOps) * 100 : 0;
 
   // Stage analysis
   const stageStats = {};
@@ -109,12 +104,14 @@ function calculateSummary() {
   // Find slowest stages
   const stageAvgs = Object.entries(stageStats).map(([stage, stats]) => ({
     stage,
-    avgDuration: stats.durations.length > 0
-      ? stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length
-      : 0,
-    successRate: stats.successes + stats.failures > 0
-      ? (stats.successes / (stats.successes + stats.failures)) * 100
-      : 100,
+    avgDuration:
+      stats.durations.length > 0
+        ? stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length
+        : 0,
+    successRate:
+      stats.successes + stats.failures > 0
+        ? (stats.successes / (stats.successes + stats.failures)) * 100
+        : 100,
   }));
 
   const slowestStages = stageAvgs.sort((a, b) => b.avgDuration - a.avgDuration).slice(0, 5);
@@ -131,7 +128,8 @@ function calculateSummary() {
       min: minDuration,
       max: maxDuration,
       recent: Math.round(recentAvg),
-      trend: recentAvg < avgDuration ? "improving" : recentAvg > avgDuration ? "degrading" : "stable",
+      trend:
+        recentAvg < avgDuration ? "improving" : recentAvg > avgDuration ? "degrading" : "stable",
     },
     cache: {
       hits: cacheMetrics.cacheHits || 0,
@@ -178,13 +176,15 @@ function calculateTrends(period = "7d") {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, stats]) => ({
       date,
-      avgDuration: stats.durations.length > 0
-        ? Math.round(stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length)
-        : 0,
+      avgDuration:
+        stats.durations.length > 0
+          ? Math.round(stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length)
+          : 0,
       runs: stats.durations.length,
-      successRate: stats.successes + stats.failures > 0
-        ? Math.round((stats.successes / (stats.successes + stats.failures)) * 100)
-        : 100,
+      successRate:
+        stats.successes + stats.failures > 0
+          ? Math.round((stats.successes / (stats.successes + stats.failures)) * 100)
+          : 100,
     }));
 
   // Calculate trend direction
@@ -229,10 +229,7 @@ function compareRuns(runId1, runId2) {
   };
 
   // Compare stages
-  const allStages = new Set([
-    ...Object.keys(run1.stages || {}),
-    ...Object.keys(run2.stages || {}),
-  ]);
+  const allStages = new Set([...Object.keys(run1.stages || {}), ...Object.keys(run2.stages || {})]);
 
   for (const stage of allStages) {
     const stage1 = run1.stages?.[stage] || {};
@@ -372,7 +369,7 @@ function generateHtmlDashboard() {
             <div class="sub">Slowest</div>
           </div>
         </div>
-        <div class="sub ${summary.duration.trend === 'improving' ? 'trend-down' : summary.duration.trend === 'degrading' ? 'trend-up' : 'trend-stable'}">
+        <div class="sub ${summary.duration.trend === "improving" ? "trend-down" : summary.duration.trend === "degrading" ? "trend-up" : "trend-stable"}">
           Trend: ${summary.duration.trend}
         </div>
       </div>
@@ -380,7 +377,7 @@ function generateHtmlDashboard() {
       <!-- Cache Card -->
       <div class="card">
         <h2>Cache Efficiency</h2>
-        <div class="metric ${parseFloat(summary.cache.hitRate) > 50 ? 'success' : 'warning'}">${summary.cache.hitRate}%</div>
+        <div class="metric ${parseFloat(summary.cache.hitRate) > 50 ? "success" : "warning"}">${summary.cache.hitRate}%</div>
         <div class="sub">Cache hit rate</div>
         <div style="margin-top: 1rem;">
           <div>Hits: ${summary.cache.hits} | Misses: ${summary.cache.misses}</div>
@@ -392,24 +389,28 @@ function generateHtmlDashboard() {
       <div class="card" style="grid-column: span 2;">
         <h2>Slowest Stages</h2>
         <div class="bar-chart">
-          ${summary.slowestStages.map((s) => {
-            const maxDuration = summary.slowestStages[0]?.avgDuration || 1;
-            const pct = (s.avgDuration / maxDuration) * 100;
-            return `
+          ${summary.slowestStages
+            .map((s) => {
+              const maxDuration = summary.slowestStages[0]?.avgDuration || 1;
+              const pct = (s.avgDuration / maxDuration) * 100;
+              return `
             <div class="bar">
               <div class="bar-label">${s.stage}</div>
               <div class="bar-track">
                 <div class="bar-fill" style="width: ${pct}%">${(s.avgDuration / 1000).toFixed(1)}s</div>
               </div>
             </div>`;
-          }).join('')}
+            })
+            .join("")}
         </div>
       </div>
 
       <!-- Trends Card -->
       <div class="card" style="grid-column: span 2;">
         <h2>7-Day Trend</h2>
-        ${trends.daily ? `
+        ${
+          trends.daily
+            ? `
         <table>
           <thead>
             <tr>
@@ -420,17 +421,24 @@ function generateHtmlDashboard() {
             </tr>
           </thead>
           <tbody>
-            ${trends.daily.slice(-7).map((d) => `
+            ${trends.daily
+              .slice(-7)
+              .map(
+                (d) => `
             <tr>
               <td>${d.date}</td>
               <td>${d.runs}</td>
               <td>${(d.avgDuration / 1000).toFixed(1)}s</td>
-              <td><span class="badge ${d.successRate >= 90 ? 'success' : d.successRate >= 70 ? 'warning' : 'error'}">${d.successRate}%</span></td>
+              <td><span class="badge ${d.successRate >= 90 ? "success" : d.successRate >= 70 ? "warning" : "error"}">${d.successRate}%</span></td>
             </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
-        ` : '<div class="sub">Not enough data for trends</div>'}
+        `
+            : '<div class="sub">Not enough data for trends</div>'
+        }
       </div>
     </div>
 
@@ -493,7 +501,9 @@ function generateMarkdownDashboard() {
   ];
 
   for (const s of summary.slowestStages) {
-    lines.push(`| ${s.stage} | ${(s.avgDuration / 1000).toFixed(1)}s | ${s.successRate.toFixed(0)}% |`);
+    lines.push(
+      `| ${s.stage} | ${(s.avgDuration / 1000).toFixed(1)}s | ${s.successRate.toFixed(0)}% |`,
+    );
   }
 
   if (trends.daily && trends.daily.length > 0) {
@@ -504,7 +514,9 @@ function generateMarkdownDashboard() {
     lines.push("|------|------|--------------|--------------|");
 
     for (const d of trends.daily.slice(-7)) {
-      lines.push(`| ${d.date} | ${d.runs} | ${(d.avgDuration / 1000).toFixed(1)}s | ${d.successRate}% |`);
+      lines.push(
+        `| ${d.date} | ${d.runs} | ${(d.avgDuration / 1000).toFixed(1)}s | ${d.successRate}% |`,
+      );
     }
 
     if (trends.trend) {
@@ -639,7 +651,7 @@ switch (args.command) {
         console.log("─".repeat(50));
         for (const d of trends.daily) {
           console.log(
-            `${d.date}    ${String(d.runs).padStart(4)}    ${((d.avgDuration / 1000).toFixed(1) + "s").padStart(12)}    ${(d.successRate + "%").padStart(6)}`
+            `${d.date}    ${String(d.runs).padStart(4)}    ${((d.avgDuration / 1000).toFixed(1) + "s").padStart(12)}    ${(d.successRate + "%").padStart(6)}`,
           );
         }
       }
@@ -681,7 +693,9 @@ switch (args.command) {
 
       const diff = comparison.durationDiff / 1000;
       const sign = diff > 0 ? "+" : "";
-      console.log(`Difference: ${sign}${diff.toFixed(1)}s ${diff > 0 ? "(slower)" : diff < 0 ? "(faster)" : ""}`);
+      console.log(
+        `Difference: ${sign}${diff.toFixed(1)}s ${diff > 0 ? "(slower)" : diff < 0 ? "(faster)" : ""}`,
+      );
       console.log("");
 
       console.log("Stage Comparison:");
@@ -689,11 +703,15 @@ switch (args.command) {
       console.log("─".repeat(60));
 
       for (const [stage, data] of Object.entries(comparison.stages)) {
-        const d1 = data.run1.duration != null ? (data.run1.duration / 1000).toFixed(1) + "s" : "N/A";
-        const d2 = data.run2.duration != null ? (data.run2.duration / 1000).toFixed(1) + "s" : "N/A";
+        const d1 =
+          data.run1.duration != null ? (data.run1.duration / 1000).toFixed(1) + "s" : "N/A";
+        const d2 =
+          data.run2.duration != null ? (data.run2.duration / 1000).toFixed(1) + "s" : "N/A";
         const stageDiff = (data.durationDiff / 1000).toFixed(1);
         const icon = data.improved ? "↓" : data.durationDiff > 0 ? "↑" : "=";
-        console.log(`${stage.padEnd(20)} ${d1.padStart(10)} ${d2.padStart(10)} ${icon} ${stageDiff}s`);
+        console.log(
+          `${stage.padEnd(20)} ${d1.padStart(10)} ${d2.padStart(10)} ${icon} ${stageDiff}s`,
+        );
       }
     }
     break;

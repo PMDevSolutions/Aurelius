@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+pnpm-lock.yaml
+CHANGELOG.md
+.claude/
+templates/
+docs/
+app/
+*.md

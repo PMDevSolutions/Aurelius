@@ -6,34 +6,61 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ── Lightweight structural validation (no Node required) ──────────────
   validate:
-    name: Validate Framework
+    name: Validate Structure
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check shell scripts syntax
+      - name: Check shell script syntax
         run: |
           errors=0
           for f in scripts/*.sh; do
             if [ -f "$f" ]; then
-              echo "Checking $f..."
-              bash -n "$f" || errors=$((errors + 1))
+              bash -n "$f" || { echo "FAIL: $f"; errors=$((errors + 1)); }
             fi
           done
+          echo "Checked $(ls scripts/*.sh 2>/dev/null | wc -l) scripts, $errors failed"
           exit $errors
 
       - name: Validate JSON configs
         run: |
           errors=0
-          for f in .claude/pipeline.config.json package.json templates/**/*.json; do
+          for f in .claude/pipeline.config.json package.json; do
             if [ -f "$f" ]; then
-              echo "Checking $f..."
-              python3 -m json.tool "$f" > /dev/null || errors=$((errors + 1))
+              python3 -m json.tool "$f" > /dev/null || { echo "FAIL: $f"; errors=$((errors + 1)); }
             fi
           done
+          for f in templates/**/*.json; do
+            if [ -f "$f" ]; then
+              python3 -m json.tool "$f" > /dev/null || { echo "FAIL: $f"; errors=$((errors + 1)); }
+            fi
+          done
+          echo "$errors JSON validation failures"
           exit $errors
+
+      - name: Validate pipeline.config.json structure
+        run: |
+          # Verify required top-level keys exist
+          required_keys='["visualDiff","iterationLoop","tdd","e2e","qualityGate","appTypes","orchestration","caching"]'
+          python3 -c "
+          import json, sys
+          with open('.claude/pipeline.config.json') as f:
+              config = json.load(f)
+          required = json.loads('$required_keys')
+          missing = [k for k in required if k not in config]
+          if missing:
+              print(f'Missing required keys: {missing}')
+              sys.exit(1)
+          print(f'All {len(required)} required keys present')
+          "
 
       - name: Check required files exist
         run: |
@@ -46,6 +73,8 @@ jobs:
             "scripts/run-tests.sh"
             "scripts/check-types.sh"
             "scripts/visual-diff.js"
+            "scripts/verify-tokens.sh"
+            "scripts/check-security.sh"
           )
           for f in "${required_files[@]}"; do
             if [ -f "$f" ]; then
@@ -57,21 +86,152 @@ jobs:
           done
           exit $exit_code
 
-      - name: Check scripts are executable
+      - name: Validate agent frontmatter
         run: |
-          for f in scripts/*.sh; do
-            if [ -f "$f" ]; then
-              if [ ! -x "$f" ]; then
-                echo "WARNING: $f is not executable"
-              else
-                echo "  $f: OK"
+          errors=0
+          count=0
+          for f in .claude/agents/*.md; do
+            [ -f "$f" ] || continue
+            count=$((count + 1))
+
+            # Extract YAML frontmatter between --- delimiters
+            frontmatter=$(sed -n '/^---$/,/^---$/p' "$f" | sed '1d;$d')
+
+            if [ -z "$frontmatter" ]; then
+              echo "FAIL: $f — no YAML frontmatter found"
+              errors=$((errors + 1))
+              continue
+            fi
+
+            # Check required fields (tools is optional — omitted means "all tools")
+            for field in name description; do
+              if ! echo "$frontmatter" | grep -qE "^${field}:"; then
+                echo "FAIL: $f — missing required field: $field"
+                errors=$((errors + 1))
               fi
+            done
+          done
+          echo "Checked $count agents, $errors failures"
+          exit $errors
+
+      - name: Validate skill structure
+        run: |
+          errors=0
+          count=0
+          for f in .claude/skills/*.md; do
+            [ -f "$f" ] || continue
+            [ "$(basename "$f")" = "README.md" ] && continue
+            count=$((count + 1))
+
+            frontmatter=$(sed -n '/^---$/,/^---$/p' "$f" | sed '1d;$d')
+
+            if [ -z "$frontmatter" ]; then
+              echo "FAIL: $f — no frontmatter found"
+              errors=$((errors + 1))
+              continue
+            fi
+
+            for field in name description; do
+              if ! echo "$frontmatter" | grep -qE "^${field}:"; then
+                echo "FAIL: $f — missing required field: $field"
+                errors=$((errors + 1))
+              fi
+            done
+          done
+          echo "Checked $count skills, $errors failures"
+          [ $count -eq 0 ] && echo "Note: no skill .md files found in .claude/skills/"
+          exit $errors
+
+      - name: Validate templates
+        run: |
+          errors=0
+
+          # Check template JSON files parse correctly
+          for f in templates/**/*.json; do
+            if [ -f "$f" ]; then
+              python3 -m json.tool "$f" > /dev/null 2>&1 || {
+                echo "FAIL: $f — invalid JSON"
+                errors=$((errors + 1))
+              }
             fi
           done
 
+          # Check key template directories exist
+          for dir in templates/shared templates/nextjs templates/vite; do
+            if [ -d "$dir" ]; then
+              echo "  $dir: OK"
+            else
+              echo "  $dir: MISSING"
+              errors=$((errors + 1))
+            fi
+          done
+
+          # Check shared configs exist
+          for f in templates/shared/eslint.config.js templates/shared/prettier.config.js templates/shared/tsconfig.json templates/shared/tailwind.config.ts; do
+            if [ -f "$f" ]; then
+              echo "  $f: OK"
+            else
+              echo "  $f: MISSING"
+              errors=$((errors + 1))
+            fi
+          done
+
+          echo "$errors template validation failures"
+          exit $errors
+
+  # ── Script test suite (needs Node + dependencies) ─────────────────────
+  script-tests:
+    name: Script Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run script tests
+        run: pnpm vitest run scripts/__tests__/ --reporter=verbose
+
+  # ── Lint & format check (needs Node + project with eslint/prettier) ───
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint and format check
+        run: bash scripts/lint-and-format.sh --check
+
+  # ── Token verification ────────────────────────────────────────────────
   token-verification:
     name: Verify Design Tokens
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
 
@@ -83,16 +243,18 @@ jobs:
             echo "No app source found — skipping token check"
           fi
 
+  # ── Security scanning ─────────────────────────────────────────────────
   security-scan:
-    name: Security Scanning
+    name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -129,9 +291,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+  # ── Visual regression (PR only) ───────────────────────────────────────
   visual-regression:
-    name: Visual Regression Test
+    name: Visual Regression
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -141,7 +305,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

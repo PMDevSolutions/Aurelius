@@ -282,9 +282,7 @@ function analyzeTypography(actualData, expectedData, width, height, options = {}
   }
 
   function getTextBands(bands) {
-    return bands
-      .map((b, i) => ({ ...b, index: i }))
-      .filter((b) => b.darkRatio > 0.05);
+    return bands.map((b, i) => ({ ...b, index: i })).filter((b) => b.darkRatio > 0.05);
   }
 
   const actualBands = analyzeBands(actualData);
@@ -392,7 +390,10 @@ function analyzeLayout(actualData, expectedData, width, height, options = {}) {
       const corr = count > 0 ? sum / count : 0;
       // Prefer smaller absolute offset when correlations are effectively equal
       const eps = bestCorr * 1e-9;
-      if (corr > bestCorr + eps || (Math.abs(corr - bestCorr) <= eps && Math.abs(shift) < Math.abs(bestOffset))) {
+      if (
+        corr > bestCorr + eps ||
+        (Math.abs(corr - bestCorr) <= eps && Math.abs(shift) < Math.abs(bestOffset))
+      ) {
         bestCorr = corr;
         bestOffset = shift;
       }
@@ -412,16 +413,8 @@ function analyzeLayout(actualData, expectedData, width, height, options = {}) {
 
   const MAX_SHIFT = Math.min(50, Math.floor(Math.min(width, height) * 0.1));
 
-  const hResult = crossCorrelate(
-    actualProfiles.horizontal,
-    expectedProfiles.horizontal,
-    MAX_SHIFT
-  );
-  const vResult = crossCorrelate(
-    actualProfiles.vertical,
-    expectedProfiles.vertical,
-    MAX_SHIFT
-  );
+  const hResult = crossCorrelate(actualProfiles.horizontal, expectedProfiles.horizontal, MAX_SHIFT);
+  const vResult = crossCorrelate(actualProfiles.vertical, expectedProfiles.vertical, MAX_SHIFT);
 
   const dx = Math.abs(vResult.offset);
   const dy = Math.abs(hResult.offset);
@@ -438,14 +431,18 @@ function analyzeLayout(actualData, expectedData, width, height, options = {}) {
       offset: hResult.offset,
       correlationImprovement:
         hResult.correlation > 0
-          ? Math.round(((hResult.correlation - hResult.zeroCorrelation) / hResult.correlation) * 10000) / 10000
+          ? Math.round(
+              ((hResult.correlation - hResult.zeroCorrelation) / hResult.correlation) * 10000,
+            ) / 10000
           : 0,
     },
     verticalProfile: {
       offset: vResult.offset,
       correlationImprovement:
         vResult.correlation > 0
-          ? Math.round(((vResult.correlation - vResult.zeroCorrelation) / vResult.correlation) * 10000) / 10000
+          ? Math.round(
+              ((vResult.correlation - vResult.zeroCorrelation) / vResult.correlation) * 10000,
+            ) / 10000
           : 0,
     },
   };
@@ -533,7 +530,8 @@ function compareSingle(actualPath, expectedPath, options) {
 
   // Save diff image if output specified
   const outputPath =
-    options.output || (options.outputDir ? join(options.outputDir, `diff-${basename(actualPath)}`) : null);
+    options.output ||
+    (options.outputDir ? join(options.outputDir, `diff-${basename(actualPath)}`) : null);
 
   if (outputPath) {
     savePNG(outputPath, diff);
@@ -543,7 +541,12 @@ function compareSingle(actualPath, expectedPath, options) {
     actual: resolve(actualPath),
     expected: resolve(expectedPath),
     diffImage: outputPath ? resolve(outputPath) : null,
-    dimensions: { width, height, actualSize: `${actual.width}x${actual.height}`, expectedSize: `${expected.width}x${expected.height}` },
+    dimensions: {
+      width,
+      height,
+      actualSize: `${actual.width}x${actual.height}`,
+      expectedSize: `${expected.width}x${expected.height}`,
+    },
     totalPixels,
     diffPixels: numDiffPixels,
     mismatchPct: Math.round(mismatchPct * 10000) / 10000,
@@ -572,7 +575,9 @@ function compareBatch(actualDir, expectedDir, options) {
   if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
 
   const actualFiles = readdirSync(actualDir).filter((f) => extname(f).toLowerCase() === ".png");
-  const expectedFiles = new Set(readdirSync(expectedDir).filter((f) => extname(f).toLowerCase() === ".png"));
+  const expectedFiles = new Set(
+    readdirSync(expectedDir).filter((f) => extname(f).toLowerCase() === ".png"),
+  );
 
   const results = [];
   let overallPass = true;
@@ -608,7 +613,9 @@ function compareBatch(actualDir, expectedDir, options) {
     }
   }
 
-  const fontIssues = results.filter((r) => r.typographyAnalysis?.fontWeightMismatch || r.typographyAnalysis?.fontFallbackDetected);
+  const fontIssues = results.filter(
+    (r) => r.typographyAnalysis?.fontWeightMismatch || r.typographyAnalysis?.fontFallbackDetected,
+  );
   const layoutIssues = results.filter((r) => r.layoutAnalysis?.layoutShiftDetected);
   const subPixelDominant = results.filter((r) => r.subPixelAnalysis?.subPixelPct > 0.5);
 
@@ -642,7 +649,9 @@ function formatHumanReadable(result) {
     lines.push(`Expected: ${result.expectedDir}`);
     lines.push(`Diffs:    ${result.outputDir}`);
     lines.push("");
-    lines.push(`Total: ${result.totalFiles} | Pass: ${result.passed} | Fail: ${result.failed} | Skip: ${result.skipped}`);
+    lines.push(
+      `Total: ${result.totalFiles} | Pass: ${result.passed} | Fail: ${result.failed} | Skip: ${result.skipped}`,
+    );
     lines.push(`Overall: ${result.overallPass ? "PASS" : "FAIL"}`);
     lines.push("");
 
@@ -662,7 +671,9 @@ function formatHumanReadable(result) {
           lines.push(`       Font: fallback detected`);
         }
         if (r.layoutAnalysis?.layoutShiftDetected) {
-          lines.push(`       Layout: shift dx=${r.layoutAnalysis.estimatedShift.dx}px dy=${r.layoutAnalysis.estimatedShift.dy}px`);
+          lines.push(
+            `       Layout: shift dx=${r.layoutAnalysis.estimatedShift.dx}px dy=${r.layoutAnalysis.estimatedShift.dy}px`,
+          );
         }
       }
     }
@@ -675,7 +686,9 @@ function formatHumanReadable(result) {
     lines.push("");
     lines.push(`Dimensions:  ${result.dimensions.width}x${result.dimensions.height}`);
     if (result.dimensions.actualSize !== result.dimensions.expectedSize) {
-      lines.push(`  (actual: ${result.dimensions.actualSize}, expected: ${result.dimensions.expectedSize})`);
+      lines.push(
+        `  (actual: ${result.dimensions.actualSize}, expected: ${result.dimensions.expectedSize})`,
+      );
     }
     lines.push(`Diff pixels: ${result.diffPixels} / ${result.totalPixels} (${pct}%)`);
     lines.push(`Threshold:   ${(result.threshold * 100).toFixed(2)}%`);
@@ -703,7 +716,9 @@ function formatHumanReadable(result) {
       const spa = result.subPixelAnalysis;
       lines.push("");
       lines.push("Sub-Pixel Analysis:");
-      lines.push(`  Total diff clusters: ${spa.clusterCount} (${spa.subPixelClusters} sub-pixel, ${spa.realClusters} real)`);
+      lines.push(
+        `  Total diff clusters: ${spa.clusterCount} (${spa.subPixelClusters} sub-pixel, ${spa.realClusters} real)`,
+      );
       lines.push(`  Sub-pixel artifacts: ${(spa.subPixelPct * 100).toFixed(1)}% of diff pixels`);
       lines.push(`  Real differences:    ${(spa.realDiffPct * 100).toFixed(2)}% of image`);
       if (spa.subPixelPct > 0.5) {
@@ -717,13 +732,19 @@ function formatHumanReadable(result) {
       lines.push("");
       lines.push("Typography Analysis:");
       if (ta.fontWeightMismatch) {
-        lines.push(`  WARN  Font weight mismatch detected (expected is ${ta.weightDirection}, delta: ${ta.avgWeightDifference})`);
+        lines.push(
+          `  WARN  Font weight mismatch detected (expected is ${ta.weightDirection}, delta: ${ta.avgWeightDifference})`,
+        );
       }
       if (ta.fontFallbackDetected) {
-        lines.push(`  WARN  Font fallback likely (character density diff: ${(ta.avgDensityDifference * 100).toFixed(1)}%)`);
+        lines.push(
+          `  WARN  Font fallback likely (character density diff: ${(ta.avgDensityDifference * 100).toFixed(1)}%)`,
+        );
       }
       if (ta.textBandCountMismatch) {
-        lines.push(`  WARN  Text line count differs (actual: ${ta.textBandsActual}, expected: ${ta.textBandsExpected})`);
+        lines.push(
+          `  WARN  Text line count differs (actual: ${ta.textBandsActual}, expected: ${ta.textBandsExpected})`,
+        );
       }
       if (!ta.fontWeightMismatch && !ta.fontFallbackDetected && !ta.textBandCountMismatch) {
         lines.push("  Typography consistent");
@@ -736,7 +757,9 @@ function formatHumanReadable(result) {
       lines.push("");
       lines.push("Layout Analysis:");
       if (la.layoutShiftDetected) {
-        lines.push(`  WARN  Layout shift detected: dx=${la.estimatedShift.dx}px, dy=${la.estimatedShift.dy}px (magnitude: ${la.shiftMagnitude}px)`);
+        lines.push(
+          `  WARN  Layout shift detected: dx=${la.estimatedShift.dx}px, dy=${la.estimatedShift.dy}px (magnitude: ${la.shiftMagnitude}px)`,
+        );
       } else {
         lines.push("  Layout consistent");
       }
@@ -757,7 +780,9 @@ if (!args.actual || !args.expected) {
   console.error("Options:");
   console.error("  --output <file>       Output diff image path (single mode)");
   console.error("  --output-dir <dir>    Output directory for diff images (batch mode)");
-  console.error("  --threshold <0.02>    Max mismatch ratio to pass (default: from pipeline config)");
+  console.error(
+    "  --threshold <0.02>    Max mismatch ratio to pass (default: from pipeline config)",
+  );
   console.error("  --region-grid <4>     Grid divisions for region analysis (default: 4)");
   console.error("  --antialiasing <bool> Ignore antialiasing differences (default: true)");
   console.error("  --json                Output JSON instead of human-readable");

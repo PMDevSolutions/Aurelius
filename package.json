@@ -30,10 +30,14 @@
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
+    "@eslint/js": "^10.0.1",
     "commit-and-tag-version": "^12.7.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "pixelmatch": "^7.1.0",
     "pngjs": "^7.0.0",
+    "prettier": "^3.8.1",
     "vitest": "^4.1.2"
   }
 }

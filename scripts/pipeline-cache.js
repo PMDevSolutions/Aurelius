@@ -169,7 +169,7 @@ function findFiles(patterns) {
           .replace(/\*/g, "[^/]*")
           .replace(/\./g, "\\.")
           .replace(/{{GLOBSTAR}}/g, ".*") +
-        "$"
+        "$",
     );
     return regex.test(filepath);
   }
@@ -346,10 +346,7 @@ function cleanCache(maxAgeDays = 7) {
   }
 
   // Also clean artifact directories
-  const artifactDirs = [
-    join(CACHE_DIR, "artifacts"),
-    join(CACHE_DIR, "screenshots"),
-  ];
+  const artifactDirs = [join(CACHE_DIR, "artifacts"), join(CACHE_DIR, "screenshots")];
 
   for (const dir of artifactDirs) {
     if (existsSync(dir)) {
@@ -507,7 +504,7 @@ function formatStatus(status) {
       status.metrics.totalBuilds > 0
         ? ((status.metrics.cacheHits / status.metrics.totalBuilds) * 100).toFixed(1)
         : 0
-    }%`
+    }%`,
   );
   lines.push(`  Time saved: ${(status.metrics.timeSaved / 1000).toFixed(1)}s`);
 
@@ -517,7 +514,9 @@ function formatStatus(status) {
     for (const phase of status.phases.list) {
       const validMark = phase.valid ? "✓" : "✗";
       const duration = phase.duration ? `${(phase.duration / 1000).toFixed(1)}s` : "N/A";
-      lines.push(`  ${validMark} ${phase.name.padEnd(20)} ${duration.padStart(8)}  ${phase.result || ""}`);
+      lines.push(
+        `  ${validMark} ${phase.name.padEnd(20)} ${duration.padStart(8)}  ${phase.result || ""}`,
+      );
     }
   }
 
@@ -560,7 +559,9 @@ switch (args.command) {
       process.exit(2);
     }
     const result = hashTarget(args.target, args.options.output);
-    console.log(args.options.json ? JSON.stringify(result, null, 2) : `Hash: ${result.hash || result.error}`);
+    console.log(
+      args.options.json ? JSON.stringify(result, null, 2) : `Hash: ${result.hash || result.error}`,
+    );
     break;
   }
 
@@ -586,6 +587,7 @@ switch (args.command) {
       }
     }
     process.exit(result.valid ? 0 : 1);
+    break;
   }
 
   case "update": {
@@ -596,9 +598,7 @@ switch (args.command) {
     const duration = parseInt(args.options.duration || process.argv[4], 10) || 0;
     const result = updatePhaseCache(args.target, duration);
     console.log(
-      args.options.json
-        ? JSON.stringify(result, null, 2)
-        : `✓ Cache updated for ${args.target}`
+      args.options.json ? JSON.stringify(result, null, 2) : `✓ Cache updated for ${args.target}`,
     );
     break;
   }
@@ -614,9 +614,7 @@ switch (args.command) {
     } else {
       const success = invalidatePhase(args.target);
       console.log(
-        success
-          ? `✓ Cache invalidated for ${args.target}`
-          : `⚠ No cache found for ${args.target}`
+        success ? `✓ Cache invalidated for ${args.target}` : `⚠ No cache found for ${args.target}`,
       );
     }
     break;

@@ -37,8 +37,8 @@ export function solid(r, g, b, a = 255) {
 export function textBands(weight = 400) {
   const darkness = Math.round(255 - (weight / 900) * 200);
   return (x, y) => {
-    const inBand = (y % 20) < 12;
-    const inChar = (x % 10) < 6;
+    const inBand = y % 20 < 12;
+    const inChar = x % 10 < 6;
     if (inBand && inChar) return [darkness, darkness, darkness, 255];
     return [255, 255, 255, 255];
   };
@@ -73,8 +73,8 @@ export function withShift(baseFn, dx, dy) {
 // Simulate font fallback: different character widths
 export function textBandsFallback() {
   return (x, y) => {
-    const inBand = (y % 20) < 12;
-    const inChar = (x % 10) < 8;
+    const inBand = y % 20 < 12;
+    const inChar = x % 10 < 8;
     if (inBand && inChar) return [50, 50, 50, 255];
     return [255, 255, 255, 255];
   };
