@@ -5,21 +5,23 @@
  * potentially dangerous data before processing in the build pipeline.
  */
 
+import path from "path";
+
 /**
  * Sanitize a URL to prevent SSRF and injection attacks
  * @param {string} url - The URL to sanitize
  * @returns {{ valid: boolean, url: string | null, error?: string }}
  */
 export function sanitizeUrl(url) {
-  if (typeof url !== 'string' || !url.trim()) {
-    return { valid: false, url: null, error: 'URL must be a non-empty string' };
+  if (typeof url !== "string" || !url.trim()) {
+    return { valid: false, url: null, error: "URL must be a non-empty string" };
   }
 
   try {
     const parsed = new URL(url.trim());
 
     // Only allow http and https protocols
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
+    if (!["http:", "https:"].includes(parsed.protocol)) {
       return {
         valid: false,
         url: null,
@@ -43,12 +45,12 @@ export function sanitizeUrl(url) {
     const isBlocked = blockedPatterns.some((pattern) => pattern.test(hostname));
 
     // Allow localhost in development mode
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = process.env.NODE_ENV === "development";
     if (isBlocked && !isDev) {
       return {
         valid: false,
         url: null,
-        error: 'Private/local addresses are not allowed',
+        error: "Private/local addresses are not allowed",
       };
     }
 
@@ -65,16 +67,15 @@ export function sanitizeUrl(url) {
  * @returns {{ valid: boolean, path: string | null, error?: string }}
  */
 export function sanitizePath(filePath, baseDir) {
-  if (typeof filePath !== 'string' || !filePath.trim()) {
-    return { valid: false, path: null, error: 'Path must be a non-empty string' };
+  if (typeof filePath !== "string" || !filePath.trim()) {
+    return { valid: false, path: null, error: "Path must be a non-empty string" };
   }
 
-  if (typeof baseDir !== 'string' || !baseDir.trim()) {
-    return { valid: false, path: null, error: 'Base directory must be specified' };
+  if (typeof baseDir !== "string" || !baseDir.trim()) {
+    return { valid: false, path: null, error: "Base directory must be specified" };
   }
 
   // Normalize paths for cross-platform compatibility
-  const path = require('path');
   const normalizedBase = path.resolve(baseDir);
   const normalizedPath = path.resolve(baseDir, filePath);
 
@@ -83,7 +84,7 @@ export function sanitizePath(filePath, baseDir) {
     return {
       valid: false,
       path: null,
-      error: 'Path traversal detected: path escapes base directory',
+      error: "Path traversal detected: path escapes base directory",
     };
   }
 
@@ -108,7 +109,7 @@ export function sanitizePath(filePath, baseDir) {
     return {
       valid: false,
       path: null,
-      error: 'Access to sensitive files is not allowed',
+      error: "Access to sensitive files is not allowed",
     };
   }
 
@@ -121,16 +122,16 @@ export function sanitizePath(filePath, baseDir) {
  * @returns {string} - Sanitized HTML with dangerous elements removed
  */
 export function sanitizeHtml(html) {
-  if (typeof html !== 'string') {
-    return '';
+  if (typeof html !== "string") {
+    return "";
   }
 
   // Remove script tags and their content
-  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
 
   // Remove event handlers
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]+/gi, '');
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, "");
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]+/gi, "");
 
   // Remove javascript: URLs
   sanitized = sanitized.replace(/href\s*=\s*["']?\s*javascript:[^"'>\s]*/gi, 'href="#"');
@@ -140,11 +141,11 @@ export function sanitizeHtml(html) {
   sanitized = sanitized.replace(/src\s*=\s*["']?\s*data:[^"'>\s]*/gi, 'src=""');
 
   // Remove style expressions (IE-specific XSS)
-  sanitized = sanitized.replace(/expression\s*\([^)]*\)/gi, '');
+  sanitized = sanitized.replace(/expression\s*\([^)]*\)/gi, "");
 
   // Remove iframe, object, embed, and form tags
-  sanitized = sanitized.replace(/<(iframe|object|embed|form)\b[^>]*>/gi, '');
-  sanitized = sanitized.replace(/<\/(iframe|object|embed|form)>/gi, '');
+  sanitized = sanitized.replace(/<(iframe|object|embed|form)\b[^>]*>/gi, "");
+  sanitized = sanitized.replace(/<\/(iframe|object|embed|form)>/gi, "");
 
   return sanitized;
 }
@@ -155,24 +156,19 @@ export function sanitizeHtml(html) {
  * @returns {{ valid: boolean, arg: string | null, error?: string }}
  */
 export function sanitizeShellArg(arg) {
-  if (typeof arg !== 'string') {
-    return { valid: false, arg: null, error: 'Argument must be a string' };
+  if (typeof arg !== "string") {
+    return { valid: false, arg: null, error: "Argument must be a string" };
   }
 
   // Block dangerous shell metacharacters
-  const dangerousPatterns = [
-    /[;&|`$(){}[\]<>]/,
-    /\n/,
-    /\r/,
-    /\0/,
-  ];
+  const dangerousPatterns = [/[;&|`$(){}[\]<>]/, /\n/, /\r/, /\0/];
 
   const hasDangerous = dangerousPatterns.some((pattern) => pattern.test(arg));
   if (hasDangerous) {
     return {
       valid: false,
       arg: null,
-      error: 'Argument contains dangerous shell metacharacters',
+      error: "Argument contains dangerous shell metacharacters",
     };
   }
 
@@ -197,25 +193,25 @@ export function sanitizeDesignUrl(url) {
   const hostname = parsed.hostname.toLowerCase();
 
   // Figma URLs
-  if (hostname === 'www.figma.com' || hostname === 'figma.com') {
+  if (hostname === "www.figma.com" || hostname === "figma.com") {
     const figmaPattern = /^\/(?:file|design|proto)\/([a-zA-Z0-9]+)/;
     if (figmaPattern.test(parsed.pathname)) {
-      return { valid: true, url: urlResult.url, type: 'figma' };
+      return { valid: true, url: urlResult.url, type: "figma" };
     }
-    return { valid: false, url: null, type: null, error: 'Invalid Figma URL format' };
+    return { valid: false, url: null, type: null, error: "Invalid Figma URL format" };
   }
 
   // Canva URLs
-  if (hostname === 'www.canva.com' || hostname === 'canva.com') {
+  if (hostname === "www.canva.com" || hostname === "canva.com") {
     const canvaPattern = /^\/design\/([a-zA-Z0-9_-]+)/;
     if (canvaPattern.test(parsed.pathname)) {
-      return { valid: true, url: urlResult.url, type: 'canva' };
+      return { valid: true, url: urlResult.url, type: "canva" };
     }
-    return { valid: false, url: null, type: null, error: 'Invalid Canva URL format' };
+    return { valid: false, url: null, type: null, error: "Invalid Canva URL format" };
   }
 
   // Generic URL (for screenshot pipeline)
-  return { valid: true, url: urlResult.url, type: 'generic' };
+  return { valid: true, url: urlResult.url, type: "generic" };
 }
 
 /**
@@ -224,20 +220,20 @@ export function sanitizeDesignUrl(url) {
  * @returns {{ valid: boolean, data: any, error?: string }}
  */
 export function sanitizeJson(jsonString) {
-  if (typeof jsonString !== 'string') {
-    return { valid: false, data: null, error: 'Input must be a string' };
+  if (typeof jsonString !== "string") {
+    return { valid: false, data: null, error: "Input must be a string" };
   }
 
   try {
     const data = JSON.parse(jsonString);
 
     // Check for prototype pollution attempts
-    const checkPrototypePollution = (obj, path = '') => {
-      if (obj === null || typeof obj !== 'object') {
+    const checkPrototypePollution = (obj, path = "") => {
+      if (obj === null || typeof obj !== "object") {
         return null;
       }
 
-      const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+      const dangerousKeys = ["__proto__", "constructor", "prototype"];
 
       for (const key of Object.keys(obj)) {
         if (dangerousKeys.includes(key)) {

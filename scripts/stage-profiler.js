@@ -17,14 +17,7 @@
  *   - Build performance reports
  */
 
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-} from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -237,7 +230,7 @@ function completeRun(finalStatus = "complete") {
       Object.entries(run.stages).map(([name, data]) => [
         name,
         { duration: data.duration, status: data.status },
-      ])
+      ]),
     ),
   });
 
@@ -340,12 +333,8 @@ function generateReport(format = "md") {
     for (const [name, data] of sortedStages) {
       const duration = data.duration ? (data.duration / 1000).toFixed(2) : "N/A";
       const statusIcon = data.status === "pass" ? "✓" : data.status === "fail" ? "✗" : "⏳";
-      const bar = data.duration
-        ? "█".repeat(Math.min(Math.ceil(data.duration / 5000), 20))
-        : "";
-      lines.push(
-        `${statusIcon} ${name.padEnd(maxNameLen)} ${duration.padStart(8)}s ${bar}`
-      );
+      const bar = data.duration ? "█".repeat(Math.min(Math.ceil(data.duration / 5000), 20)) : "";
+      lines.push(`${statusIcon} ${name.padEnd(maxNameLen)} ${duration.padStart(8)}s ${bar}`);
     }
 
     lines.push("─".repeat(60));
@@ -400,11 +389,9 @@ function analyzePerformance(slowThreshold = 30000) {
     const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
     const min = Math.min(...durations);
     const max = Math.max(...durations);
-    const variance =
-      durations.reduce((sum, d) => sum + Math.pow(d - avg, 2), 0) / durations.length;
+    const variance = durations.reduce((sum, d) => sum + Math.pow(d - avg, 2), 0) / durations.length;
     const stdDev = Math.sqrt(variance);
-    const successRate =
-      (stats.successes / (stats.successes + stats.failures)) * 100;
+    const successRate = (stats.successes / (stats.successes + stats.failures)) * 100;
 
     analysis.stages[stage] = {
       avgDuration: Math.round(avg),
@@ -443,20 +430,18 @@ function analyzePerformance(slowThreshold = 30000) {
     analysis.recommendations.push(
       `Found ${analysis.slowStages.length} slow stage(s): ${analysis.slowStages
         .map((s) => s.stage)
-        .join(", ")}`
+        .join(", ")}`,
     );
   }
 
   if (analysis.unreliableStages.length > 0) {
     analysis.recommendations.push(
-      `Found ${analysis.unreliableStages.length} unreliable stage(s) needing attention`
+      `Found ${analysis.unreliableStages.length} unreliable stage(s) needing attention`,
     );
   }
 
   // Overall trend
-  const recentDurations = recentRuns
-    .filter((r) => r.totalDuration)
-    .map((r) => r.totalDuration);
+  const recentDurations = recentRuns.filter((r) => r.totalDuration).map((r) => r.totalDuration);
   if (recentDurations.length >= 3) {
     const firstHalf = recentDurations.slice(0, Math.floor(recentDurations.length / 2));
     const secondHalf = recentDurations.slice(Math.floor(recentDurations.length / 2));
@@ -465,11 +450,11 @@ function analyzePerformance(slowThreshold = 30000) {
 
     if (secondAvg > firstAvg * 1.2) {
       analysis.recommendations.push(
-        `Build times are trending up (+${((secondAvg / firstAvg - 1) * 100).toFixed(0)}%)`
+        `Build times are trending up (+${((secondAvg / firstAvg - 1) * 100).toFixed(0)}%)`,
       );
     } else if (secondAvg < firstAvg * 0.8) {
       analysis.recommendations.push(
-        `Build times are improving (-${((1 - secondAvg / firstAvg) * 100).toFixed(0)}%)`
+        `Build times are improving (-${((1 - secondAvg / firstAvg) * 100).toFixed(0)}%)`,
       );
     }
   }
@@ -579,7 +564,9 @@ switch (args.command) {
         const date = run.timestamp.slice(0, 19).replace("T", " ");
         const duration = `${(run.totalDuration / 1000).toFixed(1)}s`;
         const status = run.status === "complete" ? "✓" : "✗";
-        console.log(`${status} ${date}  ${duration.padStart(8)}  ${run.summary.passed}/${run.summary.stageCount} passed`);
+        console.log(
+          `${status} ${date}  ${duration.padStart(8)}  ${run.summary.passed}/${run.summary.stageCount} passed`,
+        );
       }
     }
     break;
@@ -627,7 +614,7 @@ switch (args.command) {
           `  ${stage.padEnd(20)} avg: ${(stats.avgDuration / 1000).toFixed(1)}s  ` +
             `min: ${(stats.minDuration / 1000).toFixed(1)}s  ` +
             `max: ${(stats.maxDuration / 1000).toFixed(1)}s  ` +
-            `success: ${stats.successRate}%`
+            `success: ${stats.successRate}%`,
         );
       }
     }
