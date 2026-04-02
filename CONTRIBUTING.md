@@ -106,7 +106,7 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
 
 ## Claude Code Agents
 
-Aurelius includes 51 specialized Claude Code agents and 18 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
+Aurelius includes 53 specialized Claude Code agents and 19 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
 
 If you have Claude Code installed, these agents and skills are available to you automatically when working in this repository. They can assist with component development, test writing, visual QA, and much more.
 

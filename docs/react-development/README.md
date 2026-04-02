@@ -203,8 +203,8 @@ pnpm build
 
 - `docs/figma-to-react/README.md` -- Figma-to-React conversion pipeline
 - `docs/canva-to-react/README.md` -- Canva-to-React conversion pipeline
-- `.claude/skills/README.md` -- Skills catalog (17 skills)
-- `.claude/CUSTOM-AGENTS-GUIDE.md` -- Agent catalog (48 agents)
+- `.claude/skills/README.md` -- Skills catalog (19 skills)
+- `.claude/CUSTOM-AGENTS-GUIDE.md` -- Agent catalog (53 agents)
 - `.claude/PLUGINS-REFERENCE.md` -- Plugin reference
 - `scripts/README.md` -- Scripts reference
 - `templates/README.md` -- Template configs reference
