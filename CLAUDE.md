@@ -42,6 +42,11 @@ project-root/
 # Run tests with coverage
 ./scripts/run-tests.sh
 
+# Run mutation tests (Stryker)
+./scripts/run-mutation-tests.sh                    # Run with default threshold
+./scripts/run-mutation-tests.sh --threshold 80     # Override threshold
+./scripts/run-mutation-tests.sh --json             # JSON output
+
 # TypeScript type checking
 ./scripts/check-types.sh
 
@@ -503,6 +508,7 @@ gh issue create               # Create issue
 ```bash
 ./scripts/lint-and-format.sh        # ESLint + Prettier
 ./scripts/run-tests.sh              # Vitest + coverage
+./scripts/run-mutation-tests.sh     # Mutation testing (Stryker)
 ./scripts/check-types.sh            # TypeScript check
 ./scripts/check-bundle-size.sh      # Bundle analysis
 ./scripts/check-accessibility.sh    # a11y linting
@@ -535,6 +541,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-04-02
-**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 29 scripts, 8 hooks
+**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 30 scripts, 8 hooks
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`.
