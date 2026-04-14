@@ -112,3 +112,7 @@ experiments/
 
 # Release artifacts
 RELEASE_NOTES.md
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/mutation/
