@@ -22,6 +22,11 @@ JSON_OUTPUT=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --threshold)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --threshold requires a value"
+                echo "Usage: $0 [--threshold N] [--json] [--help]"
+                exit 1
+            fi
             THRESHOLD="$2"
             shift 2
             ;;
@@ -114,7 +119,7 @@ STRYKER_OUTPUT=$(npx stryker run 2>&1) || STRYKER_EXIT=$?
 
 # Parse mutation score from output
 # Stryker clear-text reporter outputs a line like: "Mutation score: 85.71%"
-SCORE=$(echo "$STRYKER_OUTPUT" | grep -oP 'Mutation score:\s*\K[0-9]+(\.[0-9]+)?' || echo "")
+SCORE=$(echo "$STRYKER_OUTPUT" | grep -oE 'Mutation score:[[:space:]]*[0-9]+(\.[0-9]+)?' | grep -oE '[0-9]+(\.[0-9]+)?$' || echo "")
 
 if [[ -z "$SCORE" ]]; then
     # Try JSON report as fallback

@@ -76,4 +76,10 @@ describe("run-mutation-tests.sh — threshold flag", () => {
     const parsed = JSON.parse(result.stdout.trim());
     expect(parsed.threshold).toBe(90);
   });
+
+  it("exits 1 when --threshold is passed without a value", () => {
+    const result = run(["--threshold"]);
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("--threshold requires a value");
+  });
 });
