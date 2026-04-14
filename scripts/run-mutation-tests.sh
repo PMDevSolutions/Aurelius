@@ -61,7 +61,7 @@ fi
 # Check that Stryker is installed
 if [[ ! -f "node_modules/.bin/stryker" ]]; then
     if [[ "$JSON_OUTPUT" == true ]]; then
-        echo "{\"status\":\"skipped\",\"reason\":\"@stryker-mutator/core not installed\",\"threshold\":$THRESHOLD}"
+        echo "{\"status\":\"skipped\",\"score\":null,\"threshold\":$THRESHOLD,\"sourceFiles\":0,\"reason\":\"@stryker-mutator/core not installed\"}"
     else
         echo "=== Mutation Testing ==="
         echo ""
@@ -74,7 +74,7 @@ fi
 # Check for stryker config
 if [[ ! -f "stryker.config.json" ]]; then
     if [[ "$JSON_OUTPUT" == true ]]; then
-        echo "{\"status\":\"skipped\",\"reason\":\"stryker.config.json not found\",\"threshold\":$THRESHOLD}"
+        echo "{\"status\":\"skipped\",\"score\":null,\"threshold\":$THRESHOLD,\"sourceFiles\":0,\"reason\":\"stryker.config.json not found\"}"
     else
         echo "=== Mutation Testing ==="
         echo ""
@@ -90,7 +90,7 @@ SRC_COUNT=$(echo "$SRC_COUNT" | tr -d ' ')
 
 if [[ "$SRC_COUNT" == "0" ]]; then
     if [[ "$JSON_OUTPUT" == true ]]; then
-        echo "{\"status\":\"skipped\",\"reason\":\"no source files found in src/\",\"threshold\":$THRESHOLD}"
+        echo "{\"status\":\"skipped\",\"score\":null,\"threshold\":$THRESHOLD,\"sourceFiles\":0,\"reason\":\"no source files found in src/\"}"
     else
         echo "=== Mutation Testing ==="
         echo ""
