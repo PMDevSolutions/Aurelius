@@ -210,7 +210,9 @@
       "**/index.ts",
       "**/*.test.*",
       "**/*.stories.*"
-    ]
+    ],
+    "generateMdx": true,
+    "maxVariantsPerProp": 10
   },
   "tokenSync": {
     "autoCheck": true,
