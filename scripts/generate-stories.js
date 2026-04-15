@@ -20,6 +20,26 @@ import {
 import { join, relative, basename, dirname } from "path";
 
 // ---------------------------------------------------------------------------
+// String helpers
+// ---------------------------------------------------------------------------
+
+/** Escape single quotes for safe interpolation into single-quoted strings */
+function esc(s) {
+  return s.replace(/'/g, "\\'");
+}
+
+/** Convert a string to a valid JS identifier for story export names */
+function toIdentifier(s) {
+  // Capitalize first letter
+  let name = s.charAt(0).toUpperCase() + s.slice(1);
+  // Replace non-alphanumeric with underscore
+  name = name.replace(/[^a-zA-Z0-9_$]/g, "_");
+  // Prefix with _ if starts with a digit
+  if (/^\d/.test(name)) name = `_${name}`;
+  return name;
+}
+
+// ---------------------------------------------------------------------------
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
@@ -474,14 +494,14 @@ function generateStoryContent(
           lines.push(`    ${prop.name}: {`);
           lines.push(`      control: 'select',`);
           lines.push(`      options: [${optStr}],`);
-          lines.push(`      description: '${prop.description}',`);
+          lines.push(`      description: '${esc(prop.description)}',`);
           lines.push("    },");
         } else {
           lines.push(`    ${prop.name}: { control: 'select', options: [${optStr}] },`);
         }
       } else {
         if (prop.description) {
-          lines.push(`    ${prop.name}: { control: '${prop.controlType}', description: '${prop.description}' },`);
+          lines.push(`    ${prop.name}: { control: '${prop.controlType}', description: '${esc(prop.description)}' },`);
         } else {
           lines.push(`    ${prop.name}: { control: '${prop.controlType}' },`);
         }
@@ -503,7 +523,7 @@ function generateStoryContent(
     lines.push("  args: {");
     for (const [key, value] of Object.entries(defaults)) {
       if (typeof value === "string") {
-        lines.push(`    ${key}: '${value}',`);
+        lines.push(`    ${key}: '${esc(value)}',`);
       } else {
         lines.push(`    ${key}: ${value},`);
       }
@@ -521,7 +541,7 @@ function generateStoryContent(
     if (prop.controlType === "select" && prop.literalValues.length > 0) {
       const values = prop.literalValues.slice(0, maxVariants);
       for (const val of values) {
-        const storyName = val.charAt(0).toUpperCase() + val.slice(1);
+        const storyName = toIdentifier(val);
         variantNames.push(storyName);
         lines.push("");
         lines.push(`export const ${storyName}: Story = {`);
