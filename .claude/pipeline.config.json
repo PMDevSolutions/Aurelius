@@ -485,6 +485,10 @@
       "lighthouse": {
         "resources": [{ "name": "port:dev-server", "mode": "shared" }],
         "description": "Run Lighthouse audit per page"
+      },
+      "mutation-score": {
+        "resources": [],
+        "description": "Run Stryker mutation testing, check score against threshold (opt-in)"
       }
     },
     "reporting": {
