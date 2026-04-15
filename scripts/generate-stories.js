@@ -10,13 +10,7 @@
  */
 
 import { Project, SyntaxKind } from "ts-morph";
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-  statSync,
-} from "fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from "fs";
 import { join, relative, basename, dirname } from "path";
 
 // ---------------------------------------------------------------------------
@@ -118,11 +112,7 @@ function walkDir(dir) {
     }
     if (stat.isDirectory()) {
       // Skip known non-component directories
-      if (
-        entry === "node_modules" ||
-        entry === "__tests__" ||
-        entry === "__mocks__"
-      ) {
+      if (entry === "node_modules" || entry === "__tests__" || entry === "__mocks__") {
         continue;
       }
       results.push(...walkDir(fullPath));
@@ -156,9 +146,7 @@ function matchesSkipPattern(filePath, patterns) {
     // Strip leading **/ for basename matching
     const simple = pattern.replace(/^\*\*\//, "");
     // Convert glob to regex
-    const regexStr = simple
-      .replace(/\./g, "\\.")
-      .replace(/\*/g, ".*");
+    const regexStr = simple.replace(/\./g, "\\.").replace(/\*/g, ".*");
     const re = new RegExp(`^${regexStr}$`);
     if (re.test(name)) return true;
   }
@@ -330,8 +318,9 @@ function isStringLiteralUnion(typeNode) {
   if (typeNode.getKind() === SyntaxKind.UnionType) {
     const types = typeNode.getTypeNodes();
     return types.every(
-      (t) => t.getKind() === SyntaxKind.LiteralType
-        && t.getLiteral().getKind() === SyntaxKind.StringLiteral,
+      (t) =>
+        t.getKind() === SyntaxKind.LiteralType &&
+        t.getLiteral().getKind() === SyntaxKind.StringLiteral,
     );
   }
   return false;
@@ -373,10 +362,11 @@ function extractDefaultValues(sourceFile, componentName) {
     for (const decl of varStatement.getDeclarations()) {
       if (decl.getName() === componentName) {
         const initializer = decl.getInitializer();
-        if (initializer && (
-          initializer.getKind() === SyntaxKind.ArrowFunction
-          || initializer.getKind() === SyntaxKind.FunctionExpression
-        )) {
+        if (
+          initializer &&
+          (initializer.getKind() === SyntaxKind.ArrowFunction ||
+            initializer.getKind() === SyntaxKind.FunctionExpression)
+        ) {
           extractDefaultsFromParams(initializer, defaults);
         }
         return defaults;
@@ -402,8 +392,8 @@ function extractDefaultsFromParams(fnNode, defaults) {
         const text = initializer.getText();
         // Parse string literals
         if (
-          (text.startsWith("'") && text.endsWith("'"))
-          || (text.startsWith('"') && text.endsWith('"'))
+          (text.startsWith("'") && text.endsWith("'")) ||
+          (text.startsWith('"') && text.endsWith('"'))
         ) {
           defaults[propName] = text.slice(1, -1);
         } else if (text === "true") {
@@ -501,7 +491,9 @@ function generateStoryContent(
         }
       } else {
         if (prop.description) {
-          lines.push(`    ${prop.name}: { control: '${prop.controlType}', description: '${esc(prop.description)}' },`);
+          lines.push(
+            `    ${prop.name}: { control: '${prop.controlType}', description: '${esc(prop.description)}' },`,
+          );
         } else {
           lines.push(`    ${prop.name}: { control: '${prop.controlType}' },`);
         }
@@ -595,12 +587,7 @@ function generateStoryContent(
 // MDX content generation
 // ---------------------------------------------------------------------------
 
-function generateMdxContent(
-  componentName,
-  componentBasename,
-  description,
-  variantNames,
-) {
+function generateMdxContent(componentName, componentBasename, description, variantNames) {
   const lines = [];
 
   lines.push("import { Meta } from '@storybook/blocks';");
@@ -657,7 +644,7 @@ function main() {
   // Load config
   const config = loadConfig(fullConfigPath);
   const skipPatterns = config.storybook.skipPatterns || [];
-  const generateMdxFlag = !noMdx && (config.storybook.generateMdx !== false);
+  const generateMdxFlag = !noMdx && config.storybook.generateMdx !== false;
 
   // Find component files
   const componentFiles = findComponentFiles(fullSrcDir);
@@ -791,9 +778,7 @@ function main() {
 
   // Output
   if (jsonOutput) {
-    console.log(
-      JSON.stringify({ generated, skipped, files: generatedFiles }),
-    );
+    console.log(JSON.stringify({ generated, skipped, files: generatedFiles }));
   } else {
     log("");
     if (dryRun) {

@@ -2,14 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import {
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  rmSync,
-  existsSync,
-  readdirSync,
-} from "fs";
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "generate-stories.js");
@@ -162,10 +155,7 @@ export function Card({ title }: CardProps) { return <div>{title}</div>; }`,
       join(dir, "src", "components", "Nav.tsx"),
       `export function Nav() { return <nav>Nav</nav>; }`,
     );
-    writeFileSync(
-      join(dir, "src", "components", "Nav.stories.tsx"),
-      `// existing story`,
-    );
+    writeFileSync(join(dir, "src", "components", "Nav.stories.tsx"), `// existing story`);
 
     const result = run(dir);
     expect(result.exitCode).toBe(0);
@@ -181,19 +171,13 @@ export function Card({ title }: CardProps) { return <div>{title}</div>; }`,
       join(dir, "src", "components", "Nav.tsx"),
       `export function Nav() { return <nav>Nav</nav>; }`,
     );
-    writeFileSync(
-      join(dir, "src", "components", "Nav.stories.tsx"),
-      `// old story content`,
-    );
+    writeFileSync(join(dir, "src", "components", "Nav.stories.tsx"), `// old story content`);
 
     const result = run(dir, ["--force"]);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Generated:");
 
-    const content = readFileSync(
-      join(dir, "src", "components", "Nav.stories.tsx"),
-      "utf-8",
-    );
+    const content = readFileSync(join(dir, "src", "components", "Nav.stories.tsx"), "utf-8");
     expect(content).toContain("import type { Meta, StoryObj }");
   });
 
@@ -231,10 +215,7 @@ export function Card({ title }: CardProps) { return <div>{title}</div>; }`,
       join(dir, "src", "components", "C.tsx"),
       `export function Charlie() { return <div>C</div>; }`,
     );
-    writeFileSync(
-      join(dir, "src", "components", "C.stories.tsx"),
-      `// existing`,
-    );
+    writeFileSync(join(dir, "src", "components", "C.stories.tsx"), `// existing`);
 
     const result = run(dir);
     expect(result.exitCode).toBe(0);
@@ -688,10 +669,7 @@ export function Heading({ level, text }: HeadingProps) {
       join(dir, "src", "components", "Footer.tsx"),
       `export function Footer() { return <footer>Footer</footer>; }`,
     );
-    writeFileSync(
-      join(dir, "src", "components", "Footer.stories.tsx"),
-      `// existing`,
-    );
+    writeFileSync(join(dir, "src", "components", "Footer.stories.tsx"), `// existing`);
 
     const result = run(dir, ["--json"]);
     expect(result.exitCode).toBe(0);
