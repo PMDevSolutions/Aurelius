@@ -80,8 +80,12 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 # Dark mode visual verification
 ./scripts/check-dark-mode.sh http://localhost:3000
 
-# Storybook story generation
-./scripts/generate-stories.sh
+# Storybook story + MDX generation (AST-based)
+./scripts/generate-stories.sh                      # Generate stories + MDX for all components
+./scripts/generate-stories.sh --force              # Overwrite existing stories
+./scripts/generate-stories.sh --dry-run            # Report without writing
+./scripts/generate-stories.sh --no-mdx             # Skip MDX documentation
+./scripts/generate-stories.sh --json               # JSON output
 
 # Token drift detection
 ./scripts/sync-tokens.sh [--dry-run] [--json]
@@ -274,7 +278,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
 - `visual-diff.js` — Pixel-level screenshot comparison with region analysis
 - `sync-tokens.sh` — Detects token drift between lockfile and source
 - `check-dark-mode.sh` — Dark mode screenshot capture and visual comparison
-- `generate-stories.sh` — Auto-generates Storybook stories from components
+- `generate-stories.sh` — AST-based Storybook story + MDX generation with prop controls, variants, and action args
 - `generate-component-docs.sh` — Generates MDX component documentation
 
 **Features:**
@@ -515,7 +519,7 @@ gh issue create               # Create issue
 ./scripts/verify-tokens.sh          # Design token enforcement
 ./scripts/sync-tokens.sh              # Token drift detection
 ./scripts/check-dark-mode.sh          # Dark mode verification
-./scripts/generate-stories.sh         # Storybook generation
+./scripts/generate-stories.sh         # Storybook story + MDX generation
 ./scripts/generate-component-docs.sh  # Component documentation
 ./scripts/check-dead-code.sh            # Dead code detection (knip)
 ./scripts/check-security.sh             # Security audit
