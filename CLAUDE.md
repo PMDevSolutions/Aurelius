@@ -114,6 +114,9 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 # Run visual regression tests against baselines
 ./scripts/regression-test.sh [url] [--update-baselines] [--json]
 
+# Export generated components as a publishable design-system workspace
+./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
+
 # Incremental build with caching and profiling
 ./scripts/incremental-build.sh [phase|all] [--force] [--parallel]
 
@@ -215,7 +218,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (19 Total)
+### Skills (20 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -238,6 +241,7 @@ Agents are invoked automatically based on task context.
 | animation-motion | Framer Motion, CSS transitions, reduced-motion a11y | "animation", "framer motion", "transition" |
 | seo-metadata | Next.js Metadata API, JSON-LD, OG images, sitemaps | "SEO", "metadata", "open graph" |
 | parallel-orchestration | Concurrent phase runner for pipeline parallelization | Invoked by pipeline commands after Phase 3 |
+| export-design-system | Exports components + tokens as a publishable pnpm workspace (Vite lib mode for web, tsc for RN) | Invoked by `/export-design-system` |
 
 **Full catalog:** `.claude/skills/README.md`
 
@@ -492,6 +496,7 @@ Claude: [Uses test-writer-fixer agent]
 /build-from-figma <URL>       # Full autonomous Figma pipeline
 /build-from-canva <URL>       # Full autonomous Canva pipeline
 /build-from-screenshot <URL or paths>  # Full autonomous screenshot pipeline
+/export-design-system [flags] # Export components + tokens as publishable pnpm workspace
 ```
 
 **Git Workflows (via commit-commands):**
@@ -528,6 +533,7 @@ gh issue create               # Create issue
 ./scripts/audit-cross-browser-css.sh   # Cross-browser CSS audit
 ./scripts/capture-baselines.sh          # Capture regression baselines
 ./scripts/regression-test.sh            # Visual regression testing
+./scripts/export-design-system.sh       # Export components + tokens as pnpm workspace
 ```
 
 **Build Performance & Caching:**
@@ -545,6 +551,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-04-14
-**Architecture:** 53 agents, 19 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 29 scripts, 8 hooks
+**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 31 scripts, 8 hooks
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`.
