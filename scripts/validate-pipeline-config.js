@@ -63,7 +63,7 @@ function loadJson(path, label) {
   try {
     return JSON.parse(readFileSync(path, "utf-8"));
   } catch (e) {
-    throw new Error(`Failed to parse ${label} (${path}): ${e.message}`);
+    throw new Error(`Failed to parse ${label} (${path}): ${e.message}`, { cause: e });
   }
 }
 
