@@ -114,6 +114,11 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 # Run visual regression tests against baselines
 ./scripts/regression-test.sh [url] [--update-baselines] [--json]
 
+# Validate pipeline.config.json against its JSON Schema
+./scripts/validate-pipeline-config.sh                # Validate live config
+./scripts/validate-pipeline-config.sh --json         # Machine-readable output
+node scripts/validate-pipeline-config.js --config <path> --schema <path>
+
 # Export generated components as a publishable design-system workspace
 ./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
 
@@ -534,6 +539,7 @@ gh issue create               # Create issue
 ./scripts/capture-baselines.sh          # Capture regression baselines
 ./scripts/regression-test.sh            # Visual regression testing
 ./scripts/export-design-system.sh       # Export components + tokens as pnpm workspace
+./scripts/validate-pipeline-config.sh   # Validate pipeline.config.json against schema
 ```
 
 **Build Performance & Caching:**
@@ -550,7 +556,7 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 
 ---
 
-**Last Updated:** 2026-04-14
-**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 31 scripts, 8 hooks
+**Last Updated:** 2026-05-21
+**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 32 scripts, 8 hooks
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`.

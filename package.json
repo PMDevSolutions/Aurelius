@@ -34,6 +34,7 @@
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
+    "ajv": "^8.20.0",
     "commit-and-tag-version": "^12.7.1",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",

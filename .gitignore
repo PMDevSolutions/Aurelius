@@ -7,6 +7,7 @@
 !.claude/*.md
 !.claude/settings.json
 !.claude/pipeline.config.json
+!.claude/pipeline.config.schema.json
 !.claude/test-fixtures/
 
 # Claude Code temporary/user-specific files

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "./pipeline.config.schema.json",
   "description": "Configuration for the Figma-to-React autonomous build pipeline",
   "version": "1.0.0",
   "visualDiff": {
@@ -504,7 +504,7 @@
     "enabled": true,
     "strategy": "content-hash",
     "directory": ".claude/pipeline-cache",
-    "maxAgedays": 7,
+    "maxAgeDays": 7,
     "inputCategories": {
       "source": ["src/**/*.{ts,tsx,js,jsx}", "components/**/*.{ts,tsx}"],
       "styles": ["src/**/*.css", "styles/**/*.css", "tailwind.config.*"],
