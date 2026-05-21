@@ -342,18 +342,18 @@ GitHub integration is via the `gh` CLI (not a plugin): `gh pr create`, `gh issue
 
 ## Hooks (8 Automated)
 
-Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` matcher. These run automatically after specific commands.
+Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` matcher. Each hook is a stand-alone script under `.claude/hooks/` that receives `$TOOL_INPUT` and `$TOOL_OUTPUT` as positional args and decides whether to print a reminder. See the [Hook System guide](../guides/hooks.md) for the full anatomy, execution order, error-handling pattern, and how to add custom hooks.
 
-| Hook | Triggers On | Action |
-|------|-------------|--------|
-| Post-build QA reminder | `pnpm build` succeeds | Suggests running quality gate checks |
-| Pre-commit token guard | `git commit` detected | Runs `verify-tokens.sh`, warns on violations |
-| Dark mode reminder | `visual-diff.js` passes | Suggests running dark mode verification |
-| Coverage enforcement | `vitest` with coverage output | Reminds to check 80% threshold |
-| Lighthouse CI | `pnpm build` succeeds | Suggests Lighthouse audit with config thresholds |
-| Bundle size guard | `git commit` detected | Warns if build exceeds `maxSizeKb` |
-| Mutation testing reminder | All vitest tests pass | Suggests running Stryker for test quality |
-| Regression reminder | `pnpm build` succeeds | Suggests regression test if baselines exist |
+| Script | Triggers On | Action |
+|--------|-------------|--------|
+| `post-build-qa.sh` | `pnpm build` succeeds | Suggests running quality gate checks |
+| `pre-commit-token-guard.sh` | `git commit` detected | Runs `verify-tokens.sh`, warns on violations |
+| `dark-mode-reminder.sh` | `visual-diff.js` passes | Suggests running dark mode verification |
+| `coverage-check.sh` | `vitest` with coverage output | Reminds to check coverage threshold |
+| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit with config thresholds |
+| `bundle-size-guard.sh` | `git commit` detected | Warns if build exceeds `maxSizeKb` |
+| `mutation-test-reminder.sh` | All vitest tests pass | Suggests running Stryker for test quality |
+| `regression-reminder.sh` | `pnpm build` succeeds | Suggests regression test if baselines exist |
 
 ---
 
