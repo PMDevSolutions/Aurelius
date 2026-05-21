@@ -6,43 +6,43 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"pnpm build\" && echo \"$TOOL_OUTPUT\" | grep -q \"built in\"; then echo \"[post-build-qa] Build succeeded. Run quality gate: pnpm vitest run && pnpm tsc --noEmit && ./scripts/verify-tokens.sh\"; fi'",
+            "command": "bash .claude/hooks/post-build-qa.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Remind to run quality gate after successful builds during the pipeline"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"git commit\"; then if [ -f src/styles/design-tokens.lock.json ] && [ -d src ]; then RESULT=$(./scripts/verify-tokens.sh 2>&1); EXIT=$?; if [ $EXIT -ne 0 ]; then echo \"[pre-commit-guard] Token violations found. Fix before committing:\"; echo \"$RESULT\" | tail -5; fi; fi; fi'",
+            "command": "bash .claude/hooks/pre-commit-token-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Check for token violations before git commits"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"visual-diff.js\" && echo \"$TOOL_OUTPUT\" | grep -q \"PASS\"; then echo \"[dark-mode-reminder] Visual diff passed. Consider running dark mode verification: ./scripts/check-dark-mode.sh\"; fi'",
+            "command": "bash .claude/hooks/dark-mode-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Remind to run dark mode verification after visual diff passes"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"vitest\" && echo \"$TOOL_OUTPUT\" | grep -qE \"[Cc]overage\"; then echo \"[coverage-check] Review coverage output above. Ensure it meets the 80% threshold in pipeline.config.json.\"; fi'",
+            "command": "bash .claude/hooks/coverage-check.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Remind to check coverage threshold after test runs with coverage"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"pnpm build\" && echo \"$TOOL_OUTPUT\" | grep -q \"built in\"; then CONFIG=\".claude/pipeline.config.json\"; if [ -f \"$CONFIG\" ]; then PERF=$(node -e \"const c=require(\\\"./\\\" + process.argv[1]); console.log(c.qualityGate?.lighthouseThresholds?.performance ?? 80)\" \"$CONFIG\" 2>/dev/null || echo 80); A11Y=$(node -e \"const c=require(\\\"./\\\" + process.argv[1]); console.log(c.qualityGate?.lighthouseThresholds?.accessibility ?? 90)\" \"$CONFIG\" 2>/dev/null || echo 90); echo \"[lighthouse-ci] Build done. Run Lighthouse audit — thresholds: performance=$PERF, accessibility=$A11Y. Use: npx lighthouse <url> --output=json\"; fi; fi'",
+            "command": "bash .claude/hooks/lighthouse-ci.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Suggest Lighthouse audit after successful builds with threshold targets"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"git commit\"; then if [ -d \".next\" ] || [ -d \"dist\" ]; then BUILD_DIR=$( [ -d \".next\" ] && echo \".next\" || echo \"dist\" ); SIZE_KB=$(du -sk \"$BUILD_DIR\" 2>/dev/null | cut -f1); CONFIG=\".claude/pipeline.config.json\"; MAX=$(node -e \"const c=require(\\\"./\\\" + process.argv[1]); console.log((c.bundleSize?.maxSizeKb ?? 200) * 1024)\" \"$CONFIG\" 2>/dev/null || echo 204800); if [ \"$SIZE_KB\" -gt \"$MAX\" ]; then echo \"[bundle-guard] Bundle size ${SIZE_KB}KB exceeds limit. Run: ./scripts/check-bundle-size.sh\"; fi; fi; fi'",
+            "command": "bash .claude/hooks/bundle-size-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Warn if bundle size exceeds configured limit before commits"
           },
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"vitest\" && echo \"$TOOL_OUTPUT\" | grep -qE \"Tests\\s+[0-9]+ passed\"; then CONFIG=\".claude/pipeline.config.json\"; REMINDER=$(node -e \"const c=require(\\\"./\\\" + process.argv[1]); console.log(c.mutationTesting?.reminder ?? false)\" \"$CONFIG\" 2>/dev/null || echo false); if [ \"$REMINDER\" = \"true\" ]; then echo \"[mutation-test] All tests passed. Consider running mutation tests to validate test quality: npx stryker run\"; fi; fi'",
+            "command": "bash .claude/hooks/mutation-test-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
             "description": "Suggest mutation testing after all tests pass"
           },
           {
             "type": "command",
             "command": "bash .claude/hooks/regression-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Reminds to run visual regression tests after successful builds"
+            "description": "Remind to run visual regression tests after successful builds"
           }
         ]
       }

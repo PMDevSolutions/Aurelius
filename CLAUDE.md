@@ -389,18 +389,18 @@ Quality gate subtasks (coverage, typecheck, build, token-verify, lighthouse) als
 
 ### Automated Hooks (8 Total)
 
-Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` matcher:
+Each hook is a standalone script under `.claude/hooks/`, registered in `.claude/settings.json` as a `PostToolUse` hook on the `Bash` matcher. Hooks receive `$TOOL_INPUT` and `$TOOL_OUTPUT` as positional args, follow a defensive skeleton (`set -u`, `trap 'exit 0' ERR`, always `exit 0`), and are testable in isolation. See [docs/guides/hooks.md](docs/guides/hooks.md) for the full guide.
 
-| Hook | Trigger | Action |
-|------|---------|--------|
-| Post-build QA reminder | `pnpm build` succeeds | Reminds to run quality gate (vitest, tsc, verify-tokens) |
-| Pre-commit token guard | `git commit` detected | Runs `verify-tokens.sh`, warns if violations found |
-| Dark mode reminder | `visual-diff.js` passes | Suggests running `check-dark-mode.sh` |
-| Coverage enforcement | `vitest` with coverage output | Reminds to check 80% threshold from pipeline config |
-| Lighthouse CI | `pnpm build` succeeds | Suggests Lighthouse audit with threshold targets from config |
-| Bundle size guard | `git commit` detected | Warns if build output exceeds maxSizeKb from config |
-| Mutation testing reminder | `vitest` all tests pass | Suggests running Stryker for test quality validation |
-| Regression reminder | `pnpm build` succeeds | Suggests running `./scripts/regression-test.sh` if baselines exist |
+| Script | Trigger | Action |
+|--------|---------|--------|
+| `post-build-qa.sh` | `pnpm build` succeeds | Reminds to run quality gate (vitest, tsc, verify-tokens) |
+| `pre-commit-token-guard.sh` | `git commit` detected | Runs `verify-tokens.sh`, warns if violations found |
+| `dark-mode-reminder.sh` | `visual-diff.js` passes | Suggests running `check-dark-mode.sh` |
+| `coverage-check.sh` | `vitest` with coverage output | Reminds to check threshold from pipeline config |
+| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit with threshold targets from config |
+| `bundle-size-guard.sh` | `git commit` detected | Warns if build output exceeds maxSizeKb from config |
+| `mutation-test-reminder.sh` | `vitest` all tests pass | Suggests running Stryker for test quality validation |
+| `regression-reminder.sh` | `pnpm build` succeeds | Suggests running `./scripts/regression-test.sh` if baselines exist |
 
 ---
 
