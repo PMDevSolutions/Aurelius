@@ -40,11 +40,11 @@ function tmpProject() {
 
 function runHook(name, cwd, toolInput = "", toolOutput = "") {
   try {
-    const stdout = execFileSync(
-      "bash",
-      [join(HOOKS_DIR, name), toolInput, toolOutput],
-      { encoding: "utf-8", timeout: 15000, cwd },
-    );
+    const stdout = execFileSync("bash", [join(HOOKS_DIR, name), toolInput, toolOutput], {
+      encoding: "utf-8",
+      timeout: 15000,
+      cwd,
+    });
     return { stdout, exitCode: 0 };
   } catch (err) {
     return {
@@ -92,12 +92,7 @@ describe("post-build-qa.sh", () => {
 
 describe("dark-mode-reminder.sh", () => {
   it("emits reminder after visual-diff PASS", () => {
-    const r = runHook(
-      "dark-mode-reminder.sh",
-      tmpProject(),
-      "node scripts/visual-diff.js",
-      "PASS",
-    );
+    const r = runHook("dark-mode-reminder.sh", tmpProject(), "node scripts/visual-diff.js", "PASS");
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain("[dark-mode-reminder]");
   });
@@ -205,12 +200,7 @@ describe("mutation-test-reminder.sh", () => {
       join(dir, ".claude", "pipeline.config.json"),
       JSON.stringify({ mutationTesting: { reminder: false } }),
     );
-    const r = runHook(
-      "mutation-test-reminder.sh",
-      dir,
-      "pnpm vitest run",
-      "Tests  10 passed (10)",
-    );
+    const r = runHook("mutation-test-reminder.sh", dir, "pnpm vitest run", "Tests  10 passed (10)");
     expect(r.stdout).toBe("");
   });
 });
@@ -223,12 +213,7 @@ describe("pre-commit-token-guard.sh", () => {
   });
 
   it("stays silent when no lockfile exists", () => {
-    const r = runHook(
-      "pre-commit-token-guard.sh",
-      tmpProject(),
-      "git commit -m feat",
-      "",
-    );
+    const r = runHook("pre-commit-token-guard.sh", tmpProject(), "git commit -m feat", "");
     expect(r.stdout).toBe("");
   });
 });
@@ -243,10 +228,7 @@ describe("regression-reminder.sh", () => {
   it("emits reminder when baselines exist", () => {
     const dir = tmpProject();
     mkdirSync(join(dir, ".claude", "visual-qa", "baselines"), { recursive: true });
-    writeFileSync(
-      join(dir, ".claude", "visual-qa", "baselines", "home.png"),
-      "fake",
-    );
+    writeFileSync(join(dir, ".claude", "visual-qa", "baselines", "home.png"), "fake");
     const r = runHook("regression-reminder.sh", dir, "pnpm build", "built in 1.0s");
     expect(r.stdout).toContain("[regression-reminder]");
     expect(r.stdout).toContain("1 baselines");
