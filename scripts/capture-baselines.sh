@@ -4,8 +4,10 @@
 # Exit codes: 0=success, 1=error
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+cd "$(common_project_root)"
 
 # --- Args ---
 URL="${1:-http://localhost:3000}"
@@ -35,22 +37,15 @@ echo "=== Baseline Screenshot Capture ==="
 echo ""
 
 # --- Read config ---
-CONFIG_FILE=".claude/pipeline.config.json"
-if [ -f "$CONFIG_FILE" ] && command -v node &> /dev/null; then
-  BASELINE_DIR=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.regressionTesting?.baselineDir||'.claude/visual-qa/baselines')")
-  BREAKPOINTS_JSON=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(JSON.stringify(c.regressionTesting?.breakpoints||{mobile:375,desktop:1440}))")
-  WAIT_MS=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.regressionTesting?.waitAfterLoadMs||1500)")
-  FULL_PAGE=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.regressionTesting?.fullPage!==false?'true':'false')")
-  CONFIG_ROUTES=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log((c.regressionTesting?.routes||['/']).join(','))")
-  BROWSERS_JSON=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(JSON.stringify(c.regressionTesting?.browsers||['chromium']))")
-else
-  BASELINE_DIR=".claude/visual-qa/baselines"
-  BREAKPOINTS_JSON='{"mobile":375,"desktop":1440}'
-  WAIT_MS=1500
-  FULL_PAGE="true"
-  CONFIG_ROUTES="/"
-  BROWSERS_JSON='["chromium"]'
-fi
+BASELINE_DIR=$(common_config_get 'regressionTesting.baselineDir' '.claude/visual-qa/baselines')
+BREAKPOINTS_JSON=$(common_config_get 'regressionTesting.breakpoints' '{"mobile":375,"desktop":1440}')
+WAIT_MS=$(common_config_get 'regressionTesting.waitAfterLoadMs' 1500)
+FULL_PAGE=$(common_config_get 'regressionTesting.fullPage' true)
+# Routes default uses a CLI fallback; common_config_get returns the raw JSON
+# array when present, so collapse it back to CSV.
+CONFIG_ROUTES_RAW=$(common_config_get 'regressionTesting.routes' '["/"]')
+CONFIG_ROUTES=$(node -e "try { console.log(JSON.parse(process.argv[1]).join(',')); } catch { console.log(process.argv[1]); }" "$CONFIG_ROUTES_RAW")
+BROWSERS_JSON=$(common_config_get 'regressionTesting.browsers' '["chromium"]')
 
 ROUTES="${ROUTES_ARG:-$CONFIG_ROUTES}"
 
@@ -73,6 +68,7 @@ fi
 
 # --- Capture screenshots ---
 TEMP_SCRIPT=$(mktemp /tmp/capture-baselines-XXXXXX.mjs)
+common_track_tmpfile "$TEMP_SCRIPT"
 cat > "$TEMP_SCRIPT" << 'SCRIPT_EOF'
 import { chromium, firefox, webkit } from '@playwright/test';
 import { mkdirSync } from 'fs';
@@ -134,8 +130,6 @@ npx playwright test --version > /dev/null 2>&1 || true
 
 node "$TEMP_SCRIPT" "$URL" "$BASELINE_DIR" "$BREAKPOINTS_JSON" "$WAIT_MS" "$FULL_PAGE" "$ROUTES" "$BROWSERS_JSON"
 EXIT_CODE=$?
-
-rm -f "$TEMP_SCRIPT"
 
 if [ $EXIT_CODE -eq 0 ]; then
   echo ""

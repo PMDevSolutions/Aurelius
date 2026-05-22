@@ -8,12 +8,16 @@ set -euo pipefail
 #   ./scripts/check-types.sh           # Standard type check
 #   ./scripts/check-types.sh --strict  # Also check with strict mode enabled
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
 STRICT_MODE=false
 if [[ "${1:-}" == "--strict" ]]; then
     STRICT_MODE=true
 fi
 
-echo "=== TypeScript Type Check ==="
+say_banner "TypeScript Type Check"
 echo ""
 
 # Check for tsconfig.json
@@ -43,6 +47,7 @@ echo "Running tsc --noEmit..."
 echo ""
 
 TSC_OUTPUT_FILE=$(mktemp)
+common_track_tmpfile "$TSC_OUTPUT_FILE"
 EXIT_CODE=0
 
 if $RUNNER tsc --noEmit 2>&1 | tee "$TSC_OUTPUT_FILE"; then
@@ -63,6 +68,7 @@ if [[ "$STRICT_MODE" == true ]]; then
     echo ""
 
     STRICT_OUTPUT_FILE=$(mktemp)
+    common_track_tmpfile "$STRICT_OUTPUT_FILE"
 
     if $RUNNER tsc --noEmit --strict 2>&1 | tee "$STRICT_OUTPUT_FILE"; then
         echo ""
@@ -73,12 +79,8 @@ if [[ "$STRICT_MODE" == true ]]; then
         echo ""
         echo "Strict mode errors: ${STRICT_ERROR_COUNT}"
     fi
-
-    rm -f "$STRICT_OUTPUT_FILE"
 fi
 
-rm -f "$TSC_OUTPUT_FILE"
-
 echo ""
-echo "=== Type Check Complete ==="
+say_banner "Type Check Complete"
 exit $EXIT_CODE

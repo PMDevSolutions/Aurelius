@@ -3,8 +3,10 @@
 # Exit codes: 0=success, 1=error (Playwright not available, capture failed)
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+cd "$(common_project_root)"
 
 # --- Args ---
 URL="${1:-http://localhost:3000}"
@@ -25,24 +27,12 @@ echo "=== Responsive Screenshot Capture ==="
 echo ""
 
 # --- Read breakpoints from pipeline config ---
-CONFIG_FILE=".claude/pipeline.config.json"
 FALLBACK_BREAKPOINTS='{"small-mobile":320,"mobile":375,"tablet":768,"desktop":1440,"wide":1920}'
-
-BREAKPOINTS_JSON=$(node -e "
-  const fs = require('fs');
-  const fallback = $FALLBACK_BREAKPOINTS;
-  try {
-    const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-    const bp = config.visualDiff?.breakpoints;
-    if (bp && Object.keys(bp).length > 0) {
-      console.log(JSON.stringify(bp));
-    } else {
-      console.log(JSON.stringify(fallback));
-    }
-  } catch (e) {
-    console.log(JSON.stringify(fallback));
-  }
-" 2>/dev/null || echo "$FALLBACK_BREAKPOINTS")
+BREAKPOINTS_JSON=$(common_config_get 'visualDiff.breakpoints' "$FALLBACK_BREAKPOINTS")
+# Treat empty object as "use fallback" to preserve old behaviour.
+if [[ "$BREAKPOINTS_JSON" == "{}" ]]; then
+  BREAKPOINTS_JSON="$FALLBACK_BREAKPOINTS"
+fi
 
 echo "▸ URL: $URL"
 echo "▸ Output: $OUTPUT_DIR"
@@ -71,7 +61,7 @@ fi
 
 # --- Generate temporary Playwright script ---
 TEMP_SCRIPT=$(mktemp --suffix=.mjs)
-trap 'rm -f "$TEMP_SCRIPT"' EXIT
+common_track_tmpfile "$TEMP_SCRIPT"
 
 cat > "$TEMP_SCRIPT" <<'PLAYWRIGHT_EOF'
 import { chromium } from 'playwright';

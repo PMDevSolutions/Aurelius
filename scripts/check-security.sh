@@ -3,8 +3,9 @@
 # Exit codes: 0=no issues, 1=issues found (unless --no-fail)
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+cd "$(common_project_root)"
 
 # --- Flags ---
 JSON_OUTPUT=false
@@ -38,41 +39,9 @@ done
 
 # --- Read config from pipeline.config.json ---
 CONFIG_FILE=".claude/pipeline.config.json"
-ENABLED=true
-CONFIG_AUDIT_LEVEL="moderate"
-FAIL_ON_VULN=true
-
-if [[ -f "$CONFIG_FILE" ]]; then
-  ENABLED=$(node -e "
-    const fs = require('fs');
-    try {
-      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-      console.log(config.security?.enabled !== false ? 'true' : 'false');
-    } catch (e) {
-      console.log('true');
-    }
-  " 2>/dev/null || echo "true")
-
-  CONFIG_AUDIT_LEVEL=$(node -e "
-    const fs = require('fs');
-    try {
-      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-      console.log(config.security?.auditLevel || 'moderate');
-    } catch (e) {
-      console.log('moderate');
-    }
-  " 2>/dev/null || echo "moderate")
-
-  FAIL_ON_VULN=$(node -e "
-    const fs = require('fs');
-    try {
-      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-      console.log(config.security?.failOnVulnerability !== false ? 'true' : 'false');
-    } catch (e) {
-      console.log('true');
-    }
-  " 2>/dev/null || echo "true")
-fi
+ENABLED=$(common_config_get 'security.enabled' true)
+CONFIG_AUDIT_LEVEL=$(common_config_get 'security.auditLevel' moderate)
+FAIL_ON_VULN=$(common_config_get 'security.failOnVulnerability' true)
 
 if [[ "$ENABLED" == "false" ]]; then
   if $JSON_OUTPUT; then
@@ -95,14 +64,7 @@ ISSUES=0
 AUDIT_RESULTS=""
 OUTDATED_RESULTS=""
 
-# --- Temp file cleanup ---
-TMPFILES=()
-cleanup() {
-  for f in "${TMPFILES[@]}"; do
-    rm -f "$f"
-  done
-}
-trap cleanup EXIT
+# --- Temp file cleanup (handled by common.sh) ---
 
 if ! $JSON_OUTPUT; then
   echo "=== Security Audit ==="
@@ -117,7 +79,7 @@ if ! $JSON_OUTPUT; then
 fi
 
 AUDIT_TMPFILE=$(mktemp)
-TMPFILES+=("$AUDIT_TMPFILE")
+common_track_tmpfile "$AUDIT_TMPFILE"
 AUDIT_EXIT=0
 
 pnpm audit --audit-level "$AUDIT_LEVEL" > "$AUDIT_TMPFILE" 2>&1 || AUDIT_EXIT=$?
@@ -163,7 +125,7 @@ if [[ ${#SRC_DIRS[@]} -gt 0 ]]; then
   #     Exclude process.env / import.meta.env references (not hardcoded)
   #     Exclude .test. and .spec. files, type definitions, and comments
   SECRET_TMPFILE=$(mktemp)
-  TMPFILES+=("$SECRET_TMPFILE")
+  common_track_tmpfile "$SECRET_TMPFILE"
 
   grep -rnE "(API_KEY|SECRET|PASSWORD|TOKEN|PRIVATE_KEY)\s*[:=]\s*['\"][^'\"]{8,}['\"]" "${SRC_DIRS[@]}" \
     --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
@@ -186,7 +148,7 @@ if [[ ${#SRC_DIRS[@]} -gt 0 ]]; then
 
   # 2b: dangerouslySetInnerHTML usage
   DANGER_TMPFILE=$(mktemp)
-  TMPFILES+=("$DANGER_TMPFILE")
+  common_track_tmpfile "$DANGER_TMPFILE"
 
   grep -rnE 'dangerouslySetInnerHTML' "${SRC_DIRS[@]}" \
     --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
@@ -204,7 +166,7 @@ if [[ ${#SRC_DIRS[@]} -gt 0 ]]; then
 
   # 2c: eval() usage
   EVAL_TMPFILE=$(mktemp)
-  TMPFILES+=("$EVAL_TMPFILE")
+  common_track_tmpfile "$EVAL_TMPFILE"
 
   grep -rnE '\beval\s*\(' "${SRC_DIRS[@]}" \
     --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
@@ -267,7 +229,7 @@ if ! $JSON_OUTPUT; then
 fi
 
 OUTDATED_TMPFILE=$(mktemp)
-TMPFILES+=("$OUTDATED_TMPFILE")
+common_track_tmpfile "$OUTDATED_TMPFILE"
 OUTDATED_EXIT=0
 
 pnpm outdated > "$OUTDATED_TMPFILE" 2>&1 || OUTDATED_EXIT=$?
