@@ -104,6 +104,37 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
 
 ---
 
+## Release Process
+
+Releases are cut by the maintainer using [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version), configured in [`.versionrc.json`](.versionrc.json). The `version` in `package.json` and the published git tag are kept in sync automatically — do not edit `package.json`'s `version` field by hand.
+
+| Command | Use Case |
+|---------|----------|
+| `pnpm run release` | Auto-detect the bump (major/minor/patch) from conventional commits since the last tag |
+| `pnpm run release:patch` | Force a patch bump |
+| `pnpm run release:minor` | Force a minor bump |
+| `pnpm run release:major` | Force a major bump |
+| `pnpm run release:dry` | Preview the bump and CHANGELOG entry without writing anything |
+| `pnpm run release:first` | First release on a fresh repo (no version bump) |
+
+Each non-dry release command:
+
+1. Bumps `package.json` to the next version.
+2. Regenerates `CHANGELOG.md` from conventional commits since the previous tag.
+3. Runs the `postchangelog` hook ([`scripts/extract-release-notes.js`](scripts/extract-release-notes.js)) to produce `RELEASE_NOTES.md` for the GitHub Release body.
+4. Commits the bump as `chore(release): vX.Y.Z`.
+5. Creates a git tag prefixed with `v` (e.g. `v1.2.0`).
+
+After the command finishes, push the commit and tag together:
+
+```bash
+git push --follow-tags origin main
+```
+
+Because the bump is derived from commit history, **conventional commit messages on `main` are load-bearing**: `feat:` triggers a minor bump, `fix:` triggers a patch, and a `!` after the type (e.g. `feat!:`) or a `BREAKING CHANGE:` body footer triggers a major bump. See the [Pull Request Process](#pull-request-process) above for examples.
+
+---
+
 ## Claude Code Agents
 
 Aurelius includes 53 specialized Claude Code agents and 19 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
