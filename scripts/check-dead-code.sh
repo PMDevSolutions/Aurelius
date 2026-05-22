@@ -3,8 +3,9 @@
 # Exit codes: 0=no dead code, 1=dead code found
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+cd "$(common_project_root)"
 
 # --- Flags ---
 JSON_OUTPUT=false
@@ -26,19 +27,7 @@ done
 
 # --- Check if dead code detection is enabled in pipeline config ---
 CONFIG_FILE=".claude/pipeline.config.json"
-ENABLED=true
-
-if [[ -f "$CONFIG_FILE" ]]; then
-  ENABLED=$(node -e "
-    const fs = require('fs');
-    try {
-      const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-      console.log(config.deadCode?.enabled !== false ? 'true' : 'false');
-    } catch (e) {
-      console.log('true');
-    }
-  " 2>/dev/null || echo "true")
-fi
+ENABLED=$(common_config_get 'deadCode.enabled' true)
 
 if [[ "$ENABLED" == "false" ]]; then
   if $JSON_OUTPUT; then
@@ -80,7 +69,7 @@ if ! $JSON_OUTPUT; then
 fi
 
 KNIP_OUTPUT_FILE=$(mktemp)
-trap 'rm -f "$KNIP_OUTPUT_FILE"' EXIT
+common_track_tmpfile "$KNIP_OUTPUT_FILE"
 KNIP_EXIT=0
 
 if $JSON_OUTPUT; then

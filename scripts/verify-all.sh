@@ -23,6 +23,10 @@
 
 set -uo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
 # Run relative to the caller's cwd (expected to be the repo root). This lets
 # tests run against fixture directories without forcing themselves into the
 # real project tree, and matches how the individual check scripts behave.
@@ -73,37 +77,16 @@ if [[ "$LIST_ONLY" == "true" ]]; then
 fi
 
 # --- Filtering ---
-csv_contains() {
-  local csv="$1"
-  local needle="$2"
-  [[ -z "$csv" ]] && return 1
-  IFS=',' read -ra parts <<< "$csv"
-  for p in "${parts[@]}"; do
-    [[ "$(echo "$p" | tr -d ' ')" == "$needle" ]] && return 0
-  done
-  return 1
-}
-
 should_run() {
   local name="$1"
   if [[ -n "$INCLUDE_LIST" ]]; then
-    csv_contains "$INCLUDE_LIST" "$name" && return 0
+    common_csv_contains "$INCLUDE_LIST" "$name" && return 0
     return 1
   fi
   if [[ -n "$SKIP_LIST" ]]; then
-    csv_contains "$SKIP_LIST" "$name" && return 1
+    common_csv_contains "$SKIP_LIST" "$name" && return 1
   fi
   return 0
-}
-
-# --- Conditional gates ---
-build_artifact_exists() {
-  for d in dist .next build out; do
-    if [[ -d "$d" ]]; then
-      return 0
-    fi
-  done
-  return 1
 }
 
 # --- Runner ---
@@ -112,17 +95,6 @@ RESULTS_STATUS=()
 RESULTS_EXIT=()
 RESULTS_MS=()
 RESULTS_REASON=()
-
-now_ms() {
-  # GNU date supports %N; macOS date does not. Fall back to Python or seconds*1000.
-  if date +%s%3N >/dev/null 2>&1; then
-    date +%s%3N
-  elif command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import time; print(int(time.time()*1000))'
-  else
-    echo "$(( $(date +%s) * 1000 ))"
-  fi
-}
 
 emit_progress() {
   $JSON_OUTPUT && return 0
@@ -143,7 +115,7 @@ run_check() {
     return 0
   fi
 
-  if [[ "$name" == "bundle-size" ]] && ! build_artifact_exists; then
+  if [[ "$name" == "bundle-size" ]] && ! common_build_artifact_exists; then
     RESULTS_NAME+=("$name")
     RESULTS_STATUS+=("skip")
     RESULTS_EXIT+=("0")
@@ -165,7 +137,7 @@ run_check() {
 
   emit_progress "▸ $name …"
   local start
-  start="$(now_ms)"
+  start="$(common_now_ms)"
   local exit_code=0
   if [[ -n "$args" ]]; then
     bash "$script" $args >/dev/null 2>&1 || exit_code=$?
@@ -173,7 +145,7 @@ run_check() {
     bash "$script" >/dev/null 2>&1 || exit_code=$?
   fi
   local end
-  end="$(now_ms)"
+  end="$(common_now_ms)"
   local duration_ms=$((end - start))
 
   RESULTS_NAME+=("$name")

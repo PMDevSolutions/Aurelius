@@ -13,7 +13,10 @@
 
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+PROJECT_ROOT="$(common_project_root)"
 URL="http://localhost:3000"
 CUSTOM_OUTPUT_DIR=""
 
@@ -36,7 +39,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# Read config from pipeline.config.json using node
+# Read config from pipeline.config.json
 CONFIG_FILE="$PROJECT_ROOT/.claude/pipeline.config.json"
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -44,10 +47,10 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 2
 fi
 
-DARK_ENABLED=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.darkMode?.enabled ?? true)")
-DIFF_THRESHOLD=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.darkMode?.diffThreshold ?? 0.03)")
-DARK_SCREENSHOT_DIR=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));console.log(c.darkMode?.screenshotDir ?? '.claude/visual-qa/screenshots/dark')")
-BREAKPOINTS_JSON=$(node -e "const c=JSON.parse(require('fs').readFileSync('$CONFIG_FILE','utf-8'));const bp=c.visualDiff?.breakpoints||{mobile:375,tablet:768,desktop:1440,wide:1920};console.log(JSON.stringify(bp))")
+DARK_ENABLED=$(common_config_get 'darkMode.enabled' true)
+DIFF_THRESHOLD=$(common_config_get 'darkMode.diffThreshold' 0.03)
+DARK_SCREENSHOT_DIR=$(common_config_get 'darkMode.screenshotDir' '.claude/visual-qa/screenshots/dark')
+BREAKPOINTS_JSON=$(common_config_get 'visualDiff.breakpoints' '{"mobile":375,"tablet":768,"desktop":1440,"wide":1920}')
 
 # Check if dark mode is disabled
 if [ "$DARK_ENABLED" = "false" ]; then
@@ -87,6 +90,7 @@ echo ""
 
 # Generate Playwright script for dark mode capture
 SCRIPT_FILE=$(mktemp /tmp/playwright-dark-mode-XXXXXX.mjs)
+common_track_tmpfile "$SCRIPT_FILE"
 
 cat > "$SCRIPT_FILE" << SCRIPT
 import { chromium } from 'playwright';
@@ -135,9 +139,6 @@ echo ""
 
 node "$SCRIPT_FILE"
 CAPTURE_EXIT=$?
-
-# Cleanup temp script
-rm -f "$SCRIPT_FILE"
 
 if [ $CAPTURE_EXIT -ne 0 ]; then
     echo ""
