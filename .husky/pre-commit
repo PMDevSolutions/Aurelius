@@ -2,3 +2,8 @@
 if [ -f "scripts/verify-tokens.sh" ] && [ -d "app/src" ]; then
   bash scripts/verify-tokens.sh
 fi
+
+# Pre-commit hook: flag drift between documented agent/skill counts and disk
+if [ -f "scripts/check-doc-counts.sh" ]; then
+  bash scripts/check-doc-counts.sh
+fi
