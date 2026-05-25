@@ -203,6 +203,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate pipeline.config.json against schema
+        run: node scripts/validate-pipeline-config.js
+
       - name: Run script tests
         run: pnpm vitest run --config scripts/__tests__/vitest.config.js scripts/__tests__/ --reporter=verbose
 
