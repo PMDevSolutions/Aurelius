@@ -1,7 +1,7 @@
 # Skills Catalog
 
-**Last Updated:** 2026-03-18
-**Total Skills:** 17
+**Last Updated:** 2026-05-23
+**Total Skills:** 20
 **Location:** `.claude/skills/`
 
 Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
@@ -44,68 +44,85 @@ These skills power the `/build-from-figma` and `/build-from-canva` autonomous pi
 - **Triggers:** "visual QA", "compare to Figma", "screenshot diff", "verify app"
 - **Works with:** visual-qa-agent, Chrome DevTools MCP, Figma MCP
 
-### Canva Pipeline Skills
+#### 7. parallel-orchestration (Phases 4-9)
+- **Purpose:** Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting the dependency graph and resource constraints defined in `pipeline.config.json`.
+- **Triggers:** Invoked by pipeline commands after Phase 3 (TDD gate)
+- **Works with:** all build/QA phases; falls back to sequential execution when disabled
 
-These skills power the `/build-from-canva` autonomous pipeline. They handle Canva-specific phases (1, 2) before converging with the shared pipeline (phases 3-9).
+### Canva & Screenshot Pipeline Skills
 
-#### 7. canva-intake (Phase 1 -- Canva)
+These skills power the `/build-from-canva` and `/build-from-screenshot` autonomous pipelines. They handle source-specific phases (1, 2) before converging with the shared pipeline (phases 3-9).
+
+#### 8. canva-intake (Phase 1 -- Canva)
 - **Purpose:** Structured discovery for Canva designs. Exports screenshots via Canva AI Connector MCP, uses Claude vision to analyze page structure and components, asks 3-5 targeted questions, and produces a `build-spec.json` with `source: "canva"`.
 - **Triggers:** Phase 1 of `/build-from-canva`, or any Canva design URL conversation
 - **Output:** `.claude/plans/build-spec.json`
 
-#### 8. canva-token-inference (Phase 2 -- Canva)
-- **Purpose:** AI-powered token extraction from Canva screenshots with confidence scoring. Uses Claude vision to infer colors, typography, spacing, and effects. Presents tokens with confidence levels for user confirmation before locking.
-- **Triggers:** Phase 2 of `/build-from-canva`, "extract Canva tokens", "Canva design tokens"
+#### 9. canva-token-inference (Phase 2 -- Canva/Screenshot)
+- **Purpose:** AI-powered token extraction from Canva or screenshot sources with confidence scoring. Uses Claude vision to infer colors, typography, spacing, and effects. Presents tokens with confidence levels for user confirmation before locking.
+- **Triggers:** Phase 2 of `/build-from-canva` and `/build-from-screenshot`, "extract Canva tokens", "Canva design tokens"
 - **Output:** `src/styles/design-tokens.lock.json`, `tailwind.config.ts`, `src/styles/tokens.css`
+
+#### 10. screenshot-intake (Phase 1 -- Screenshot)
+- **Purpose:** Structured discovery from a URL or provided screenshot files. Captures pages via Chrome DevTools or Playwright MCP, analyzes structure with Claude vision, and produces a `build-spec.json` with `outputTarget`.
+- **Triggers:** Phase 1 of `/build-from-screenshot`, "build from screenshot", "clone this site"
+- **Output:** `.claude/plans/build-spec.json`
 
 ### React Development Skills
 
 These skills provide patterns and best practices. They trigger on relevant keywords during any React development work.
 
-#### 9. react-component-development
+#### 11. react-component-development
 - **Purpose:** Component patterns, TypeScript conventions, custom hooks, composition, and Tailwind CSS best practices
 - **Triggers:** "create component", "component pattern", "custom hook", "React best practices"
 - **Works with:** frontend-developer agent, ui-designer agent
 
-#### 10. react-testing-workflows
+#### 12. react-testing-workflows
 - **Purpose:** Testing strategy with Vitest, React Testing Library, Playwright, and Storybook
 - **Triggers:** "write tests", "test coverage", "Vitest", "Playwright", "Storybook"
 - **Works with:** test-writer-fixer agent, test-results-analyzer agent
 
-#### 11. react-performance-optimization
+#### 13. react-performance-optimization
 - **Purpose:** Performance profiling, bundle analysis, code splitting, and Web Vitals
 - **Triggers:** "performance", "bundle size", "Web Vitals", "lazy loading", "profiling"
 - **Works with:** performance-benchmarker agent, analytics-reporter agent
 
-#### 12. react-accessibility
+#### 14. react-accessibility
 - **Purpose:** WCAG 2.1 AA patterns for React, ARIA usage, keyboard navigation, focus management
 - **Triggers:** "accessibility", "WCAG", "ARIA", "a11y", "keyboard navigation"
 - **Works with:** accessibility-auditor agent, ux-researcher agent
 
-#### 13. state-management
+#### 15. state-management
 - **Purpose:** State architecture decisions — Zustand for global UI state, TanStack Query for server state, URL state patterns, and anti-patterns to avoid
 - **Triggers:** "state management", "zustand", "tanstack query", "react query", "global state", "data fetching", "caching"
 - **Works with:** frontend-developer agent
 
-#### 14. form-handling
+#### 16. form-handling
 - **Purpose:** Form patterns with React Hook Form + Zod — typed forms, reusable field components, dynamic field arrays, multi-step wizards, server actions, and accessible error handling
 - **Triggers:** "form", "form handling", "react hook form", "zod", "validation", "multi-step form", "wizard"
 - **Works with:** frontend-developer agent, accessibility-auditor agent
 
-#### 15. auth-flows
+#### 17. auth-flows
 - **Purpose:** Authentication patterns — Auth.js v5 (NextAuth), Clerk, Supabase Auth. Covers session management, protected routes, OAuth, and role-based access control (RBAC)
 - **Triggers:** "auth", "authentication", "login", "sign in", "session", "protected route", "OAuth", "clerk", "supabase auth"
 - **Works with:** backend-architect agent, frontend-developer agent
 
-#### 16. animation-motion
+#### 18. animation-motion
 - **Purpose:** Animation patterns — Framer Motion (motion/react), CSS transitions, page transitions, scroll-driven animations, staggered lists, and reduced-motion accessibility
 - **Triggers:** "animation", "framer motion", "transition", "micro-interaction", "page transition", "scroll animation", "motion"
 - **Works with:** frontend-developer agent, whimsy-injector agent
 
-#### 17. seo-metadata
+#### 19. seo-metadata
 - **Purpose:** SEO patterns — Next.js Metadata API, Open Graph tags, dynamic OG images, structured data (JSON-LD), sitemaps, robots.txt, and Vite SPA SEO with react-helmet-async
 - **Triggers:** "SEO", "metadata", "open graph", "og image", "sitemap", "structured data", "json-ld", "meta tags"
 - **Works with:** frontend-developer agent, content-creator agent
+
+### Export Skills
+
+#### 20. export-design-system
+- **Purpose:** Exports generated components + `design-tokens.lock.json` as a publishable pnpm workspace. Generates a framework-agnostic tokens package and a framework-specific component library (React/Vue/Svelte via Vite library mode, React Native via tsc), with Tailwind preset, ThemeProvider, and Changesets versioning.
+- **Triggers:** `/export-design-system`, "export design system", "publishable component library"
+- **Output:** `packages/` pnpm workspace (tokens + component library)
 
 ---
 
