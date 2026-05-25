@@ -684,7 +684,6 @@ function main() {
 
   for (const filePath of componentFiles) {
     const relPath = relative(cwd, filePath);
-    const fileName = basename(filePath);
     const fileDir = dirname(filePath);
     const componentBasename = basename(filePath, ".tsx");
 

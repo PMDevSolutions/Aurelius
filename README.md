@@ -4,8 +4,8 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 
 ## What This Framework Provides
 
-- **48 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
-- **17 Development Skills** -- Automated workflows for Figma/Canva conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
+- **53 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
+- **20 Development Skills** -- Automated workflows for Figma/Canva conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
 - **10-Phase Design-to-React Pipeline** -- Convert Figma or Canva designs into fully working, tested React apps with a single command
 - **App-Type Awareness** -- Tailored build and test strategies for web apps, Chrome extensions, and PWAs
 - **Testing Stack** -- Vitest, React Testing Library, Playwright (cross-browser), Storybook, and pixel-diff visual QA
@@ -85,8 +85,8 @@ project-root/
 │   ├── canva-to-react/          # Canva pipeline guide
 │   └── react-development/       # Development standards
 ├── .claude/              # Claude Code configuration
-│   ├── agents/                  # 48 custom agents
-│   ├── skills/                  # 17 development skills
+│   ├── agents/                  # 53 custom agents
+│   ├── skills/                  # 20 development skills
 │   ├── commands/                # Slash commands (/build-from-figma, /lint, /test)
 │   ├── pipeline.config.json     # Pipeline thresholds and app-type definitions
 │   ├── CUSTOM-AGENTS-GUIDE.md   # Agent catalog
@@ -136,15 +136,15 @@ All thresholds and behavior are configurable in `.claude/pipeline.config.json`:
 - Lighthouse minimums (performance: 80, accessibility: 90)
 - App-type-specific E2E strategies
 
-## 48 Custom Agents
+## 53 Custom Agents
 
 Agents are auto-selected by Claude Code based on your task:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
-| Engineering | 10 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer |
+| Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 3 | figma-react-converter, canva-react-converter, asset-cataloger |
+| Design-to-Code | 6 | figma-react-converter, canva-react-converter, vue-converter, svelte-converter, react-native-converter, asset-cataloger |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -154,9 +154,9 @@ Agents are auto-selected by Claude Code based on your task:
 
 Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 
-## 17 Development Skills
+## 20 Development Skills
 
-### Pipeline Skills (Phases 1-6)
+### Pipeline Skills
 
 | # | Skill | Purpose |
 |---|-------|---------|
@@ -166,27 +166,35 @@ Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 | 4 | figma-to-react-workflow | Generate components that pass the tests |
 | 5 | visual-qa-verification | Pixel-diff comparison loop with region analysis |
 | 6 | e2e-test-generator | Generate Playwright E2E tests (app-type-aware) |
+| 7 | parallel-orchestration | Concurrent phase execution with dependency graph |
 
-### Canva Pipeline Skills
+### Canva & Screenshot Pipeline Skills
 
 | # | Skill | Purpose |
 |---|-------|---------|
-| 7 | canva-intake | Canva design discovery + build-spec.json generation |
-| 8 | canva-token-inference | AI-powered token extraction from Canva screenshots |
+| 8 | canva-intake | Canva design discovery + build-spec.json generation |
+| 9 | canva-token-inference | AI-powered token extraction from Canva/screenshot sources |
+| 10 | screenshot-intake | URL/screenshot capture + vision-based discovery |
 
 ### React Development Skills
 
 | # | Skill | Purpose |
 |---|-------|---------|
-| 9 | react-component-development | Component patterns, hooks, composition |
-| 10 | react-testing-workflows | Vitest, RTL, Playwright, Storybook |
-| 11 | react-performance-optimization | Profiling, bundle analysis, Web Vitals |
-| 12 | react-accessibility | WCAG 2.1 AA patterns for React |
-| 13 | state-management | Zustand, TanStack Query, URL state architecture |
-| 14 | form-handling | React Hook Form + Zod: typed forms, wizards |
-| 15 | auth-flows | Auth.js, Clerk, Supabase Auth, RBAC |
-| 16 | animation-motion | Framer Motion, CSS transitions, reduced-motion a11y |
-| 17 | seo-metadata | Next.js Metadata API, JSON-LD, OG images, sitemaps |
+| 11 | react-component-development | Component patterns, hooks, composition |
+| 12 | react-testing-workflows | Vitest, RTL, Playwright, Storybook |
+| 13 | react-performance-optimization | Profiling, bundle analysis, Web Vitals |
+| 14 | react-accessibility | WCAG 2.1 AA patterns for React |
+| 15 | state-management | Zustand, TanStack Query, URL state architecture |
+| 16 | form-handling | React Hook Form + Zod: typed forms, wizards |
+| 17 | auth-flows | Auth.js, Clerk, Supabase Auth, RBAC |
+| 18 | animation-motion | Framer Motion, CSS transitions, reduced-motion a11y |
+| 19 | seo-metadata | Next.js Metadata API, JSON-LD, OG images, sitemaps |
+
+### Export Skills
+
+| # | Skill | Purpose |
+|---|-------|---------|
+| 20 | export-design-system | Export components + tokens as a publishable pnpm workspace |
 
 Full catalog: `.claude/skills/README.md`
 
@@ -262,7 +270,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 |----------|----------|-------------|
 | **Developer onboarding** | `docs/onboarding/README.md` | Start here -- quickstart, architecture, configuration, troubleshooting |
 | Quickstart guide | `docs/onboarding/quickstart.md` | Clone to running project in 10 minutes |
-| Architecture overview | `docs/onboarding/architecture.md` | All 53 agents, 19 skills, 3 pipelines, and how they connect |
+| Architecture overview | `docs/onboarding/architecture.md` | All 53 agents, 20 skills, 3 pipelines, and how they connect |
 | Pipeline configuration | `docs/onboarding/pipeline-configuration.md` | Every setting in pipeline.config.json explained |
 | Troubleshooting FAQ | `docs/onboarding/troubleshooting.md` | Common issues and solutions |
 | Project instructions | `CLAUDE.md` | Full project config for Claude Code |
@@ -270,7 +278,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | React standards | `docs/react-development/README.md` | TypeScript, Tailwind, testing conventions |
 | Canva pipeline guide | `docs/canva-to-react/README.md` | Canva pipeline overview and troubleshooting |
 | Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 53 agents with use cases |
-| Skills catalog | `.claude/skills/README.md` | All 19 skills with triggers |
+| Skills catalog | `.claude/skills/README.md` | All 20 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |
 | Templates reference | `templates/README.md` | Starter configs and how to use them |

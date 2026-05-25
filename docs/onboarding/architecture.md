@@ -15,7 +15,7 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   53 Agents   │   │    19 Skills    │   │    4 Plugins    │
+     │   53 Agents   │   │    20 Skills    │   │    4 Plugins    │
      │ (specialized  │   │  (workflow      │   │ (extensions:    │
      │  task workers) │   │   automation)  │   │  memory, git,   │
      └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
@@ -141,7 +141,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 
 ---
 
-## Skills (19 Total)
+## Skills (20 Total)
 
 Skills are automated workflows triggered by slash commands or keyword detection. Unlike agents (which are general-purpose workers), skills encode specific multi-step processes.
 
@@ -159,6 +159,7 @@ Skills are automated workflows triggered by slash commands or keyword detection.
 | `e2e-test-generator` | Phase 6 | Generates Playwright E2E tests (web app, Chrome extension, PWA) |
 | `visual-qa-verification` | Phase 5 | Automated pixel-diff using pixelmatch, up to 5 iterations |
 | `parallel-orchestration` | Phases 4-9 | Concurrent phase execution with dependency graph |
+| `export-design-system` | Post-build | Exports components + tokens as a publishable pnpm workspace (`/export-design-system`) |
 
 ### React Development Skills
 

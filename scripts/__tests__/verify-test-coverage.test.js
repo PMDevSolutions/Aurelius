@@ -3,7 +3,7 @@ import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { tmpdir } from "os";
-import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "verify-test-coverage.sh");

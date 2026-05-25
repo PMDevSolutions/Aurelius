@@ -142,6 +142,9 @@ jobs:
           [ $count -eq 0 ] && echo "Note: no skill .md files found in .claude/skills/"
           exit $errors
 
+      - name: Check doc counts match agents/skills on disk
+        run: bash scripts/check-doc-counts.sh
+
       - name: Validate templates
         run: |
           errors=0
