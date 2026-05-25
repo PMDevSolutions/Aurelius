@@ -32,9 +32,8 @@ function run(args = []) {
 
 function countAgents() {
   const dir = join(PROJECT_ROOT, ".claude", "agents");
-  return readdirSync(dir).filter(
-    (f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md",
-  ).length;
+  return readdirSync(dir).filter((f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md")
+    .length;
 }
 
 function countSkills() {
