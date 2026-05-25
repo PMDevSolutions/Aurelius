@@ -6,9 +6,9 @@
 #   skills  → subdirectories of .claude/skills/ that contain a SKILL.md
 #
 # Then scans the live Markdown docs for any "N agents" / "N skills" claim and
-# fails if a claim disagrees with the on-disk count. Historical records
-# (CHANGELOG.md, docs/plans/) are intentionally excluded — they describe a
-# past release and must not be rewritten.
+# fails if a claim disagrees with the on-disk count. Historical and generated
+# records (CHANGELOG.md, RELEASE_NOTES.md, docs/plans/) are intentionally
+# excluded — they describe a past release and must not be rewritten.
 #
 # Usage:
 #   ./scripts/check-doc-counts.sh           # human-readable report, exit 1 on drift
@@ -78,6 +78,7 @@ DOC_COUNT=$(find . -type f -name '*.md' \
   -not -path '*/node_modules/*' \
   -not -path './docs/plans/*' \
   -not -name 'CHANGELOG.md' \
+  -not -name 'RELEASE_NOTES.md' \
   | wc -l | tr -d ' ')
 
 # Combined matcher for the three claim forms. Run once recursively (a single
@@ -111,6 +112,7 @@ while IFS= read -r match; do
 done < <(grep -riInoE "$COMBINED" \
   --include='*.md' \
   --exclude='CHANGELOG.md' \
+  --exclude='RELEASE_NOTES.md' \
   --exclude-dir='.git' \
   --exclude-dir='node_modules' \
   --exclude-dir='plans' \
@@ -145,7 +147,7 @@ else
   say_banner "Documentation Count Check"
   echo ""
   say_step "On disk: ${agent_count} agents, ${skill_count} skills"
-  say_step "Scanned ${DOC_COUNT} Markdown files (CHANGELOG.md and docs/plans/ excluded)"
+  say_step "Scanned ${DOC_COUNT} Markdown files (CHANGELOG.md, RELEASE_NOTES.md, and docs/plans/ excluded)"
   echo ""
   if [[ "$DRIFT" -eq 0 ]]; then
     say_pass "All agent/skill counts in docs match the entries on disk"
