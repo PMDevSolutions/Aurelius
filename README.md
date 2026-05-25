@@ -285,6 +285,16 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | Pipeline config | `.claude/pipeline.config.json` | Thresholds, app types, quality gates |
 | Agent naming guide | `.claude/AGENT-NAMING-GUIDE.md` | Conventions for creating new agents |
 
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [AI SEO Copilot (Chrome)](https://github.com/die-Manufaktur/AISEOC-Chrome-Extension) | Free, open-source Chrome extension for AI-powered SEO analysis. Built with React 19, TypeScript, and Vite. The Chrome extension pipeline in Aurelius was battle-tested against this project. [Install from Chrome Web Store](https://chromewebstore.google.com/detail/ai-seo-copilot/anhpobnkbmgjhcgbohkddjjpcbbdllhl) |
+| [AI SEO Copilot (Webflow)](https://github.com/die-Manufaktur/AI-SEO-Copilot-for-Webflow) | The original Webflow app with ~20,000 installs |
+| [Flavian](https://github.com/PMDevSolutions/Flavian) | Claude Code-integrated WordPress development framework with FSE block theme tools and Figma-to-WordPress pipelines |
+| [Nerva](https://github.com/PMDevSolutions/Nerva) | Claude Code-integrated API and backend development framework with Hono, Cloudflare Workers, and Drizzle ORM |
+| [Claudius](https://github.com/PMDevSolutions/Claudius) | Embeddable AI chat widget powered by Claude. React + TypeScript + Cloudflare Workers |
+
 ## License
 
 MIT
