@@ -35,16 +35,14 @@ Run these Figma MCP calls to gather context automatically:
 Simultaneously scan the local project:
 
 ```
-1. Detect framework:
-   - next.config.* → Next.js (outputTarget: "react")
-   - vite.config.* + vue in package.json → Vue + Vite (outputTarget: "vue")
-   - nuxt.config.* → Nuxt (outputTarget: "vue")
-   - svelte.config.* → SvelteKit (outputTarget: "svelte")
-   - vite.config.* + svelte in package.json → Svelte + Vite (outputTarget: "svelte")
-   - app.json with "expo" → Expo (outputTarget: "react-native")
-   - vite.config.* → Vite + React (outputTarget: "react")
-   - remix.config.* → Remix (outputTarget: "react")
-   - None → New project needed (ask output target question)
+1. Detect framework via the renderer registry:
+   - Run: node scripts/renderer-registry.js detect . --json
+   - On { "renderer": "<name>", "language": "<lang>" }:
+       set build-spec renderer = <name>
+       set build-spec outputTarget = <language>  (react | vue | svelte | react-native)
+   - On { "renderer": null }:
+       no framework detected → New project needed (ask output target question)
+   Do not hand-sniff config files or package.json deps; the registry owns detection.
 
 2. Detect app type:
    - manifest.json with "manifest_version" → Chrome Extension
@@ -127,12 +125,12 @@ Only ask questions whose answers cannot be derived from the Figma file or local 
 > (Only ask if existing project detected)
 
 **Question 6 — Output Target (only if no framework detected):**
-> What framework should I build this in?
-> a) React (Next.js / Vite / Remix)
-> b) Vue 3 (Nuxt / Vite)
-> c) Svelte (SvelteKit / Vite)
-> d) React Native (Expo)
-> (Skip if existing project with framework detected — auto-detect from package.json)
+> Run `node scripts/renderer-registry.js list --json` and present the returned
+> renderer names as the choices (each entry has `name` and `language`):
+> "Which renderer should I build this in? [numbered list of registry renderers]"
+> - Greenfield React default: `vite`.
+> - Set build-spec `renderer` = the chosen name and `outputTarget` = its `language`.
+> (Skip if the registry already detected a framework for the existing project.)
 
 **Question 7 — App Type (only if ambiguous):**
 > I detected this as a [chrome-extension / web-app / pwa]. Is that correct?

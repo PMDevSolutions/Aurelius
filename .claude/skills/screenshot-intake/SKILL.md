@@ -190,16 +190,14 @@ Store extracted data in working memory for Step 4 (questions) and Step 5 (build-
 ### Step 3: Local Project Scan
 
 ```
-1. Detect framework (in order):
-   - next.config.* → Next.js          (outputTarget: "react")
-   - remix.config.* → Remix           (outputTarget: "react")
-   - nuxt.config.* → Nuxt             (outputTarget: "vue")
-   - svelte.config.* → SvelteKit      (outputTarget: "svelte")
-   - app.json with "expo" → Expo      (outputTarget: "react-native")
-   - vite.config.* + vue in deps → Vite+Vue       (outputTarget: "vue")
-   - vite.config.* + svelte in deps → Vite+Svelte (outputTarget: "svelte")
-   - vite.config.* → Vite+React        (outputTarget: "react")
-   - None → ask user (Q3 below)
+1. Detect framework via the renderer registry:
+   - Run: node scripts/renderer-registry.js detect . --json
+   - On { "renderer": "<name>", "language": "<lang>" }:
+       set build-spec renderer = <name>
+       set build-spec outputTarget = <language>  (react | vue | svelte | react-native)
+   - On { "renderer": null }:
+       no framework detected → ask user (Q3 below)
+   Do not hand-sniff config files or package.json deps; the registry owns detection.
 
 2. Detect app type:
    - manifest.json with "manifest_version" → chrome-extension
@@ -240,12 +238,11 @@ Only ask what cannot be derived from captures or local scan. Use `AskUserQuestio
 > Since detection is vision-based, low-confidence rows are worth a second look.
 
 **Q3 — Output target (only if no framework detected):**
-> What framework should I build this in?
-> a) React (Next.js / Vite / Remix)
-> b) Vue 3 (Nuxt / Vite)
-> c) Svelte (SvelteKit / Vite)
-> d) React Native (Expo)
-> Default: React + Vite for new projects.
+> Run `node scripts/renderer-registry.js list --json` and present the returned
+> renderer names as the choices (each entry has `name` and `language`):
+> "Which renderer should I build this in? [numbered list of registry renderers]"
+> Default: `vite` (React) for new projects.
+> Set build-spec `renderer` = the chosen name and `outputTarget` = its `language`.
 
 **Q4 — Component reuse (only if existing components detected):**
 > I found N existing components that match detected components.
