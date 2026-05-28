@@ -7,6 +7,7 @@ import {
   countExamples,
   buildCatalog,
   satisfiesRange,
+  resolveDependencies,
 } from "../agent-plugin-lib.js";
 
 function makePlugin(root, name, version, deps = {}) {
@@ -71,5 +72,41 @@ describe("buildCatalog + satisfiesRange", () => {
   it("satisfiesRange wraps semver", () => {
     expect(satisfiesRange("1.2.0", "^1.0.0")).toBe(true);
     expect(satisfiesRange("2.0.0", "^1.0.0")).toBe(false);
+  });
+});
+
+describe("resolveDependencies", () => {
+  const catalog = {
+    a: { version: "1.0.0", deps: {} },
+    b: { version: "1.0.0", deps: { a: "^1.0.0" } },
+    c: { version: "1.0.0", deps: { b: "^1.0.0", a: "^1.0.0" } },
+  };
+
+  it("orders dependencies before dependents", () => {
+    const { order, errors } = resolveDependencies(catalog, "c");
+    expect(errors).toEqual([]);
+    expect(order.indexOf("a")).toBeLessThan(order.indexOf("b"));
+    expect(order.indexOf("b")).toBeLessThan(order.indexOf("c"));
+    expect(order[order.length - 1]).toBe("c");
+  });
+
+  it("flags a missing dependency", () => {
+    const { errors } = resolveDependencies({ x: { version: "1.0.0", deps: { y: "^1.0.0" } } }, "x");
+    expect(errors.some((e) => e.code === "missing")).toBe(true);
+  });
+
+  it("flags a version mismatch", () => {
+    const c = { p: { version: "1.0.0", deps: { q: "^2.0.0" } }, q: { version: "1.0.0", deps: {} } };
+    const { errors } = resolveDependencies(c, "p");
+    expect(errors.some((e) => e.code === "version")).toBe(true);
+  });
+
+  it("detects a cycle", () => {
+    const c = {
+      m: { version: "1.0.0", deps: { n: "^1.0.0" } },
+      n: { version: "1.0.0", deps: { m: "^1.0.0" } },
+    };
+    const { errors } = resolveDependencies(c, "m");
+    expect(errors.some((e) => e.code === "cycle")).toBe(true);
   });
 });

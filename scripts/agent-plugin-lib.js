@@ -55,3 +55,65 @@ export function buildCatalog(pluginsRoot) {
 export function satisfiesRange(version, range) {
   return semver.satisfies(version, range, { includePrerelease: true });
 }
+
+/**
+ * Resolve the transitive agent-dependency graph rooted at `rootName`.
+ * Returns { order, errors, involved }. `order` lists deps before dependents
+ * (topological). `errors` collects every problem: missing deps, semver
+ * mismatches, and cycles. Errors do not short-circuit — all are reported.
+ */
+export function resolveDependencies(catalog, rootName) {
+  const errors = [];
+  const involved = new Set();
+  const edges = {}; // name -> [dependency names]
+
+  function visit(name, chain) {
+    if (!catalog[name]) {
+      const by = chain.length ? ` (required by ${chain.join(" -> ")})` : "";
+      errors.push({ code: "missing", message: `"${name}" not found in catalog${by}` });
+      return;
+    }
+    if (involved.has(name)) return;
+    involved.add(name);
+    edges[name] = [];
+    for (const [dep, range] of Object.entries(catalog[name].deps || {})) {
+      edges[name].push(dep);
+      if (!catalog[dep]) {
+        errors.push({
+          code: "missing",
+          message: `"${dep}" not found (required by ${[...chain, name].join(" -> ")})`,
+        });
+        continue;
+      }
+      if (!satisfiesRange(catalog[dep].version, range)) {
+        errors.push({
+          code: "version",
+          message: `"${dep}@${catalog[dep].version}" does not satisfy "${range}" (required by ${name})`,
+        });
+      }
+      visit(dep, [...chain, name]);
+    }
+  }
+  visit(rootName, []);
+
+  // Kahn topological sort over involved nodes (edge n -> d means n depends on d).
+  const indeg = {};
+  for (const n of involved) indeg[n] = (edges[n] || []).filter((d) => involved.has(d)).length;
+  const queue = [...involved].filter((n) => indeg[n] === 0);
+  const order = [];
+  while (queue.length) {
+    const n = queue.shift();
+    order.push(n);
+    for (const m of involved) {
+      if ((edges[m] || []).includes(n)) {
+        indeg[m]--;
+        if (indeg[m] === 0) queue.push(m);
+      }
+    }
+  }
+  if (order.length !== involved.size) {
+    const cyclic = [...involved].filter((n) => !order.includes(n));
+    errors.push({ code: "cycle", message: `dependency cycle involving: ${cyclic.join(", ")}` });
+  }
+  return { order, errors, involved: [...involved] };
+}
