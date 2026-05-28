@@ -178,7 +178,7 @@ This phase:
 
 ## Phase 4.5: Storybook Generation (Non-Blocking)
 
-Identical to `/build-from-figma` Phase 4.5. Skipped for `react-native` outputTarget.
+Identical to `/build-from-figma` Phase 4.5. Skipped when the renderer has no browser story (e.g. expo).
 
 ```bash
 ./scripts/generate-stories.sh
