@@ -30,4 +30,18 @@ describe("renderer-registry.js", () => {
         .sort(),
     ).toEqual(["nextjs", "vite"]);
   });
+
+  it("resolves a known renderer to its full manifest", () => {
+    const r = run(["resolve", "nextjs", "--json"]);
+    expect(r.exitCode).toBe(0);
+    const manifest = JSON.parse(r.stdout);
+    expect(manifest.name).toBe("nextjs");
+    expect(manifest.language).toBe("react");
+  });
+
+  it("exits 2 on an unknown renderer", () => {
+    const r = run(["resolve", "does-not-exist", "--json"]);
+    expect(r.exitCode).toBe(2);
+    expect(r.stdout).toMatch(/unknown renderer/i);
+  });
 });
