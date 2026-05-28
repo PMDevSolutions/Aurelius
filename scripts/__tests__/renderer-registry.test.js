@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "renderer-registry.js");
 const RENDERERS_ROOT = join(__dirname, "fixtures", "renderers");
+const PROJ = (name) => join(__dirname, "fixtures", "projects", name);
 
 function run(args) {
   try {
@@ -43,5 +44,29 @@ describe("renderer-registry.js", () => {
     const r = run(["resolve", "does-not-exist", "--json"]);
     expect(r.exitCode).toBe(2);
     expect(r.stdout).toMatch(/unknown renderer/i);
+  });
+
+  it("detects nextjs from a next.config.ts project", () => {
+    const r = run(["detect", PROJ("nextjs-proj"), "--json"]);
+    expect(r.exitCode).toBe(0);
+    expect(JSON.parse(r.stdout).renderer).toBe("nextjs");
+  });
+
+  it("detects vite from a vite.config.ts project", () => {
+    const r = run(["detect", PROJ("vite-proj"), "--json"]);
+    expect(r.exitCode).toBe(0);
+    expect(JSON.parse(r.stdout).renderer).toBe("vite");
+  });
+
+  it("resolves an ambiguous project to the higher-priority renderer (nextjs)", () => {
+    const r = run(["detect", PROJ("ambiguous-proj"), "--json"]);
+    expect(r.exitCode).toBe(0);
+    expect(JSON.parse(r.stdout).renderer).toBe("nextjs");
+  });
+
+  it("detects nothing in an empty project (renderer null, exit 0)", () => {
+    const r = run(["detect", PROJ("empty-proj"), "--json"]);
+    expect(r.exitCode).toBe(0);
+    expect(JSON.parse(r.stdout).renderer).toBeNull();
   });
 });
