@@ -39,7 +39,7 @@ Use `TodoWrite` to create a master checklist. Update each item as phases complet
 [ ] Phase 1: Intake — canva-intake skill → build-spec.json
 [ ] Phase 2: Token Inference — canva-token-inference skill → lockfile + tailwind config (requires user confirmation)
 [ ] Phase 3: TDD Scaffold — tdd-from-figma skill → failing tests (RED)
-[ ] Phase 4: Component Build — canva-react-converter agent → tests pass (GREEN)
+[ ] Phase 4: Component Build — converter agent (per resolved renderer manifest) → tests pass (GREEN)
 [ ] Phase 4.5: Storybook — generate-stories.sh → auto-generated stories
 [ ] Phase 5: Visual Verification — pixel-diff loop (max N iterations, against Canva screenshots)
 [ ] Phase 5.5: Dark Mode — check-dark-mode.sh → dark mode visual verification
@@ -104,18 +104,28 @@ Identical to `/build-from-figma` Phase 3.
 
 After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
 
+**Read `renderer` from `build-spec.json` and resolve its manifest before dispatching:**
+
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+The manifest drives both converter dispatch (`manifest.converter`) and phase exclusion (`manifest.phases.exclude`).
+
 **Invoke the `parallel-orchestration` skill with:**
 - Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
+  - Drop any phase listed in `manifest.phases.exclude`
 - Context:
   - Build spec: `.claude/plans/build-spec.json`
   - Lockfile: `src/styles/design-tokens.lock.json`
   - Test files: `src/components/**/*.test.tsx`
   - Pipeline source: `"canva"`
+  - Renderer manifest: from `renderer-registry.js resolve <renderer> --json`
   - Reference screenshots: `.claude/visual-qa/screenshots/canva/`
 - Config: `.claude/pipeline.config.json` → `orchestration` section
 
 The parallel orchestration skill will:
-1. Start `component-build` first (dispatches `canva-react-converter` agent)
+1. Start `component-build` first (dispatches the converter named in the resolved manifest, see Phase 4)
 2. After build completes, fan out independent phases in parallel (max 3 concurrent)
 3. Run `e2e-tests` after `visual-diff` completes
 4. Run `report` after both `quality-gate` and `e2e-tests` complete
@@ -126,19 +136,30 @@ The parallel orchestration skill will:
 
 The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
 
-## Phase 4: Component Build
+## Phase 4: Component Build (Renderer-Driven)
 
-Dispatch the `canva-react-converter` agent.
+Read `renderer` from `build-spec.json`, resolve its manifest, and dispatch the converter it names:
 
-**Input:** build-spec.json, lockfile, existing test files, Canva screenshots
-**Output:** `src/components/**/*.tsx`, page files
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+**Converter selection:**
+- If `manifest.language === "react"`, prefer the source-appropriate React converter. For the Canva pipeline that is `canva-react-converter` (it builds React components from Canva screenshots). The shipped React manifests (nextjs, vite) set `converter` to the generic `figma-react-converter`; for the Canva source, use `canva-react-converter` instead.
+- Otherwise dispatch `manifest.converter` directly (e.g. `react-native-converter` for expo, and the future `vue-converter` / `svelte-converter`).
+
+The component extension, directory, page-routing convention, and test command come from `manifest.component` and `manifest.commands.test`.
+
+**Input:** build-spec.json, resolved renderer manifest, lockfile, existing test files, Canva screenshots
+**Output:** Component and page files for the renderer's framework (React: `src/components/**/*.tsx`)
 
 This phase:
-1. Reads build-spec.json — verifies `source` is `"canva"`
-2. References lockfile for all token values (no approximating)
-3. Uses Canva screenshots for layout/structure decisions
-4. Generates components that satisfy the test files from Phase 3
-5. Runs `pnpm vitest run` after each component batch to confirm GREEN
+1. Reads build-spec.json — verifies `source` is `"canva"` and reads `renderer`
+2. Resolves the manifest and dispatches the converter (see selection rule above)
+3. References lockfile for all token values (no approximating)
+4. Uses Canva screenshots for layout/structure decisions
+5. Generates components (at `manifest.component.dir` with `manifest.component.ext`) that satisfy the test files from Phase 3
+6. Runs `manifest.commands.test` after each component batch to confirm GREEN
 
 **Critical rule:** If tests fail, fix the component — never modify the test files.
 
