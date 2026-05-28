@@ -9,6 +9,7 @@
 !.claude/pipeline.config.json
 !.claude/pipeline.config.schema.json
 !.claude/agent-plugin.schema.json
+!.claude/agent-plugins/
 !.claude/test-fixtures/
 
 # Claude Code temporary/user-specific files

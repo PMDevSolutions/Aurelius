@@ -120,6 +120,19 @@ describe("agent-registry.js", () => {
     expect(r.stdout).toMatch(/not installed/i);
   });
 
+  it("refuses to install a plugin that fails validation (exit 1, not copied)", () => {
+    const dir = join(pluginsRoot, "broken-agent");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "plugin.json"),
+      JSON.stringify({ name: "broken-agent", version: "1.0.0", description: "x" }),
+    );
+    writeFileSync(join(dir, "agent.md"), "no frontmatter here");
+    const r = run(["install", "broken-agent", "--json"]);
+    expect(r.exitCode).toBe(1);
+    expect(existsSync(join(root, ".claude", "agents", "broken-agent.md"))).toBe(false);
+  });
+
   it("aborts install when the preInstall hook fails (exit 1, no agent copied)", () => {
     writeHookedPlugin();
     const r = run(["install", "hooked", "--json"], { FAIL_PRE: "1" });

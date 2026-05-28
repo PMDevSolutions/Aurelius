@@ -26,6 +26,7 @@ import { createHash } from "crypto";
 import { buildCatalog, resolveDependencies } from "./agent-plugin-lib.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const VALIDATOR = join(__dirname, "validate-agent-plugin.js");
 
 function parseArgs(argv) {
   const out = { cmd: null, name: null, json: false, force: false, root: resolve(__dirname, "..") };
@@ -89,6 +90,24 @@ function saveInstalled(p, state) {
 }
 function sourceHash(file) {
   return createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 16);
+}
+
+// Validate a plugin dir via the validator CLI. Returns { ok, detail }.
+function validatePluginDir(dir) {
+  try {
+    execFileSync("node", [VALIDATOR, "--dir", dir, "--json"], { encoding: "utf-8" });
+    return { ok: true };
+  } catch (e) {
+    let detail = "validation failed";
+    try {
+      const out = JSON.parse(e.stdout || "{}");
+      const first = out.issues?.[0];
+      if (first) detail = `${out.issues.length} issue(s): ${first.path}: ${first.message}`;
+    } catch {
+      /* keep the generic detail */
+    }
+    return { ok: false, detail };
+  }
 }
 
 function runHook(catalog, name, hook, fail) {
@@ -172,6 +191,20 @@ function main() {
           console.log(`Install order: ${order.join(" -> ")}`),
         );
         process.exit(0);
+      }
+
+      // Validate every plugin before copying anything, so a broken agent
+      // never lands in .claude/agents/ and the install stays all-or-nothing.
+      for (const name of order) {
+        const v = validatePluginDir(catalog[name].dir);
+        if (!v.ok) {
+          emit(
+            args.json,
+            { ok: false, error: `"${name}" failed validation`, detail: v.detail },
+            () => console.error(`✗ "${name}" failed validation: ${v.detail}`),
+          );
+          process.exit(1);
+        }
       }
 
       // install
