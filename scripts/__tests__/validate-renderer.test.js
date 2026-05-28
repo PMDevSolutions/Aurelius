@@ -104,4 +104,18 @@ describe("validate-renderer.js", () => {
     const r = run(["--json"]);
     expect(r.exitCode).toBe(2);
   });
+
+  it("exits 2 when --dir is the last arg with no value", () => {
+    // Call directly (no trailing --root) so --dir is genuinely the last arg.
+    let exitCode = 0;
+    let stderr = "";
+    try {
+      execFileSync("node", [SCRIPT, "--dir"], { encoding: "utf-8", timeout: 30000 });
+    } catch (e) {
+      exitCode = e.status;
+      stderr = e.stderr || "";
+    }
+    expect(exitCode).toBe(2);
+    expect(stderr).toMatch(/missing value/i);
+  });
 });

@@ -13,25 +13,36 @@
  *   node scripts/validate-renderer.js --all [--renderers-root <dir>] [--json]
  *   (--root <dir> overrides the repo root for resolving template/agent paths)
  *
- * Exit codes: 0 valid · 1 invalid · 2 usage/IO error
+ * Exit codes: 0 valid · 1 invalid/validation failure · 2 usage/unknown-name/IO error
  */
-import { readFileSync, existsSync, statSync, readdirSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join, dirname, resolve, basename } from "path";
 import { fileURLToPath } from "url";
+import { loadManifest, listRendererDirs } from "./renderer-lib.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const SCHEMA = join(repoRoot, "renderers", "renderer.schema.json");
 const VALID_LANGUAGES = ["react", "vue", "svelte", "react-native"];
 
+/** Require a value for a flag that expects one; exit 2 if it's the last arg. */
+function requireValue(flag, value) {
+  if (value === undefined) {
+    console.error(`Missing value for ${flag}`);
+    printHelp();
+    process.exit(2);
+  }
+  return value;
+}
+
 function parseArgs(argv) {
   const out = { dir: null, all: false, json: false, renderersRoot: null, root: repoRoot };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--dir") out.dir = resolve(argv[++i]);
+    if (a === "--dir") out.dir = resolve(requireValue(a, argv[++i]));
     else if (a === "--all") out.all = true;
-    else if (a === "--renderers-root") out.renderersRoot = resolve(argv[++i]);
-    else if (a === "--root") out.root = resolve(argv[++i]);
+    else if (a === "--renderers-root") out.renderersRoot = resolve(requireValue(a, argv[++i]));
+    else if (a === "--root") out.root = resolve(requireValue(a, argv[++i]));
     else if (a === "--json") out.json = true;
     else if (a === "-h" || a === "--help") {
       printHelp();
@@ -78,12 +89,6 @@ function formatSchemaError(err) {
   return { path, message };
 }
 
-function loadManifest(dir) {
-  const p = join(dir, "renderer.json");
-  if (!existsSync(p)) throw new Error(`No renderer.json in ${dir}`);
-  return JSON.parse(readFileSync(p, "utf-8"));
-}
-
 function validateRenderer(dir, validate, root) {
   const issues = [];
   const manifest = loadManifest(dir); // may throw -> caller reports it as an (io) issue
@@ -125,20 +130,6 @@ function validateRenderer(dir, validate, root) {
   }
 
   return { name: manifest.name ?? dirName, dir, ok: issues.length === 0, issues };
-}
-
-function listRendererDirs(root) {
-  const dirs = [];
-  if (!existsSync(root)) return dirs;
-  for (const entry of readdirSync(root)) {
-    const full = join(root, entry);
-    try {
-      if (statSync(full).isDirectory() && existsSync(join(full, "renderer.json"))) dirs.push(full);
-    } catch {
-      /* skip unreadable entry */
-    }
-  }
-  return dirs;
 }
 
 async function main() {

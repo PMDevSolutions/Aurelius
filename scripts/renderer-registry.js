@@ -12,14 +12,25 @@
  *   node scripts/renderer-registry.js detect <projectDir> [--json]
  *   (--renderers-root <dir> overrides the renderers root; used by tests)
  *
- * Exit codes: 0 ok · 1 resolution failure · 2 usage/IO error
+ * Exit codes: 0 ok · 1 invalid/validation failure · 2 usage/unknown-name/IO error
  */
-import { readFileSync, readdirSync, existsSync, statSync } from "fs";
+import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, resolve, basename } from "path";
 import { fileURLToPath } from "url";
+import { loadCatalog, globToRegExp } from "./renderer-lib.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RENDERERS_ROOT = resolve(__dirname, "..", "renderers");
+
+/** Require a value for a flag that expects one; exit 2 if it's the last arg. */
+function requireValue(flag, value) {
+  if (value === undefined) {
+    console.error(`Missing value for ${flag}`);
+    printHelp();
+    process.exit(2);
+  }
+  return value;
+}
 
 function parseArgs(argv) {
   const out = { cmd: null, arg: null, json: false, renderersRoot: DEFAULT_RENDERERS_ROOT };
@@ -27,7 +38,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--json") out.json = true;
-    else if (a === "--renderers-root") out.renderersRoot = resolve(argv[++i]);
+    else if (a === "--renderers-root") out.renderersRoot = resolve(requireValue(a, argv[++i]));
     else if (a === "-h" || a === "--help") {
       printHelp();
       process.exit(0);
@@ -54,41 +65,6 @@ Options:
   --json                 Machine-readable output
   --renderers-root <dir> Override the renderers root (default: ./renderers)
   -h, --help             Show this message`);
-}
-
-/** Build a catalog { name -> { dir, manifest } } from renderer.json files
- *  under the renderers root. Skips unreadable or malformed manifests so one
- *  bad renderer can't abort the scan. */
-function loadCatalog(root) {
-  const catalog = {};
-  if (!existsSync(root)) return catalog;
-  for (const entry of readdirSync(root)) {
-    const dir = join(root, entry);
-    let isDir;
-    try {
-      isDir = statSync(dir).isDirectory();
-    } catch {
-      continue;
-    }
-    if (!isDir) continue;
-    const manifestPath = join(dir, "renderer.json");
-    if (!existsSync(manifestPath)) continue;
-    let manifest;
-    try {
-      manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-    } catch {
-      continue;
-    }
-    if (!manifest || typeof manifest.name !== "string") continue;
-    catalog[manifest.name] = { dir, manifest };
-  }
-  return catalog;
-}
-
-/** Translate a simple glob (only `*` wildcards) to an anchored regex. */
-function globToRegExp(glob) {
-  const escaped = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${escaped}$`);
 }
 
 function emit(json, payload, human) {
@@ -156,11 +132,15 @@ function main() {
 
 /** Find the first matching renderer, highest detect.priority first. A renderer
  *  matches if any configFiles glob matches a file basename in projectDir, or
- *  any dependencies entry appears in the project's package.json deps/devDeps. */
+ *  any dependencies entry appears in the project's package.json deps/devDeps.
+ *  Ties on priority are broken by name ascending so results are deterministic
+ *  across platforms and filesystem ordering. */
 function detect(catalog, projectDir) {
-  const ranked = Object.values(catalog).sort(
-    (a, b) => (b.manifest.detect?.priority ?? 0) - (a.manifest.detect?.priority ?? 0),
-  );
+  const ranked = Object.values(catalog).sort((a, b) => {
+    const byPriority = (b.manifest.detect?.priority ?? 0) - (a.manifest.detect?.priority ?? 0);
+    if (byPriority !== 0) return byPriority;
+    return a.manifest.name.localeCompare(b.manifest.name);
+  });
 
   let files = [];
   try {
