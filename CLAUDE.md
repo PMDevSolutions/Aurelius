@@ -122,6 +122,12 @@ node scripts/validate-pipeline-config.js --config <path> --schema <path>
 # Export generated components as a publishable design-system workspace
 ./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
 
+# Author / validate / install / test custom agents as versioned plugins
+node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
+node scripts/validate-agent-plugin.js --dir <plugin-dir>   # or --all [--plugins-root <dir>]
+node scripts/agent-registry.js (list | resolve <name> | install <name> | uninstall <name>)
+node scripts/test-agent-plugin.js --dir <plugin-dir>       # or --all [--plugins-root <dir>]
+
 # Incremental build with caching and profiling
 ./scripts/incremental-build.sh [phase|all] [--force] [--parallel]
 
@@ -551,6 +557,14 @@ gh issue create               # Create issue
 ./scripts/verify-all.sh --ci            # CI mode: JSON output, exit 1 on any failure
 ```
 
+**Agent Plugins** (custom agents as versioned plugins — see `docs/guides/agent-plugins.md`):
+```bash
+node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
+node scripts/validate-agent-plugin.js --dir <plugin-dir>   # or --all
+node scripts/agent-registry.js (list | resolve <name> | install <name> | uninstall <name>)
+node scripts/test-agent-plugin.js --dir <plugin-dir>       # or --all
+```
+
 **Build Performance & Caching:**
 ```bash
 ./scripts/incremental-build.sh          # Incremental build with caching
@@ -565,7 +579,7 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 
 ---
 
-**Last Updated:** 2026-05-23
-**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 33 scripts, 8 hooks
+**Last Updated:** 2026-05-28
+**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 38 scripts, 8 hooks
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

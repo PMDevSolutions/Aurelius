@@ -108,8 +108,8 @@ describe("all checks pass", () => {
     const json = JSON.parse(r.stdout);
     expect(json.ok).toBe(true);
     expect(json.summary.fail).toBe(0);
-    expect(json.summary.total).toBe(8);
-    expect(json.checks).toHaveLength(8);
+    expect(json.summary.total).toBe(9);
+    expect(json.checks).toHaveLength(9);
     for (const check of json.checks) {
       expect(["pass", "skip"]).toContain(check.status);
     }
@@ -153,9 +153,9 @@ describe("--skip and --include", () => {
     const json = JSON.parse(r.stdout);
     const passed = json.checks.filter((c) => c.status === "pass").map((c) => c.name);
     expect(passed.sort()).toEqual(["tokens", "types"]);
-    // The other six should all be skipped.
+    // The other seven should all be skipped.
     expect(json.summary.pass).toBe(2);
-    expect(json.summary.skip).toBe(6);
+    expect(json.summary.skip).toBe(7);
   });
 
   it("failure inside --include still triggers exit 1", () => {
@@ -184,6 +184,29 @@ describe("bundle-size conditional", () => {
     const json = JSON.parse(r.stdout);
     const bundle = json.checks.find((c) => c.name === "bundle-size");
     expect(bundle.status).toBe("pass");
+  });
+});
+
+describe("agent-plugins conditional", () => {
+  it("skips agent-plugins when no plugins exist", () => {
+    const r = run(tmpProject({ hasBuild: true }), ["--ci"]);
+    const json = JSON.parse(r.stdout);
+    const ap = json.checks.find((c) => c.name === "agent-plugins");
+    expect(ap.status).toBe("skip");
+    expect(ap.reason).toContain("no plugins");
+  });
+
+  it("runs agent-plugins when a plugin exists", () => {
+    const dir = tmpProject({ hasBuild: true });
+    mkdirSync(join(dir, ".claude", "agent-plugins", "p"), { recursive: true });
+    writeFileSync(join(dir, ".claude", "agent-plugins", "p", "plugin.json"), "{}");
+    const wrapper = join(dir, "scripts", "verify-agent-plugins.sh");
+    writeFileSync(wrapper, "#!/usr/bin/env bash\necho ran\nexit 0\n");
+    chmodSync(wrapper, 0o755);
+    const r = run(dir, ["--ci"]);
+    const json = JSON.parse(r.stdout);
+    const ap = json.checks.find((c) => c.name === "agent-plugins");
+    expect(ap.status).toBe("pass");
   });
 });
 

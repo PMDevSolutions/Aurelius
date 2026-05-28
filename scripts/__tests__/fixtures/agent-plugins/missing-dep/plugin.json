@@ -1,0 +1,6 @@
+{
+  "name": "missing-dep",
+  "version": "1.0.0",
+  "description": "Depends on a plugin that does not exist",
+  "dependencies": { "agents": { "ghost": "^1.0.0" } }
+}

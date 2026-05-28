@@ -1,0 +1,6 @@
+{
+  "name": "depends-on-base",
+  "version": "1.0.0",
+  "description": "Depends on valid-base",
+  "dependencies": { "agents": { "valid-base": "^1.0.0" } }
+}

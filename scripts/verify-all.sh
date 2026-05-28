@@ -15,7 +15,7 @@
 #
 # Check names:
 #   lint-and-format, types, tests, accessibility, tokens, dead-code, security,
-#   bundle-size
+#   bundle-size, agent-plugins
 #
 # Exit codes:
 #   0 — every check passed (or was skipped intentionally)
@@ -58,6 +58,7 @@ done
 
 # Each check: name | script path | extra args (space-separated)
 # `bundle-size` is conditional — it runs only when a build artifact exists.
+# `agent-plugins` is conditional — it runs only when .claude/agent-plugins/ has plugins.
 ALL_CHECKS=(
   "lint-and-format|./scripts/lint-and-format.sh|--check"
   "types|./scripts/check-types.sh|"
@@ -67,6 +68,7 @@ ALL_CHECKS=(
   "dead-code|./scripts/check-dead-code.sh|"
   "security|./scripts/check-security.sh|"
   "bundle-size|./scripts/check-bundle-size.sh|"
+  "agent-plugins|./scripts/verify-agent-plugins.sh|"
 )
 
 if [[ "$LIST_ONLY" == "true" ]]; then
@@ -122,6 +124,16 @@ run_check() {
     RESULTS_MS+=("0")
     RESULTS_REASON+=("no build artifact (dist/.next/build/out)")
     emit_progress "▸ $name … skipped (no build artifact)"
+    return 0
+  fi
+
+  if [[ "$name" == "agent-plugins" ]] && ! common_agent_plugins_exist; then
+    RESULTS_NAME+=("$name")
+    RESULTS_STATUS+=("skip")
+    RESULTS_EXIT+=("0")
+    RESULTS_MS+=("0")
+    RESULTS_REASON+=("no plugins under .claude/agent-plugins")
+    emit_progress "▸ $name … skipped (no plugins)"
     return 0
   fi
 
