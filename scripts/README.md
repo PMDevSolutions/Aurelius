@@ -144,6 +144,28 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Usage**: `./scripts/setup-project.sh my-app --next` or `--vite`
 - **What it does**: Copies template configs, installs dependencies, sets up testing
 
+## Agent Plugin System
+
+Tooling to author, validate, install, and test custom Claude Code agents as
+versioned plugins. Full guide: [`docs/guides/agent-plugins.md`](../docs/guides/agent-plugins.md).
+All four CLIs share `agent-plugin-lib.js` and use `--json` + exit codes `0/1/2`.
+
+### Create Agent Plugin (`create-agent-plugin.js`)
+- **Purpose**: Scaffold a new plugin (manifest, agent.md skeleton, default tests, optional hook stubs)
+- **Usage**: `node scripts/create-agent-plugin.js <name> [--description "..."] [--model opus|sonnet|haiku] [--tools "Read,Write"] [--with-hooks] [--force] [--json]`
+
+### Validate Agent Plugin (`validate-agent-plugin.js`)
+- **Purpose**: Validate a manifest against the JSON Schema + structural checks (name consistency, agent file, hooks/skills/tools existence, dependency resolution)
+- **Usage**: `node scripts/validate-agent-plugin.js --dir <plugin-dir> [--json]` or `--all [--plugins-root <dir>]`
+
+### Agent Registry (`agent-registry.js`)
+- **Purpose**: List / resolve / install / uninstall plugins with transitive dependency resolution and management-lifecycle hooks
+- **Usage**: `node scripts/agent-registry.js (list | resolve <name> | install <name> | uninstall <name> [--force]) [--json]`
+
+### Test Agent Plugin (`test-agent-plugin.js`)
+- **Purpose**: Run a plugin's static, deterministic assertions (no Claude invocation); unknown assertions fail loudly
+- **Usage**: `node scripts/test-agent-plugin.js --dir <plugin-dir> [--json]` or `--all [--plugins-root <dir>]`
+
 ## Agent-Specific Scripts
 
 Each agent has supporting scripts in `scripts/<agent-name>/`:
