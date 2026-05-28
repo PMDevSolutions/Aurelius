@@ -263,13 +263,20 @@ After user confirmation, write `src/styles/design-tokens.lock.json` in the same 
 }
 ```
 
-### Step 6: Generate Tailwind Config and CSS Properties
+### Step 6: Generate Framework Config and CSS Properties
 
-Identical to `design-token-lock` Steps 4-5:
+The token-extraction above is framework-agnostic; only the config target changes. Resolve the build-spec's `renderer` manifest to pick the target:
 
-1. Generate or update `tailwind.config.ts` from the lockfile
-2. Generate `src/styles/tokens.css` with CSS custom properties
-3. All values reference `var(--color-*)` — no raw hex in config
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+Use `manifest.language` to choose the styling approach and `manifest.template` to locate where the framework's config lives and what shape it takes:
+
+- **`react` / `vue` / `svelte`** — Tailwind CSS-variable approach. Generate or update the Tailwind config (e.g. `tailwind.config.ts`, alongside `manifest.template`) plus `src/styles/tokens.css`. All values reference `var(--color-*)` — no raw hex in config. (Astro reuses this React/Tailwind path: its language is `react`.)
+- **`react-native`** — NativeWind. Generate the NativeWind/Tailwind config and a StyleSheet token module for the Expo template (`manifest.template`) instead of a web `tokens.css`.
+
+Steps otherwise mirror `design-token-lock` Steps 4-5.
 
 ### Step 7: Validate Lockfile
 
@@ -287,8 +294,8 @@ Report any gaps to the user before proceeding.
 | File | Purpose |
 |------|---------|
 | `src/styles/design-tokens.lock.json` | Versioned lockfile — identical format to Figma path |
-| `tailwind.config.ts` | Tailwind theme extended from lockfile |
-| `src/styles/tokens.css` | CSS custom properties from lockfile |
+| Framework config (`tailwind.config.ts` for react/vue/svelte/astro; NativeWind config for react-native) | Theme extended from lockfile, target chosen from `manifest.language` |
+| `src/styles/tokens.css` (web) / StyleSheet token module (react-native) | CSS custom properties from lockfile, or RN token module |
 
 ## Accuracy Expectations
 
