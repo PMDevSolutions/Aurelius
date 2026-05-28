@@ -41,12 +41,24 @@ describe("parseFrontmatter", () => {
     expect(hasFrontmatter).toBe(false);
     expect(frontmatter).toEqual({});
   });
+
+  it("collects YAML block-list values into a comma-joined string", () => {
+    const md = "---\nname: foo\ntools:\n  - Read\n  - Write\n---\nbody";
+    const { frontmatter } = parseFrontmatter(md);
+    expect(frontmatter.name).toBe("foo");
+    expect(frontmatter.tools).toBe("Read, Write");
+  });
 });
 
 describe("countExamples", () => {
   it("counts <example> blocks", () => {
     expect(countExamples("a <example>x</example> b <example>y</example>")).toBe(2);
     expect(countExamples("none")).toBe(0);
+  });
+
+  it("treats null/undefined as zero", () => {
+    expect(countExamples(null)).toBe(0);
+    expect(countExamples(undefined)).toBe(0);
   });
 });
 

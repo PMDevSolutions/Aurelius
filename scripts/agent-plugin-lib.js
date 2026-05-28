@@ -8,21 +8,38 @@ import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import semver from "semver";
 
-/** Parse simple single-line `key: value` YAML frontmatter from a Markdown string. */
+/**
+ * Parse single-line `key: value` YAML frontmatter from a Markdown string.
+ * Also supports YAML block-list values (a key with an empty inline value
+ * followed by indented `- item` lines); list items are joined with ", " to
+ * match the inline `tools: A, B` convention used across this repo's agents.
+ * Multi-line scalar/nested-map values beyond this are not supported.
+ */
 export function parseFrontmatter(content) {
   const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!m) return { frontmatter: {}, body: content, hasFrontmatter: false };
   const frontmatter = {};
+  const listAccum = {};
+  let currentKey = null;
   for (const line of m[1].split(/\r?\n/)) {
     const km = line.match(/^([A-Za-z][\w-]*):\s*(.*)$/);
-    if (km) frontmatter[km[1]] = km[2].trim();
+    if (km) {
+      currentKey = km[1];
+      frontmatter[currentKey] = km[2].trim();
+      continue;
+    }
+    const item = line.match(/^\s*-\s+(.*)$/);
+    if (item && currentKey && (frontmatter[currentKey] === "" || currentKey in listAccum)) {
+      (listAccum[currentKey] ??= []).push(item[1].trim());
+      frontmatter[currentKey] = listAccum[currentKey].join(", ");
+    }
   }
   return { frontmatter, body: m[2], hasFrontmatter: true };
 }
 
-/** Count `<example>` blocks in an agent description. */
+/** Count `<example>` blocks in an agent description. Null/undefined → 0. */
 export function countExamples(description = "") {
-  return (description.match(/<example>/g) || []).length;
+  return (String(description ?? "").match(/<example>/g) || []).length;
 }
 
 /** Read and parse a plugin's plugin.json. Throws if absent. */
