@@ -14,6 +14,8 @@
  *   node scripts/agent-registry.js uninstall <name> [--force] [--json]
  *   (--root <dir> overrides repo root; used by tests)
  *
+ * Hooks run via `bash`; ensure bash is on PATH (Git Bash/WSL on Windows).
+ *
  * Exit codes: 0 ok · 1 resolution/operation failure · 2 usage/IO error
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, rmSync } from "fs";
@@ -70,7 +72,16 @@ const paths = (root) => ({
 });
 
 function loadInstalled(p) {
-  return existsSync(p.installedFile) ? JSON.parse(readFileSync(p.installedFile, "utf-8")) : {};
+  if (!existsSync(p.installedFile)) return {};
+  try {
+    return JSON.parse(readFileSync(p.installedFile, "utf-8"));
+  } catch (e) {
+    const err = new Error(`Failed to parse installed.json (${p.installedFile}): ${e.message}`, {
+      cause: e,
+    });
+    err.code = "IO";
+    throw err;
+  }
 }
 function saveInstalled(p, state) {
   mkdirSync(dirname(p.installedFile), { recursive: true });
@@ -97,8 +108,10 @@ function runHook(catalog, name, hook, fail) {
     });
     return { ran: true, ok: true };
   } catch (e) {
-    if (fail) throw new Error(`${hook} hook failed for "${name}": ${e.message}`, { cause: e });
-    console.warn(`⚠ ${hook} hook for "${name}" failed (continuing): ${e.message}`);
+    const detail =
+      e.code === "ENOENT" ? "bash not found on PATH (required to run hooks)" : e.message;
+    if (fail) throw new Error(`${hook} hook failed for "${name}": ${detail}`, { cause: e });
+    console.warn(`⚠ ${hook} hook for "${name}" failed (continuing): ${detail}`);
     return { ran: true, ok: false };
   }
 }
@@ -115,113 +128,121 @@ function main() {
     process.exit(2);
   }
   const p = paths(args.root);
-  const catalog = buildCatalog(p.pluginsRoot);
 
-  if (args.cmd === "list") {
-    const installed = loadInstalled(p);
-    const plugins = Object.values(catalog).map((c) => ({
-      name: c.manifest.name,
-      version: c.version,
-      installed: Boolean(installed[c.manifest.name]),
-    }));
-    emit(args.json, { plugins }, () => {
-      if (!plugins.length) console.log("No plugins found.");
-      for (const pl of plugins) console.log(`${pl.installed ? "●" : "○"} ${pl.name}@${pl.version}`);
-    });
-    process.exit(0);
-  }
+  try {
+    const catalog = buildCatalog(p.pluginsRoot);
 
-  if (!args.name) {
-    console.error("This command requires a plugin name.");
-    process.exit(2);
-  }
-  if (!catalog[args.name]) {
-    emit(args.json, { ok: false, error: `Unknown plugin "${args.name}"` }, () =>
-      console.error(`✗ Unknown plugin "${args.name}"`),
-    );
-    process.exit(2);
-  }
-
-  if (args.cmd === "resolve" || args.cmd === "install") {
-    const { order, errors } = resolveDependencies(catalog, args.name);
-    if (errors.length) {
-      emit(args.json, { ok: false, order, errors }, () => {
-        console.error(`✗ Cannot resolve "${args.name}":`);
-        for (const e of errors) console.error(`    [${e.code}] ${e.message}`);
+    if (args.cmd === "list") {
+      const installed = loadInstalled(p);
+      const plugins = Object.values(catalog).map((c) => ({
+        name: c.manifest.name,
+        version: c.version,
+        installed: Boolean(installed[c.manifest.name]),
+      }));
+      emit(args.json, { plugins }, () => {
+        if (!plugins.length) console.log("No plugins found.");
+        for (const pl of plugins)
+          console.log(`${pl.installed ? "●" : "○"} ${pl.name}@${pl.version}`);
       });
-      process.exit(1);
-    }
-    if (args.cmd === "resolve") {
-      emit(args.json, { ok: true, order }, () =>
-        console.log(`Install order: ${order.join(" -> ")}`),
-      );
       process.exit(0);
     }
 
-    // install
-    const installed = loadInstalled(p);
-    mkdirSync(p.agentsDir, { recursive: true });
-    const actions = [];
-    for (const name of order) {
-      const entry = catalog[name];
-      const agentSrc = join(entry.dir, entry.manifest.agent || "agent.md");
-      const dest = join(p.agentsDir, `${name}.md`);
-      if (installed[name]?.version === entry.version && existsSync(dest)) {
-        actions.push({ name, skipped: true });
-        continue;
-      }
-      runHook(catalog, name, "preInstall", true);
-      copyFileSync(agentSrc, dest);
-      runHook(catalog, name, "postInstall", false);
-      installed[name] = {
-        version: entry.version,
-        sourceHash: sourceHash(agentSrc),
-        installedAt: new Date().toISOString(),
-      };
-      actions.push({ name, installed: true });
+    if (!args.name) {
+      console.error("This command requires a plugin name.");
+      process.exit(2);
     }
-    saveInstalled(p, installed);
-    emit(args.json, { ok: true, order, actions }, () => {
-      for (const a of actions)
-        console.log(a.skipped ? `= ${a.name} (already installed)` : `+ ${a.name}`);
-    });
-    process.exit(0);
-  }
-
-  if (args.cmd === "uninstall") {
-    const installed = loadInstalled(p);
-    if (!installed[args.name]) {
-      emit(args.json, { ok: false, error: `"${args.name}" is not installed` }, () =>
-        console.error(`✗ "${args.name}" is not installed`),
+    if (!catalog[args.name]) {
+      emit(args.json, { ok: false, error: `Unknown plugin "${args.name}"` }, () =>
+        console.error(`✗ Unknown plugin "${args.name}"`),
       );
-      process.exit(1);
+      process.exit(2);
     }
-    // Block if an installed plugin depends on this one.
-    const dependents = Object.keys(installed).filter(
-      (n) =>
-        n !== args.name && catalog[n] && Object.keys(catalog[n].deps || {}).includes(args.name),
-    );
-    if (dependents.length && !args.force) {
-      emit(args.json, { ok: false, error: "has dependents", dependents }, () => {
-        console.error(
-          `✗ "${args.name}" is required by: ${dependents.join(", ")}. Use --force to override.`,
-        );
-      });
-      process.exit(1);
-    }
-    runHook(catalog, args.name, "preUninstall", true);
-    const dest = join(p.agentsDir, `${args.name}.md`);
-    if (existsSync(dest)) rmSync(dest);
-    runHook(catalog, args.name, "postUninstall", false);
-    delete installed[args.name];
-    saveInstalled(p, installed);
-    emit(args.json, { ok: true, removed: args.name }, () => console.log(`- ${args.name}`));
-    process.exit(0);
-  }
 
-  console.error(`Unknown command: ${args.cmd}`);
-  printHelp();
-  process.exit(2);
+    if (args.cmd === "resolve" || args.cmd === "install") {
+      const { order, errors } = resolveDependencies(catalog, args.name);
+      if (errors.length) {
+        emit(args.json, { ok: false, order, errors }, () => {
+          console.error(`✗ Cannot resolve "${args.name}":`);
+          for (const e of errors) console.error(`    [${e.code}] ${e.message}`);
+        });
+        process.exit(1);
+      }
+      if (args.cmd === "resolve") {
+        emit(args.json, { ok: true, order }, () =>
+          console.log(`Install order: ${order.join(" -> ")}`),
+        );
+        process.exit(0);
+      }
+
+      // install
+      const installed = loadInstalled(p);
+      mkdirSync(p.agentsDir, { recursive: true });
+      const actions = [];
+      for (const name of order) {
+        const entry = catalog[name];
+        const agentSrc = join(entry.dir, entry.manifest.agent || "agent.md");
+        const dest = join(p.agentsDir, `${name}.md`);
+        if (installed[name]?.version === entry.version && existsSync(dest)) {
+          actions.push({ name, skipped: true });
+          continue;
+        }
+        runHook(catalog, name, "preInstall", true); // may throw; prior plugins are already persisted
+        copyFileSync(agentSrc, dest);
+        runHook(catalog, name, "postInstall", false);
+        installed[name] = {
+          version: entry.version,
+          sourceHash: sourceHash(agentSrc),
+          installedAt: new Date().toISOString(),
+        };
+        saveInstalled(p, installed); // persist incrementally so disk and record can't desync on abort
+        actions.push({ name, installed: true });
+      }
+      emit(args.json, { ok: true, order, actions }, () => {
+        for (const a of actions)
+          console.log(a.skipped ? `= ${a.name} (already installed)` : `+ ${a.name}`);
+      });
+      process.exit(0);
+    }
+
+    if (args.cmd === "uninstall") {
+      const installed = loadInstalled(p);
+      if (!installed[args.name]) {
+        emit(args.json, { ok: false, error: `"${args.name}" is not installed` }, () =>
+          console.error(`✗ "${args.name}" is not installed`),
+        );
+        process.exit(1);
+      }
+      const dependents = Object.keys(installed).filter(
+        (n) =>
+          n !== args.name && catalog[n] && Object.keys(catalog[n].deps || {}).includes(args.name),
+      );
+      if (dependents.length && !args.force) {
+        emit(args.json, { ok: false, error: "has dependents", dependents }, () => {
+          console.error(
+            `✗ "${args.name}" is required by: ${dependents.join(", ")}. Use --force to override.`,
+          );
+        });
+        process.exit(1);
+      }
+      runHook(catalog, args.name, "preUninstall", true);
+      const dest = join(p.agentsDir, `${args.name}.md`);
+      if (existsSync(dest)) rmSync(dest);
+      runHook(catalog, args.name, "postUninstall", false);
+      delete installed[args.name];
+      saveInstalled(p, installed);
+      emit(args.json, { ok: true, removed: args.name }, () => console.log(`- ${args.name}`));
+      process.exit(0);
+    }
+
+    console.error(`Unknown command: ${args.cmd}`);
+    printHelp();
+    process.exit(2);
+  } catch (e) {
+    const code = e.code === "IO" ? 2 : 1;
+    if (args.json) console.log(JSON.stringify({ ok: false, error: e.message }));
+    else console.error(`✗ ${e.message}`);
+    process.exit(code);
+  }
 }
 
 main();
