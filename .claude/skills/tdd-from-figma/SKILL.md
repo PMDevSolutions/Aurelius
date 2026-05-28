@@ -435,11 +435,24 @@ describe("Service Worker", () => {
 4. ALWAYS: Generate standard component tests (existing behavior)
 ```
 
-## Output-Target-Aware Test Generation
+## Renderer-Aware Test Generation
 
-Read `build-spec.json` field `outputTarget` to determine test library and component patterns. Default is `"react"` (existing behavior above).
+Resolve the build-spec's `renderer` manifest to determine the test runner and library:
 
-### Vue 3 Tests (outputTarget: "vue")
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+Read `manifest.test`:
+
+- `runner` — `vitest` or `jest`
+- `library` — e.g. `@testing-library/react`, `@vue/test-utils`, `@testing-library/svelte`, `@testing-library/react-native`
+- `setup` (optional) — test setup file to wire up
+- `containerApi` (optional) — when `true`, the framework supports server/static container rendering (used by Astro static `.astro` components; render via the framework's Container API rather than a DOM testing library)
+
+The component patterns below are grouped by `manifest.language`. Default is React (`@testing-library/react` + Vitest, the existing behavior above).
+
+### Vue 3 Tests (language: "vue", library: @vue/test-utils)
 
 Use `@vue/test-utils` + Vitest:
 
@@ -533,7 +546,7 @@ it("renders named slots", () => {
 });
 ```
 
-### Svelte Tests (outputTarget: "svelte")
+### Svelte Tests (language: "svelte", library: @testing-library/svelte)
 
 Use `@testing-library/svelte` + Vitest:
 
@@ -602,9 +615,9 @@ it("navigation has correct landmark", () => {
 });
 ```
 
-### React Native Tests (outputTarget: "react-native")
+### React Native Tests (language: "react-native", runner: jest, library: @testing-library/react-native)
 
-Use `@testing-library/react-native` + Jest (Expo default):
+Use `@testing-library/react-native` + Jest (Expo default — `manifest.test.runner` is `jest`):
 
 #### Rendering Tests
 ```typescript
@@ -680,17 +693,33 @@ it("renders primary variant styling", () => {
 ### Conditional Test Generation Logic (Updated)
 
 ```
-1. Read build-spec.json → outputTarget, appType
-2. Select test library based on outputTarget:
-   - "react" → @testing-library/react + vitest (existing)
-   - "vue" → @vue/test-utils + vitest
-   - "svelte" → @testing-library/svelte + vitest
-   - "react-native" → @testing-library/react-native + jest
-3. Generate component tests using the appropriate library patterns
-4. THEN apply app-type-specific tests (existing chrome-extension/pwa logic)
+1. Read build-spec.json → renderer, appType
+2. Resolve the renderer manifest: renderer-registry.js resolve <renderer> --json
+3. Select the test runner + library directly from manifest.test:
+   - runner:   manifest.test.runner   (vitest | jest)
+   - library:  manifest.test.library  (@testing-library/react | @vue/test-utils |
+               @testing-library/svelte | @testing-library/react-native | ...)
+   - setup:    manifest.test.setup    (wire up if present)
+   - containerApi: manifest.test.containerApi (static container rendering, see Astro note)
+4. Generate component tests using the patterns for manifest.language
+5. THEN apply app-type-specific tests (existing chrome-extension/pwa logic)
    - Note: chrome-extension and pwa app types only apply to web targets (react/vue/svelte)
    - react-native does not use chrome-extension or pwa test templates
 ```
+
+### Astro Test Split (forward-looking)
+
+Astro is not yet authored as a renderer; when its manifest lands, `manifest.language`
+will be `react` and `manifest.test.containerApi` will be `true`. Split tests by what is
+under test:
+
+- **Islands** (interactive React/Vue/Svelte components) → the island's framework
+  runner + library from `manifest.test` (e.g. Vitest + `@testing-library/react`).
+- **Static `.astro` components** → Vitest + the Astro Container API
+  (`manifest.test.containerApi === true`): render the component to a string/fragment
+  and assert on the output rather than using a DOM testing library.
+- **Page-level interactivity** (hydration, cross-island behavior) → Playwright E2E,
+  generated in Phase 6 (e2e-test-generator), not here.
 
 ## Output
 
