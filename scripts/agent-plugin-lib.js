@@ -82,6 +82,22 @@ export function buildCatalog(pluginsRoot) {
   return catalog;
 }
 
+/** List absolute paths of plugin directories (those containing plugin.json) under a root.
+ *  Skips unreadable entries; returns [] if the root is missing. */
+export function listPluginDirs(root) {
+  const dirs = [];
+  if (!existsSync(root)) return dirs;
+  for (const entry of readdirSync(root)) {
+    const full = join(root, entry);
+    try {
+      if (statSync(full).isDirectory() && existsSync(join(full, "plugin.json"))) dirs.push(full);
+    } catch {
+      /* skip unreadable entry */
+    }
+  }
+  return dirs;
+}
+
 /** True if `version` satisfies the semver `range`. */
 export function satisfiesRange(version, range) {
   return semver.satisfies(version, range, { includePrerelease: true });

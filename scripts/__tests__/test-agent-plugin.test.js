@@ -124,4 +124,82 @@ describe("test-agent-plugin.js", () => {
     expect(r.exitCode).toBe(0);
     expect(JSON.parse(r.stdout).ok).toBe(true);
   });
+
+  it("passes frontmatter.<field> in (...) when the value is allowed", () => {
+    const r = run([
+      "--dir",
+      join(FIX, "valid-base"),
+      "--assert",
+      "frontmatter.model in (opus,sonnet,haiku)",
+      "--json",
+    ]);
+    expect(r.exitCode).toBe(0);
+  });
+
+  it("fails frontmatter.<field> in (...) when the value is not allowed", () => {
+    const r = run([
+      "--dir",
+      join(FIX, "valid-base"),
+      "--assert",
+      "frontmatter.model in (opus,haiku)",
+      "--json",
+    ]);
+    expect(r.exitCode).toBe(1);
+  });
+
+  it("passes frontmatter.<field> in (...) when the field is unset", () => {
+    const r = run([
+      "--dir",
+      join(FIX, "valid-base"),
+      "--assert",
+      "frontmatter.permissionMode in (default,plan)",
+      "--json",
+    ]);
+    expect(r.exitCode).toBe(0);
+  });
+
+  it("fails deps.resolve for a missing dependency", () => {
+    const r = run(["--dir", join(FIX, "missing-dep"), "--assert", "deps.resolve", "--json"]);
+    expect(r.exitCode).toBe(1);
+  });
+
+  it("fails hooks.executable when a declared hook is absent", () => {
+    const dir = join(tmp, "bad-hook");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "plugin.json"),
+      JSON.stringify({
+        name: "bad-hook",
+        version: "1.0.0",
+        description: "x",
+        hooks: { preInstall: "hooks/nope.sh" },
+      }),
+    );
+    writeFileSync(
+      join(dir, "agent.md"),
+      "---\nname: bad-hook\ndescription: D. <example>a</example> <example>b</example>\ntools: Read\nmodel: sonnet\n---\n\n## When to Use This Agent\n\nx\n",
+    );
+    const r = run(["--dir", dir, "--assert", "hooks.executable", "--json"]);
+    expect(r.exitCode).toBe(1);
+  });
+
+  it("forces exit 2 under --all when one plugin has an unknown assertion", () => {
+    cpSync(join(FIX, "valid-base"), join(tmp, "valid-base"), { recursive: true });
+    const weird = join(tmp, "weird");
+    mkdirSync(join(weird, "tests"), { recursive: true });
+    writeFileSync(
+      join(weird, "plugin.json"),
+      JSON.stringify({ name: "weird", version: "1.0.0", description: "x" }),
+    );
+    writeFileSync(
+      join(weird, "agent.md"),
+      "---\nname: weird\ndescription: D. <example>a</example> <example>b</example>\ntools: Read\nmodel: sonnet\n---\n\n## When to Use This Agent\n\nx\n",
+    );
+    writeFileSync(
+      join(weird, "tests", "plugin.test.json"),
+      JSON.stringify({ assert: ["bogus.assertion"] }),
+    );
+    const r = run(["--all", "--plugins-root", tmp, "--json"]);
+    expect(r.exitCode).toBe(2);
+  });
 });

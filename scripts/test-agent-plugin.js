@@ -11,7 +11,7 @@
  *
  * Exit codes: 0 all pass · 1 a failure · 2 usage/IO/unknown-assertion error
  */
-import { readFileSync, existsSync, readdirSync, statSync, accessSync, constants } from "fs";
+import { readFileSync, existsSync, accessSync, constants } from "fs";
 import { join, dirname, resolve, basename } from "path";
 import { fileURLToPath } from "url";
 import { execFileSync } from "child_process";
@@ -21,6 +21,7 @@ import {
   buildCatalog,
   resolveDependencies,
   countExamples,
+  listPluginDirs,
 } from "./agent-plugin-lib.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -82,8 +83,16 @@ const PREDICATES = {
     try {
       execFileSync("node", [VALIDATOR, "--dir", ctx.dir, "--json"], { encoding: "utf-8" });
       return { pass: true };
-    } catch {
-      return { pass: false, detail: "validate-agent-plugin reported issues" };
+    } catch (e) {
+      let detail = "validate-agent-plugin reported issues";
+      try {
+        const out = JSON.parse(e.stdout || "{}");
+        const first = out.issues?.[0];
+        if (first) detail = `${out.issues.length} issue(s): ${first.path}: ${first.message}`;
+      } catch {
+        /* keep the generic detail */
+      }
+      return { pass: false, detail };
     }
   },
   "deps.resolve": (ctx) => {
@@ -180,18 +189,7 @@ function main() {
   let catalog;
   if (args.all) {
     catalog = buildCatalog(args.pluginsRoot);
-    dirs = [];
-    if (existsSync(args.pluginsRoot)) {
-      for (const d of readdirSync(args.pluginsRoot)) {
-        const full = join(args.pluginsRoot, d);
-        try {
-          if (statSync(full).isDirectory() && existsSync(join(full, "plugin.json")))
-            dirs.push(full);
-        } catch {
-          /* skip unreadable entry */
-        }
-      }
-    }
+    dirs = listPluginDirs(args.pluginsRoot);
   } else {
     if (!existsSync(join(args.dir, "plugin.json"))) {
       console.error(`✗ No plugin.json in ${args.dir}`);
@@ -218,6 +216,7 @@ function main() {
       JSON.stringify({ ok, results: reports.flatMap((r) => r.results), reports }, null, 2),
     );
   } else {
+    if (args.all && reports.length === 0) console.log(`No plugins found under ${args.pluginsRoot}`);
     for (const r of reports) {
       if (r.error) {
         console.log(`✗ ${r.name}: ${r.error}`);

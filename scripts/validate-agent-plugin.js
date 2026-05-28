@@ -15,7 +15,7 @@
  *
  * Exit codes: 0 valid · 1 invalid · 2 usage/IO error
  */
-import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
 import { join, dirname, resolve, basename } from "path";
 import { fileURLToPath } from "url";
 import {
@@ -23,6 +23,7 @@ import {
   loadManifest,
   buildCatalog,
   resolveDependencies,
+  listPluginDirs,
 } from "./agent-plugin-lib.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -184,18 +185,7 @@ async function main() {
   let catalog;
   if (args.all) {
     catalog = buildCatalog(args.pluginsRoot);
-    dirs = [];
-    if (existsSync(args.pluginsRoot)) {
-      for (const d of readdirSync(args.pluginsRoot)) {
-        const full = join(args.pluginsRoot, d);
-        try {
-          if (statSync(full).isDirectory() && existsSync(join(full, "plugin.json")))
-            dirs.push(full);
-        } catch {
-          /* skip unreadable entry */
-        }
-      }
-    }
+    dirs = listPluginDirs(args.pluginsRoot);
   } else {
     if (!existsSync(join(args.dir, "plugin.json"))) {
       const msg = `No plugin.json found in ${args.dir}`;

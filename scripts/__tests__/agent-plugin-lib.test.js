@@ -8,6 +8,7 @@ import {
   buildCatalog,
   satisfiesRange,
   resolveDependencies,
+  listPluginDirs,
 } from "../agent-plugin-lib.js";
 
 function makePlugin(root, name, version, deps = {}) {
@@ -98,6 +99,21 @@ describe("buildCatalog + satisfiesRange", () => {
   it("satisfiesRange wraps semver", () => {
     expect(satisfiesRange("1.2.0", "^1.0.0")).toBe(true);
     expect(satisfiesRange("2.0.0", "^1.0.0")).toBe(false);
+  });
+
+  it("listPluginDirs returns only directories containing plugin.json", () => {
+    const root = mkdtempSync(join(tmpdir(), "lpd-"));
+    try {
+      makePlugin(root, "p1", "1.0.0");
+      mkdirSync(join(root, "not-a-plugin"), { recursive: true });
+      writeFileSync(join(root, "loose.txt"), "x");
+      const names = listPluginDirs(root)
+        .map((d) => d.split(/[\\/]/).pop())
+        .sort();
+      expect(names).toEqual(["p1"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
