@@ -74,6 +74,28 @@ Copies shared templates plus Next.js-specific config.
 
 Copies shared templates plus Vite-specific config.
 
+## Astro Templates (`astro/`)
+
+| File | Purpose |
+|------|---------|
+| `astro.config.mjs` | Astro config with `@astrojs/react` (islands) + `@astrojs/tailwind` |
+| `package.json` | Astro + React island deps; Vitest + RTL + jsdom for tests |
+| `tsconfig.json` | Extends `astro/tsconfigs/strict`, `jsx: react-jsx` for islands |
+| `tailwind.config.mjs` | Tailwind content globs covering `.astro`, `.tsx`, `.ts`, `.md`, `.mdx` |
+| `vitest.config.ts` | `getViteConfig` wiring jsdom + Astro Container API testing |
+| `src/pages/index.astro` | Example page composing a static `.astro` + a React island |
+| `src/components/Hero.astro` | Static, zero-JS component (props via frontmatter `interface Props`) |
+| `src/components/Counter.tsx` | Interactive React island, hydrated with `client:*` |
+| `src/test/setup.ts` | Imports `@testing-library/jest-dom` |
+
+### Usage
+
+```bash
+./scripts/setup-project.sh my-app --renderer astro
+```
+
+Hybrid output: static/presentational components are zero-JS `.astro` files; interactive components are React islands (`.tsx`) hydrated via `client:load`/`client:visible`. Static components are tested with the Astro Container API (`experimental_AstroContainer` from `astro/container`); islands use Vitest + @testing-library/react.
+
 ## Vue 3 Templates (`vue/`)
 
 | File | Purpose |
