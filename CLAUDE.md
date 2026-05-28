@@ -591,6 +591,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-05-28
-**Architecture:** 54 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 38 scripts, 8 hooks
+**Architecture:** 54 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.
