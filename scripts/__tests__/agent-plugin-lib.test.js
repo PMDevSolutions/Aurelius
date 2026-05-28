@@ -1,5 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, countExamples } from "../agent-plugin-lib.js";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import {
+  parseFrontmatter,
+  countExamples,
+  buildCatalog,
+  satisfiesRange,
+} from "../agent-plugin-lib.js";
+
+function makePlugin(root, name, version, deps = {}) {
+  const dir = join(root, name);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, "plugin.json"),
+    JSON.stringify({
+      name,
+      version,
+      description: `${name} agent`,
+      dependencies: { agents: deps },
+    }),
+  );
+  return dir;
+}
 
 describe("parseFrontmatter", () => {
   it("splits frontmatter from body", () => {
@@ -23,5 +46,30 @@ describe("countExamples", () => {
   it("counts <example> blocks", () => {
     expect(countExamples("a <example>x</example> b <example>y</example>")).toBe(2);
     expect(countExamples("none")).toBe(0);
+  });
+});
+
+describe("buildCatalog + satisfiesRange", () => {
+  it("indexes plugins by name with version and deps", () => {
+    const root = mkdtempSync(join(tmpdir(), "plg-"));
+    try {
+      makePlugin(root, "alpha", "1.0.0");
+      makePlugin(root, "beta", "2.1.0", { alpha: "^1.0.0" });
+      const catalog = buildCatalog(root);
+      expect(Object.keys(catalog).sort()).toEqual(["alpha", "beta"]);
+      expect(catalog.beta.version).toBe("2.1.0");
+      expect(catalog.beta.deps).toEqual({ alpha: "^1.0.0" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("returns empty catalog for a missing root", () => {
+    expect(buildCatalog(join(tmpdir(), "does-not-exist-xyz"))).toEqual({});
+  });
+
+  it("satisfiesRange wraps semver", () => {
+    expect(satisfiesRange("1.2.0", "^1.0.0")).toBe(true);
+    expect(satisfiesRange("2.0.0", "^1.0.0")).toBe(false);
   });
 });

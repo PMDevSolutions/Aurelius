@@ -24,3 +24,34 @@ export function parseFrontmatter(content) {
 export function countExamples(description = "") {
   return (description.match(/<example>/g) || []).length;
 }
+
+/** Read and parse a plugin's plugin.json. Throws if absent. */
+export function loadManifest(pluginDir) {
+  const p = join(pluginDir, "plugin.json");
+  if (!existsSync(p)) throw new Error(`No plugin.json in ${pluginDir}`);
+  return JSON.parse(readFileSync(p, "utf-8"));
+}
+
+/** Build a catalog { name -> { version, dir, manifest, deps } } from a plugins root. */
+export function buildCatalog(pluginsRoot) {
+  const catalog = {};
+  if (!existsSync(pluginsRoot)) return catalog;
+  for (const entry of readdirSync(pluginsRoot)) {
+    const dir = join(pluginsRoot, entry);
+    if (!statSync(dir).isDirectory()) continue;
+    if (!existsSync(join(dir, "plugin.json"))) continue;
+    const manifest = loadManifest(dir);
+    catalog[manifest.name] = {
+      version: manifest.version,
+      dir,
+      manifest,
+      deps: manifest.dependencies?.agents ?? {},
+    };
+  }
+  return catalog;
+}
+
+/** True if `version` satisfies the semver `range`. */
+export function satisfiesRange(version, range) {
+  return semver.satisfies(version, range, { includePrerelease: true });
+}
