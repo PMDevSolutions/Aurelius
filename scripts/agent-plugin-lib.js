@@ -49,15 +49,29 @@ export function loadManifest(pluginDir) {
   return JSON.parse(readFileSync(p, "utf-8"));
 }
 
-/** Build a catalog { name -> { version, dir, manifest, deps } } from a plugins root. */
+/** Build a catalog { name -> { version, dir, manifest, deps } } from a plugins root.
+ *  Entries that are unreadable or have a malformed/nameless plugin.json are skipped
+ *  (the validator surfaces those separately), so one bad plugin can't abort the scan. */
 export function buildCatalog(pluginsRoot) {
   const catalog = {};
   if (!existsSync(pluginsRoot)) return catalog;
   for (const entry of readdirSync(pluginsRoot)) {
     const dir = join(pluginsRoot, entry);
-    if (!statSync(dir).isDirectory()) continue;
+    let isDir;
+    try {
+      isDir = statSync(dir).isDirectory();
+    } catch {
+      continue;
+    }
+    if (!isDir) continue;
     if (!existsSync(join(dir, "plugin.json"))) continue;
-    const manifest = loadManifest(dir);
+    let manifest;
+    try {
+      manifest = loadManifest(dir);
+    } catch {
+      continue;
+    }
+    if (!manifest || typeof manifest.name !== "string") continue;
     catalog[manifest.name] = {
       version: manifest.version,
       dir,

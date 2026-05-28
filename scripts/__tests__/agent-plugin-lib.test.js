@@ -81,6 +81,20 @@ describe("buildCatalog + satisfiesRange", () => {
     expect(buildCatalog(join(tmpdir(), "does-not-exist-xyz"))).toEqual({});
   });
 
+  it("skips a plugin with malformed plugin.json without throwing", () => {
+    const root = mkdtempSync(join(tmpdir(), "plg-bad-"));
+    try {
+      makePlugin(root, "good", "1.0.0");
+      const badDir = join(root, "bad");
+      mkdirSync(badDir, { recursive: true });
+      writeFileSync(join(badDir, "plugin.json"), "{ not valid json");
+      const catalog = buildCatalog(root);
+      expect(Object.keys(catalog)).toEqual(["good"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("satisfiesRange wraps semver", () => {
     expect(satisfiesRange("1.2.0", "^1.0.0")).toBe(true);
     expect(satisfiesRange("2.0.0", "^1.0.0")).toBe(false);

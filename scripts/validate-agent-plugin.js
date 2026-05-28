@@ -4,18 +4,19 @@
  * JSON Schema) plus structural checks the schema cannot express:
  *   - manifest.name matches directory name AND agent.md frontmatter name
  *   - declared hook scripts exist
- *   - the agent file exists
+ *   - the agent file exists and is a file
  *   - skill deps exist under .claude/skills/, tool deps exist as repo files
  *   - agent.md frontmatter has name/description/tools; model/permissionMode valid
+ *   - agent dependencies resolve against the catalog (siblings, in --dir mode)
  *
  * Usage:
  *   node scripts/validate-agent-plugin.js --dir <plugin-dir> [--json]
- *   node scripts/validate-agent-plugin.js --all [--json]
+ *   node scripts/validate-agent-plugin.js --all [--plugins-root <dir>] [--json]
  *
  * Exit codes: 0 valid · 1 invalid · 2 usage/IO error
  */
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
-import { dirname, resolve, basename, join } from "path";
+import { join, dirname, resolve, basename } from "path";
 import { fileURLToPath } from "url";
 import {
   parseFrontmatter,
@@ -26,18 +27,19 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
-const PLUGINS_ROOT = join(repoRoot, ".claude", "agent-plugins");
+const DEFAULT_PLUGINS_ROOT = join(repoRoot, ".claude", "agent-plugins");
 const SCHEMA = join(repoRoot, ".claude", "agent-plugin.schema.json");
 const SKILLS_ROOT = join(repoRoot, ".claude", "skills");
 const VALID_MODELS = ["opus", "sonnet", "haiku"];
 const VALID_PERM = ["default", "acceptEdits", "bypassPermissions", "plan"];
 
 function parseArgs(argv) {
-  const out = { dir: null, all: false, json: false };
+  const out = { dir: null, all: false, json: false, pluginsRoot: DEFAULT_PLUGINS_ROOT };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--dir") out.dir = resolve(argv[++i]);
     else if (a === "--all") out.all = true;
+    else if (a === "--plugins-root") out.pluginsRoot = resolve(argv[++i]);
     else if (a === "--json") out.json = true;
     else if (a === "-h" || a === "--help") {
       printHelp();
@@ -48,17 +50,22 @@ function parseArgs(argv) {
       process.exit(2);
     }
   }
+  if (out.dir && out.all) {
+    console.error("Use either --dir or --all, not both.");
+    process.exit(2);
+  }
   return out;
 }
 
 function printHelp() {
-  console.log(`Usage: node scripts/validate-agent-plugin.js (--dir <plugin-dir> | --all) [--json]
+  console.log(`Usage: node scripts/validate-agent-plugin.js (--dir <plugin-dir> | --all) [options]
 
 Options:
-  --dir <path>   Validate a single plugin directory
-  --all          Validate every plugin under .claude/agent-plugins/
-  --json         Machine-readable output
-  -h, --help     Show this message`);
+  --dir <path>           Validate a single plugin directory
+  --all                  Validate every plugin under the plugins root
+  --plugins-root <dir>   Plugins root for --all (default: .claude/agent-plugins)
+  --json                 Machine-readable output
+  -h, --help             Show this message`);
 }
 
 async function compileSchema() {
@@ -67,17 +74,24 @@ async function compileSchema() {
   return new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 }
 
+/** Flatten an ajv error to { path, message } with the offending key surfaced. */
+function formatSchemaError(err) {
+  const path = err.instancePath || "(root)";
+  let message = err.message ?? "validation failed";
+  if (err.params?.additionalProperty) message += `: "${err.params.additionalProperty}"`;
+  if (err.params?.missingProperty) message += `: "${err.params.missingProperty}"`;
+  if (err.params?.allowedValues) message += ` (allowed: ${err.params.allowedValues.join(", ")})`;
+  return { path, message };
+}
+
 function validatePlugin(dir, validate, catalog) {
   const issues = [];
-  const manifest = loadManifest(dir); // may throw -> caller treats as IO error
+  const manifest = loadManifest(dir); // may throw -> caller reports it as an (io) issue
 
   if (!validate(manifest)) {
-    for (const e of validate.errors ?? []) {
-      issues.push({ path: e.instancePath || "(root)", message: e.message });
-    }
+    for (const e of validate.errors ?? []) issues.push(formatSchemaError(e));
   }
 
-  // name: dir vs manifest vs frontmatter
   const dirName = basename(dir);
   if (manifest.name && manifest.name !== dirName) {
     issues.push({
@@ -87,10 +101,16 @@ function validatePlugin(dir, validate, catalog) {
   }
 
   const agentFile = join(dir, manifest.agent || "agent.md");
-  if (!existsSync(agentFile)) {
+  let agentStat = null;
+  try {
+    agentStat = statSync(agentFile);
+  } catch {
+    /* missing */
+  }
+  if (!agentStat || !agentStat.isFile()) {
     issues.push({
       path: "agent",
-      message: `agent file not found: ${manifest.agent || "agent.md"}`,
+      message: `agent file not found or not a file: ${manifest.agent || "agent.md"}`,
     });
   } else {
     const { frontmatter, hasFrontmatter } = parseFrontmatter(readFileSync(agentFile, "utf-8"));
@@ -122,24 +142,20 @@ function validatePlugin(dir, validate, catalog) {
     }
   }
 
-  // hooks exist
   for (const [hook, rel] of Object.entries(manifest.hooks ?? {})) {
     if (!existsSync(join(dir, rel)))
       issues.push({ path: `hooks.${hook}`, message: `hook script not found: ${rel}` });
   }
 
-  // skills exist
   for (const skill of manifest.dependencies?.skills ?? []) {
     if (!existsSync(join(SKILLS_ROOT, skill)))
       issues.push({ path: "dependencies.skills", message: `skill not found: ${skill}` });
   }
-  // tools exist (repo-relative)
   for (const tool of manifest.dependencies?.tools ?? []) {
     if (!existsSync(join(repoRoot, tool)))
       issues.push({ path: "dependencies.tools", message: `tool not found: ${tool}` });
   }
 
-  // agent deps resolve (against the catalog)
   if (catalog[manifest.name]) {
     const { errors } = resolveDependencies(catalog, manifest.name);
     for (const e of errors) issues.push({ path: "dependencies.agents", message: e.message });
@@ -155,10 +171,9 @@ async function main() {
     process.exit(2);
   }
 
-  let validate, catalog;
+  let validate;
   try {
     validate = await compileSchema();
-    catalog = buildCatalog(PLUGINS_ROOT);
   } catch (e) {
     if (args.json) console.log(JSON.stringify({ ok: false, error: e.message }));
     else console.error(`✗ ${e.message}`);
@@ -166,12 +181,21 @@ async function main() {
   }
 
   let dirs;
+  let catalog;
   if (args.all) {
-    dirs = existsSync(PLUGINS_ROOT)
-      ? readdirSync(PLUGINS_ROOT)
-          .map((d) => join(PLUGINS_ROOT, d))
-          .filter((d) => statSync(d).isDirectory() && existsSync(join(d, "plugin.json")))
-      : [];
+    catalog = buildCatalog(args.pluginsRoot);
+    dirs = [];
+    if (existsSync(args.pluginsRoot)) {
+      for (const d of readdirSync(args.pluginsRoot)) {
+        const full = join(args.pluginsRoot, d);
+        try {
+          if (statSync(full).isDirectory() && existsSync(join(full, "plugin.json")))
+            dirs.push(full);
+        } catch {
+          /* skip unreadable entry */
+        }
+      }
+    }
   } else {
     if (!existsSync(join(args.dir, "plugin.json"))) {
       const msg = `No plugin.json found in ${args.dir}`;
@@ -180,14 +204,8 @@ async function main() {
       process.exit(2);
     }
     dirs = [args.dir];
-    // Include the standalone dir in the catalog so its deps resolve.
-    const m = loadManifest(args.dir);
-    catalog[m.name] = {
-      version: m.version,
-      dir: args.dir,
-      manifest: m,
-      deps: m.dependencies?.agents ?? {},
-    };
+    // Seed the catalog from sibling plugins so the target's agent deps resolve.
+    catalog = buildCatalog(dirname(args.dir));
   }
 
   const results = [];
@@ -206,8 +224,15 @@ async function main() {
 
   const ok = results.every((r) => r.ok);
   if (args.json) {
-    console.log(JSON.stringify({ ok, results, issues: results.flatMap((r) => r.issues) }, null, 2));
+    console.log(
+      JSON.stringify(
+        { ok, count: results.length, results, issues: results.flatMap((r) => r.issues) },
+        null,
+        2,
+      ),
+    );
   } else {
+    if (args.all && results.length === 0) console.log(`No plugins found under ${args.pluginsRoot}`);
     for (const r of results) {
       if (r.ok) console.log(`✓ ${r.name}`);
       else {
