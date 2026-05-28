@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -9,6 +9,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "renderer-registry.js");
 const RENDERERS_ROOT = join(__dirname, "fixtures", "renderers");
 const PROJ = (name) => join(__dirname, "fixtures", "projects", name);
+const REPO_ROOT = join(__dirname, "..", "..");
+const FIXTURE = join(REPO_ROOT, ".claude", "test-fixtures", "astro-hybrid.build-spec.json");
+
+/** Run against the real (shipped) renderers root, not the test fixtures root. */
+function runReal(args) {
+  try {
+    const stdout = execFileSync("node", [SCRIPT, ...args], {
+      encoding: "utf-8",
+      timeout: 30000,
+    });
+    return { stdout, exitCode: 0 };
+  } catch (e) {
+    return { stdout: e.stdout || "", stderr: e.stderr || "", exitCode: e.status };
+  }
+}
 
 function run(args) {
   try {
@@ -125,5 +140,35 @@ describe("renderer-registry.js", () => {
     } finally {
       rmSync(tmpRoot, { recursive: true, force: true });
     }
+  });
+});
+
+describe("astro-hybrid build-spec fixture (island/static contract)", () => {
+  it("is valid JSON declaring renderer astro / outputTarget react", () => {
+    const spec = JSON.parse(readFileSync(FIXTURE, "utf-8"));
+    expect(spec.renderer).toBe("astro");
+    expect(spec.outputTarget).toBe("react");
+    expect(spec.appType).toBe("web-app");
+  });
+
+  it("contains one interactive (island) and one static component", () => {
+    const spec = JSON.parse(readFileSync(FIXTURE, "utf-8"));
+    const island = spec.components.filter((c) => c._astroKind === "island");
+    const stat = spec.components.filter((c) => c._astroKind === "static");
+    expect(island).toHaveLength(1);
+    expect(stat).toHaveLength(1);
+    // The island has a behavioral action; the static one does not.
+    expect(island[0].action).toBe("search");
+    expect(island[0]._astroClient).toMatch(/^client:/);
+    expect(stat[0].action).toBe("generate");
+  });
+
+  it("resolves the fixture's renderer to astro-converter via the real registry", () => {
+    const spec = JSON.parse(readFileSync(FIXTURE, "utf-8"));
+    const r = runReal(["resolve", spec.renderer, "--json"]);
+    expect(r.exitCode).toBe(0);
+    const manifest = JSON.parse(r.stdout);
+    expect(manifest.converter).toBe("astro-converter");
+    expect(manifest.language).toBe("react");
   });
 });

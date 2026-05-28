@@ -28,6 +28,8 @@ const ALL_CHECKS = [
   ["dead-code", "check-dead-code.sh"],
   ["security", "check-security.sh"],
   ["bundle-size", "check-bundle-size.sh"],
+  ["agent-plugins", "verify-agent-plugins.sh"],
+  ["renderers", "verify-renderers.sh"],
 ];
 
 function tmpProject({ failing = [], hasBuild = false } = {}) {
@@ -108,8 +110,8 @@ describe("all checks pass", () => {
     const json = JSON.parse(r.stdout);
     expect(json.ok).toBe(true);
     expect(json.summary.fail).toBe(0);
-    expect(json.summary.total).toBe(9);
-    expect(json.checks).toHaveLength(9);
+    expect(json.summary.total).toBe(10);
+    expect(json.checks).toHaveLength(10);
     for (const check of json.checks) {
       expect(["pass", "skip"]).toContain(check.status);
     }
@@ -153,9 +155,9 @@ describe("--skip and --include", () => {
     const json = JSON.parse(r.stdout);
     const passed = json.checks.filter((c) => c.status === "pass").map((c) => c.name);
     expect(passed.sort()).toEqual(["tokens", "types"]);
-    // The other seven should all be skipped.
+    // The other eight should all be skipped.
     expect(json.summary.pass).toBe(2);
-    expect(json.summary.skip).toBe(7);
+    expect(json.summary.skip).toBe(8);
   });
 
   it("failure inside --include still triggers exit 1", () => {
