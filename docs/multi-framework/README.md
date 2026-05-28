@@ -144,7 +144,7 @@ Most pipeline phases are shared across all output targets. Only Phase 4 (Build) 
 | [1] Intake | Shared | Produces `outputTarget` in build-spec.json |
 | [2] Token Lock/Infer | Shared | Tokens map to Tailwind config (or NativeWind for React Native) |
 | [3] TDD (Gate) | Target-specific | Test file format and library vary by target |
-| [4] Build | **Target-specific** | Dispatches to `vue-converter`, `svelte-converter`, `react-native-converter`, or React converter |
+| [4] Build | **Target-specific** | Dispatches to the renderer manifest's `converter` (e.g. `vue-converter`, `svelte-converter`, `react-native-converter`, `astro-converter`, or a React converter) |
 | [4.5] Storybook | React/Vue only | Svelte uses SvelteKit stories; React Native skips |
 | [5] Visual Diff | Shared | Compares screenshots regardless of framework |
 | [5.5] Dark Mode | Shared | Theme token verification |
@@ -164,17 +164,21 @@ The `tdd-from-figma` skill generates framework-appropriate test files:
 | Vue | Vitest | @vue/test-utils | `.test.ts` |
 | Svelte | Vitest | @testing-library/svelte | `.test.ts` |
 | React Native | Jest | @testing-library/react-native | `.test.tsx` |
+| Astro | Vitest | @testing-library/react (islands) + Container API (static `.astro`) | `.test.tsx` / `.test.ts` |
 
 ## Phase 4: Agent Dispatch Table
 
-| outputTarget | Source: Figma | Source: Canva | Source: Screenshot |
-|-------------|--------------|--------------|-------------------|
-| `react` | figma-react-converter | canva-react-converter | figma-react-converter |
-| `vue` | vue-converter | vue-converter | vue-converter |
-| `svelte` | svelte-converter | svelte-converter | svelte-converter |
-| `react-native` | react-native-converter | react-native-converter | react-native-converter |
+Phase 4 dispatch now resolves through the renderer manifest: the pipeline reads `manifest.converter` for the resolved `renderer` rather than keying off `outputTarget` directly (see [`renderers.md`](./renderers.md)). The table below lists the converter each renderer's manifest currently points to.
 
-For Figma and screenshot sources with non-React targets, the converter agent reads the design tokens and build-spec, then generates framework-specific components directly (no intermediate React step).
+| renderer (outputTarget) | Source: Figma | Source: Canva | Source: Screenshot |
+|-------------|--------------|--------------|-------------------|
+| `nextjs` / `vite` (`react`) | figma-react-converter | canva-react-converter | figma-react-converter |
+| `sveltekit` (`svelte`) | svelte-converter | svelte-converter | svelte-converter |
+| `expo` (`react-native`) | react-native-converter | react-native-converter | react-native-converter |
+| `astro` (`react`) | astro-converter | astro-converter | astro-converter |
+| (`vue`) | vue-converter | vue-converter | vue-converter |
+
+For non-React targets (and for Astro's hybrid `.astro` + React islands output), the converter agent reads the design tokens and build-spec, then generates framework-specific components directly (no intermediate React step).
 
 ## Related Documentation
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Fixture for renderer-registry tests. The underscore-prefixed component fields (_astroKind, _astroClient, _astroNote) are fixture annotations documenting the EXPECTED island/static split for assertions. They are NOT inputs the astro-converter reads — the converter derives island vs static from action/category/businessLogic.",
+  "_comment": "Reference fixture documenting the astro-converter island/static split contract. The underscore-prefixed component fields (_astroKind, _astroClient, _astroNote) are fixture annotations documenting the EXPECTED island/static split for assertions. They are NOT inputs the astro-converter reads — the converter derives island vs static from action/category/businessLogic.",
   "version": "1.0.0",
   "source": "screenshot",
   "renderer": "astro",

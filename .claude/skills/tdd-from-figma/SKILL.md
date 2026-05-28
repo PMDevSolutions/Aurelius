@@ -707,11 +707,10 @@ it("renders primary variant styling", () => {
    - react-native does not use chrome-extension or pwa test templates
 ```
 
-### Astro Test Split (forward-looking)
+### Astro Test Split
 
-Astro is not yet authored as a renderer; when its manifest lands, `manifest.language`
-will be `react` and `manifest.test.containerApi` will be `true`. Split tests by what is
-under test:
+For `renderer: "astro"`, `manifest.language` is `react` and `manifest.test.containerApi`
+is `true`. Split tests by what is under test:
 
 - **Islands** (interactive React/Vue/Svelte components) → the island's framework
   runner + library from `manifest.test` (e.g. Vitest + `@testing-library/react`).
