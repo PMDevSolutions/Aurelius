@@ -268,7 +268,8 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
 {
   "version": "1.0.0",
   "source": "screenshot",
-  "outputTarget": "react",
+  "renderer": "vite",          // registry renderer name (from `renderer-registry list`): "nextjs" | "vite" | "sveltekit" | "expo" | ...
+  "outputTarget": "react",     // resolved language; equals the renderer's language
   "createdAt": "2026-05-21T14:30:00Z",
   "screenshot": {
     "inputType": "url",
@@ -285,7 +286,7 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
   },
   "appType": "web-app",
   "framework": {
-    "type": "vite",
+    "type": "vite",            // DEPRECATED — superseded by top-level `renderer`. Retained for back-compat only.
     "version": "6.0.0",
     "outputDir": "src"
   },
@@ -368,6 +369,12 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
 **File-mode variant:** set `screenshot.inputType` to `"files"`, `sourceUrl` to `null`, and `captureMode` to `"file"`. Record original paths in a `screenshot.originalPaths` array.
 
 **Manual-fallback variant:** set `captureMode` to `"manual"`.
+
+**Renderer fields:**
+- `renderer` (string) is the authoritative framework field. Valid values are the renderer names from `node scripts/renderer-registry.js list --json` (currently `nextjs`, `vite`, `sveltekit`, `expo`).
+- `outputTarget` is retained and **equals the resolved renderer's `language`** (react / vue / svelte / react-native). Set both together from the registry `detect`/`resolve` output.
+- `framework.type` is **deprecated** — folded into `renderer`. Keep it only for back-compat with older specs; `renderer` wins on any conflict.
+- **Back-compat rule:** a build-spec carrying only `outputTarget` (no `renderer`) resolves to that language's DEFAULT renderer: `react → vite`, `svelte → sveltekit`, `react-native → expo`. (`vue` has no renderer yet — its default is unsupported/future.)
 
 ### Step 6: Confirm and Proceed
 

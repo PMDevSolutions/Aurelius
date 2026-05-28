@@ -2,34 +2,56 @@
 
 The pipeline supports generating code for multiple frontend frameworks from any design source (Figma, Canva, or screenshots/URLs).
 
-## The `outputTarget` Field
+## The `renderer` and `outputTarget` Fields
 
-The `outputTarget` field in `build-spec.json` controls which framework the pipeline generates code for:
+The `renderer` field in `build-spec.json` is the **authoritative** field controlling which framework the pipeline generates code for. Its valid values are the renderer names from the renderer registry (`node scripts/renderer-registry.js list --json`) — currently `nextjs`, `vite`, `sveltekit`, `expo`.
 
 ```json
 {
   "source": "figma",
   "appType": "web-app",
-  "outputTarget": "vue",
+  "renderer": "vite",
+  "outputTarget": "react",
   "components": [...]
 }
 ```
 
-Valid values: `"react"` (default), `"vue"`, `"svelte"`, `"react-native"`.
+The `outputTarget` field is **retained** and **equals the resolved `renderer`'s `language`**. Each renderer manifest declares a `language`; resolving a renderer yields the matching `outputTarget`:
+
+| Renderer | `language` (= `outputTarget`) |
+|----------|------------------------------|
+| `nextjs` | `react` |
+| `vite` | `react` |
+| `sveltekit` | `svelte` |
+| `expo` | `react-native` |
+
+Valid `outputTarget` values: `"react"` (default), `"vue"`, `"svelte"`, `"react-native"`.
+
+> **`framework.type` is deprecated.** It has been folded into `renderer`. Older specs may still carry `framework.type`; it is kept for back-compat only and `renderer` wins on any conflict.
+
+### Back-compat: resolving `outputTarget` without `renderer`
+
+A build-spec carrying only `outputTarget` (no `renderer`) resolves to that language's **default renderer**:
+
+| `outputTarget` | Default renderer |
+|----------------|------------------|
+| `react` | `vite` |
+| `svelte` | `sveltekit` |
+| `react-native` | `expo` |
+| `vue` | _(no renderer yet — future/unsupported)_ |
 
 ## Framework Auto-Detection
 
-If `outputTarget` is not explicitly set during intake, the pipeline detects the framework from the project context:
+If `renderer` is not explicitly set during intake, the pipeline detects the framework from the project context via the renderer registry:
 
-| Signal | Detected Target |
-|--------|----------------|
-| `next.config.*` or `react-dom` in `package.json` | `react` |
-| `vue` in `package.json` dependencies | `vue` |
-| `svelte.config.*` or `svelte` in `package.json` | `svelte` |
-| `app.json` with Expo config or `react-native` in `package.json` | `react-native` |
-| No project context (greenfield) | `react` (default) |
+```bash
+node scripts/renderer-registry.js detect . --json
+# → { "renderer": "<name>", "language": "<lang>" }  or  { "renderer": null }
+```
 
-The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask the user to confirm or override the detected target during the interview phase.
+When a renderer is detected, both `renderer` (the detected name) and `outputTarget` (the resolved `language`) are written to the build-spec. The registry owns all detection logic — the intake skills no longer hand-sniff config files or `package.json` dependencies. When detection returns `null` (greenfield), the intake skills present the registry's renderer list to the user; the greenfield React default is `vite`.
+
+The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask the user to confirm or override the detected renderer during the interview phase.
 
 ## Output Targets
 
