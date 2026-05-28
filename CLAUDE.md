@@ -17,7 +17,7 @@ The framework is designed for:
 ```
 project-root/
 ├── .claude/              # Claude Code configuration
-│   ├── agents/           # 53 specialized agents
+│   ├── agents/           # 54 specialized agents
 │   ├── skills/           # 20 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
@@ -205,15 +205,15 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (53 Total)
+### Custom Agents (54 Total)
 
-53 specialized agents covering the full product lifecycle:
+54 specialized agents covering the full product lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
 | Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 6 | figma-react-converter, canva-react-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
+| Design-to-Code | 7 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -580,6 +580,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-05-28
-**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 38 scripts, 8 hooks
+**Architecture:** 54 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 38 scripts, 8 hooks
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

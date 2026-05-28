@@ -15,7 +15,7 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   53 Agents   │   │    20 Skills    │   │    4 Plugins    │
+     │   54 Agents   │   │    20 Skills    │   │    4 Plugins    │
      │ (specialized  │   │  (workflow      │   │ (extensions:    │
      │  task workers) │   │   automation)  │   │  memory, git,   │
      └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
@@ -37,7 +37,7 @@ This document explains how Aurelius is structured and how its components work to
 
 ---
 
-## Agents (53 Total)
+## Agents (54 Total)
 
 Agents are specialized Claude Code sub-processes that handle complex, multi-step tasks. Each agent is a markdown file in `.claude/agents/` with frontmatter defining its tools, capabilities, and instructions. Claude Code selects agents automatically based on your task context.
 
@@ -68,7 +68,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 | `visual-storyteller` | Create data visualizations, infographics, presentations |
 | `whimsy-injector` | Add micro-interactions and delightful UI details (runs proactively after UI changes) |
 
-### Design-to-Code Agents (6)
+### Design-to-Code Agents (7)
 
 | Agent | Purpose | Output |
 |-------|---------|--------|
@@ -77,6 +77,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 | `vue-converter` | Convert designs to Vue 3 components | Vue 3 + `<script setup>` + TypeScript |
 | `svelte-converter` | Convert designs to Svelte 5 components | SvelteKit + TypeScript + Tailwind |
 | `react-native-converter` | Convert designs to React Native components | Expo + TypeScript + NativeWind |
+| `astro-converter` | Convert designs to Astro (zero-JS `.astro` statics + React islands) | Astro + React islands + TypeScript + Tailwind |
 | `asset-cataloger` | Catalog and semantically map project image assets | Mapping JSON + validation |
 
 ### Testing and QA Agents (7)

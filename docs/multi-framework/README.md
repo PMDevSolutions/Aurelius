@@ -4,7 +4,7 @@ The pipeline supports generating code for multiple frontend frameworks from any 
 
 ## The `renderer` and `outputTarget` Fields
 
-The `renderer` field in `build-spec.json` is the **authoritative** field controlling which framework the pipeline generates code for. Its valid values are the renderer names from the renderer registry (`node scripts/renderer-registry.js list --json`) — currently `nextjs`, `vite`, `sveltekit`, `expo`.
+The `renderer` field in `build-spec.json` is the **authoritative** field controlling which framework the pipeline generates code for. Its valid values are the renderer names from the renderer registry (`node scripts/renderer-registry.js list --json`) — currently `nextjs`, `vite`, `astro`, `sveltekit`, `expo`.
 
 ```json
 {
@@ -22,6 +22,7 @@ The `outputTarget` field is **retained** and **equals the resolved `renderer`'s 
 |----------|------------------------------|
 | `nextjs` | `react` |
 | `vite` | `react` |
+| `astro` | `react` |
 | `sveltekit` | `svelte` |
 | `expo` | `react-native` |
 
@@ -62,6 +63,27 @@ The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask
 - **Test library:** Vitest + @testing-library/react
 - **Templates:** `templates/nextjs/` (Next.js App Router) or `templates/vite/` (Vite + React)
 - **Component pattern:** Functional components with TypeScript, props interfaces, `children`/`className` passthrough
+
+### Astro (hybrid islands)
+
+- **Converter agent:** `astro-converter`
+- **Renderer:** `astro` (`language`/`outputTarget` = `react`)
+- **Styling:** Tailwind CSS via `@astrojs/tailwind`
+- **Test library:** Vitest + @testing-library/react (islands) + Astro Container API (`.astro` statics)
+- **Template:** `templates/astro/` (`@astrojs/react` islands + `@astrojs/tailwind`)
+- **Component pattern:** Hybrid — zero-JS static `.astro` files for presentational components, React islands (`.tsx`) for interactive ones, composed under file-based `src/pages/*.astro` routes.
+
+The `astro-converter` agent classifies every component from `build-spec.json`:
+- A component with an `action`, an interactive `category`, or any
+  `businessLogic` involvement → a **React island** (`.tsx`), referenced from the
+  page with a `client:*` directive (`client:load` above the fold,
+  `client:visible` below).
+- Otherwise → a **static `.astro`** component (zero JS), props typed via the
+  frontmatter `interface Props`.
+
+Islands are tested with Vitest + @testing-library/react (the React path);
+static `.astro` components are tested with the Astro Container API
+(`experimental_AstroContainer` from `astro/container`).
 
 ### Vue 3
 

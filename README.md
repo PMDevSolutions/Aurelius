@@ -4,7 +4,7 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 
 ## What This Framework Provides
 
-- **53 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
+- **54 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
 - **20 Development Skills** -- Automated workflows for Figma/Canva conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
 - **10-Phase Design-to-React Pipeline** -- Convert Figma or Canva designs into fully working, tested React apps with a single command
 - **App-Type Awareness** -- Tailored build and test strategies for web apps, Chrome extensions, and PWAs
@@ -85,7 +85,7 @@ project-root/
 │   ├── canva-to-react/          # Canva pipeline guide
 │   └── react-development/       # Development standards
 ├── .claude/              # Claude Code configuration
-│   ├── agents/                  # 53 custom agents
+│   ├── agents/                  # 54 custom agents
 │   ├── skills/                  # 20 development skills
 │   ├── commands/                # Slash commands (/build-from-figma, /lint, /test)
 │   ├── pipeline.config.json     # Pipeline thresholds and app-type definitions
@@ -136,7 +136,7 @@ All thresholds and behavior are configurable in `.claude/pipeline.config.json`:
 - Lighthouse minimums (performance: 80, accessibility: 90)
 - App-type-specific E2E strategies
 
-## 53 Custom Agents
+## 54 Custom Agents
 
 Agents are auto-selected by Claude Code based on your task:
 
@@ -144,7 +144,7 @@ Agents are auto-selected by Claude Code based on your task:
 |----------|-------|------------|
 | Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 6 | figma-react-converter, canva-react-converter, vue-converter, svelte-converter, react-native-converter, asset-cataloger |
+| Design-to-Code | 7 | figma-react-converter, canva-react-converter, astro-converter, vue-converter, svelte-converter, react-native-converter, asset-cataloger |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -270,14 +270,14 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 |----------|----------|-------------|
 | **Developer onboarding** | `docs/onboarding/README.md` | Start here -- quickstart, architecture, configuration, troubleshooting |
 | Quickstart guide | `docs/onboarding/quickstart.md` | Clone to running project in 10 minutes |
-| Architecture overview | `docs/onboarding/architecture.md` | All 53 agents, 20 skills, 3 pipelines, and how they connect |
+| Architecture overview | `docs/onboarding/architecture.md` | All 54 agents, 20 skills, 3 pipelines, and how they connect |
 | Pipeline configuration | `docs/onboarding/pipeline-configuration.md` | Every setting in pipeline.config.json explained |
 | Troubleshooting FAQ | `docs/onboarding/troubleshooting.md` | Common issues and solutions |
 | Project instructions | `CLAUDE.md` | Full project config for Claude Code |
 | Figma pipeline guide | `docs/figma-to-react/README.md` | Pipeline overview and troubleshooting |
 | React standards | `docs/react-development/README.md` | TypeScript, Tailwind, testing conventions |
 | Canva pipeline guide | `docs/canva-to-react/README.md` | Canva pipeline overview and troubleshooting |
-| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 53 agents with use cases |
+| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 54 agents with use cases |
 | Skills catalog | `.claude/skills/README.md` | All 20 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |

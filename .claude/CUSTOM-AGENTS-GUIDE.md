@@ -1,7 +1,7 @@
 # Custom Agents Guide
 
 **Last Updated:** 2026-03-25
-**Total Agents:** 53
+**Total Agents:** 54
 **Location:** `.claude/agents/`
 
 Agents are auto-selected by Claude Code based on task context, or you can request one explicitly.
@@ -41,6 +41,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 |-------|---------|-------------|
 | figma-react-converter | Figma-to-React conversion pipeline orchestration | Converting Figma designs into React components with Tailwind CSS |
 | canva-react-converter | Canva-to-React conversion from screenshots | Converting Canva designs into React components with Tailwind CSS |
+| astro-converter | Design-to-Astro hybrid conversion (zero-JS .astro statics + React islands) | Building Astro apps where most components are static and a few are interactive React islands |
 | asset-cataloger | Image/asset semantic mapping and validation | Mapping hash-named exports to meaningful names, validating asset usage |
 
 ## Testing & QA
