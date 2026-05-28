@@ -178,6 +178,7 @@ For Figma and screenshot sources with non-React targets, the converter agent rea
 
 ## Related Documentation
 
+- [`renderers.md`](./renderers.md) -- The renderer model (three-axis: outputTarget/renderer/appType), manifest field reference, registry CLI + validator, and how to add a renderer
 - `docs/figma-to-react/README.md` -- Figma conversion pipeline
 - `docs/canva-to-react/README.md` -- Canva conversion pipeline
 - `docs/screenshot-to-app/README.md` -- Screenshot/URL conversion pipeline

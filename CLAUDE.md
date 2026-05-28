@@ -23,6 +23,7 @@ project-root/
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
 ├── scripts/              # Development automation scripts
+├── renderers/            # Pluggable framework renderer manifests (renderer.json + schema)
 ├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
 ├── docs/                 # Documentation
 │   ├── figma-to-react/   # Figma conversion pipeline docs
@@ -121,6 +122,10 @@ node scripts/validate-pipeline-config.js --config <path> --schema <path>
 
 # Export generated components as a publishable design-system workspace
 ./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
+
+# Renderer registry: list / resolve / detect framework renderers (see docs/multi-framework/renderers.md)
+node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
+node scripts/validate-renderer.js --dir <renderer-dir>     # or --all [--renderers-root <dir>]
 
 # Author / validate / install / test custom agents as versioned plugins
 node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
@@ -555,6 +560,12 @@ gh issue create               # Create issue
 ./scripts/check-doc-counts.sh           # Flag drift between documented agent/skill counts and disk
 ./scripts/verify-all.sh                 # Run all quality checks with summary
 ./scripts/verify-all.sh --ci            # CI mode: JSON output, exit 1 on any failure
+```
+
+**Renderers** (pluggable framework renderers — see `docs/multi-framework/renderers.md`):
+```bash
+node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
+node scripts/validate-renderer.js --dir <renderer-dir>   # or --all
 ```
 
 **Agent Plugins** (custom agents as versioned plugins — see `docs/guides/agent-plugins.md`):
