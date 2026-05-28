@@ -148,6 +148,16 @@ common_build_artifact_exists() {
   return 1
 }
 
+# Returns 0 if at least one agent plugin (a dir with plugin.json) exists under
+# .claude/agent-plugins/ in the cwd.
+common_agent_plugins_exist() {
+  local d
+  for d in .claude/agent-plugins/*/plugin.json; do
+    [[ -f "$d" ]] && return 0
+  done
+  return 1
+}
+
 # --- pipeline.config.json access -----------------------------------------
 #
 # Thin wrapper around scripts/lib/pipeline-config.js so shell scripts no longer
