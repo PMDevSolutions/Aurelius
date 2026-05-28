@@ -12,7 +12,7 @@
  *
  * Exit codes: 0 created · 1 exists (no --force) · 2 usage/IO error
  */
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { createInterface } from "readline";
@@ -69,13 +69,14 @@ Options:
 }
 
 function ask(question) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((res) =>
+  return new Promise((res) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.on("close", () => res(""));
     rl.question(question, (a) => {
       rl.close();
       res(a.trim());
-    }),
-  );
+    });
+  });
 }
 
 function manifest(name, description, withHooks) {
@@ -140,9 +141,10 @@ exit 0
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const interactive = Boolean(process.stdin.isTTY);
 
   let name = args.name;
-  if (!name && !args.json) name = await ask("Plugin name (kebab-case): ");
+  if (!name && !args.json && interactive) name = await ask("Plugin name (kebab-case): ");
   if (!name) {
     console.error("A plugin name is required.");
     process.exit(2);
@@ -153,7 +155,7 @@ async function main() {
   }
 
   let description = args.description;
-  if (!description && !args.json) description = await ask("Description: ");
+  if (!description && !args.json && interactive) description = await ask("Description: ");
   if (!description) description = `The ${name} agent`;
 
   if (!VALID_MODELS.includes(args.model)) {
@@ -161,21 +163,33 @@ async function main() {
     process.exit(2);
   }
 
+  const tools = args.tools
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(", ");
+
   const dir = join(args.root, ".claude", "agent-plugins", name);
-  if (existsSync(dir) && !args.force) {
+  const preExisting = existsSync(dir);
+  if (preExisting && !args.force) {
     if (args.json) console.log(JSON.stringify({ ok: false, error: "exists" }));
     else console.error(`✗ Plugin "${name}" already exists. Use --force to overwrite.`);
     process.exit(1);
   }
 
-  mkdirSync(join(dir, "tests"), { recursive: true });
-  writeFileSync(join(dir, "plugin.json"), manifest(name, description, args.withHooks));
-  writeFileSync(join(dir, "agent.md"), agentMd(name, description, args.model, args.tools));
-  writeFileSync(join(dir, "tests", "plugin.test.json"), TESTS);
-  if (args.withHooks) {
-    mkdirSync(join(dir, "hooks"), { recursive: true });
-    writeFileSync(join(dir, "hooks", "pre-install.sh"), HOOK_STUB);
-    writeFileSync(join(dir, "hooks", "post-install.sh"), HOOK_STUB);
+  try {
+    mkdirSync(join(dir, "tests"), { recursive: true });
+    writeFileSync(join(dir, "plugin.json"), manifest(name, description, args.withHooks));
+    writeFileSync(join(dir, "agent.md"), agentMd(name, description, args.model, tools));
+    writeFileSync(join(dir, "tests", "plugin.test.json"), TESTS);
+    if (args.withHooks) {
+      mkdirSync(join(dir, "hooks"), { recursive: true });
+      writeFileSync(join(dir, "hooks", "pre-install.sh"), HOOK_STUB);
+      writeFileSync(join(dir, "hooks", "post-install.sh"), HOOK_STUB);
+    }
+  } catch (e) {
+    if (!preExisting) rmSync(dir, { recursive: true, force: true });
+    throw e;
   }
 
   if (args.json) console.log(JSON.stringify({ ok: true, name, dir }, null, 2));
