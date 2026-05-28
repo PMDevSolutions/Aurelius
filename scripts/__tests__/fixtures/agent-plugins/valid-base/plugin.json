@@ -1,0 +1,7 @@
+{
+  "name": "valid-base",
+  "version": "1.0.0",
+  "description": "A valid base agent plugin for tests",
+  "agent": "agent.md",
+  "tests": "tests/plugin.test.json"
+}

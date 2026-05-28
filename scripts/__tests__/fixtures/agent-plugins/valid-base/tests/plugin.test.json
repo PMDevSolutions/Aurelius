@@ -1,0 +1,11 @@
+{
+  "assert": [
+    "manifest.valid",
+    "frontmatter.has(name,description,tools)",
+    "frontmatter.model in (opus,sonnet,haiku)",
+    "deps.resolve",
+    "hooks.executable",
+    "prompt.section('When to Use This Agent')",
+    "description.examples >= 2"
+  ]
+}
