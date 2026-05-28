@@ -23,12 +23,27 @@ The scheduler produces real-time streaming output as phases start and finish, an
 
 1. **Phase IDs** -- ordered list of phase IDs to execute (e.g., `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`).
 2. **Prior context** -- artifacts from earlier sequential phases:
-   - `build-spec.json` (component list, appType, outputTarget, E2E flows)
+   - `build-spec.json` (component list, appType, `renderer`, E2E flows)
    - `design-tokens.lock.json` (locked token values)
    - Test files from tdd-scaffold phase
 3. **Pipeline config** -- `.claude/pipeline.config.json`, specifically the `orchestration` section.
+4. **Renderer manifest** -- the resolved manifest for the build-spec's `renderer`, used to drop excluded phases and select the converter (see Step 0 and Step 5).
 
 ## Algorithm
+
+### Step 0: Resolve Renderer and Exclude Phases
+
+Before scheduling, read `renderer` from `build-spec.json` and resolve its manifest:
+
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+Read `manifest.phases.exclude` (an array, absent/empty for most renderers) and **drop every listed phase from the requested phase set before building the dependency graph.** Excluded phases never enter the scheduler — they are not dispatched, not tracked, and not awaited.
+
+Example: the `expo` renderer excludes `visual-diff`, `cross-browser`, `responsive`, and `dark-mode` (no browser rendering), so those phases are removed up front and only `component-build`, `storybook`, `e2e-tests`, `quality-gate`, and `report` schedule. When a dependent phase's dependency was excluded, treat that dependency as pre-satisfied (same as a phase completed externally).
+
+This replaces any per-framework phase-skipping logic — the manifest is the single source of truth for which phases a renderer supports.
 
 ### Step 1: Load Configuration
 
@@ -125,7 +140,7 @@ function hasResourceConflict(candidatePhase, runningPhases):
 
 | Phase | Dispatch Method |
 |-------|----------------|
-| `component-build` | **Agent:** invoke figma-to-react-workflow skill (or vue-converter / svelte-converter / react-native-converter based on `outputTarget` in build-spec.json) |
+| `component-build` | **Agent:** dispatch the converter named by the resolved renderer manifest. For React renderers the calling command supplies the source-appropriate converter (figma/screenshot → figma-react-converter via the figma-to-react-workflow skill, canva → canva-react-converter); otherwise dispatch `manifest.converter` (e.g. react-native-converter for expo, future vue-converter / svelte-converter) |
 | `storybook` | **Bash:** `./scripts/generate-stories.sh` |
 | `visual-diff` | **Agent:** invoke visual-qa-verification skill with pixel-diff loop (max iterations from `iterationLoop.maxVisualIterations`) |
 | `dark-mode` | **Bash:** `./scripts/check-dark-mode.sh http://localhost:3000` |
@@ -233,10 +248,11 @@ Invoke parallel-orchestration with phases:
    "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]
 
 Context provided:
-  - build-spec.json (appType, outputTarget, component list, E2E flows)
+  - build-spec.json (appType, renderer, component list, E2E flows)
   - design-tokens.lock.json
   - Test files from phase 3
   - Pipeline config
+  - Resolved renderer manifest (drives phase exclusion + converter selection)
 ```
 
-The parallel scheduler respects the dependency graph within the handed-off phases. For example, `component-build` has no unmet deps (its dep `tdd-scaffold` was completed in the sequential block), so it starts immediately. Phases like `visual-diff`, `storybook`, `dark-mode`, `quality-gate`, `cross-browser`, and `responsive` all depend on `component-build`, so they fan out once it completes. Finally, `report` waits for `quality-gate` and `e2e-tests` before running.
+Before scheduling, the scheduler resolves the renderer manifest and drops any phase in `manifest.phases.exclude` (Step 0). The parallel scheduler then respects the dependency graph within the remaining handed-off phases. For example, `component-build` has no unmet deps (its dep `tdd-scaffold` was completed in the sequential block), so it starts immediately. Phases like `visual-diff`, `storybook`, `dark-mode`, `quality-gate`, `cross-browser`, and `responsive` all depend on `component-build`, so they fan out once it completes. Finally, `report` waits for `quality-gate` and `e2e-tests` before running.
