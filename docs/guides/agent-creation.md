@@ -2,7 +2,7 @@
 
 Agents are specialized Markdown files with YAML frontmatter that live in `.claude/agents/`. Each agent defines a persona, a set of allowed tools, and detailed instructions that shape how Claude Code behaves when the agent is selected. Claude Code reads the `description` field to decide which agent best matches a given task, then loads that agent's instructions as the system prompt for the session.
 
-This framework ships with 53 agents covering engineering, design, testing, marketing, and operations. You can add your own by following the conventions below.
+This framework ships with 54 agents covering engineering, design, testing, marketing, and operations. You can add your own by following the conventions below.
 
 ## File Location
 

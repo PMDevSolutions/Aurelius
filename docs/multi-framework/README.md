@@ -2,34 +2,57 @@
 
 The pipeline supports generating code for multiple frontend frameworks from any design source (Figma, Canva, or screenshots/URLs).
 
-## The `outputTarget` Field
+## The `renderer` and `outputTarget` Fields
 
-The `outputTarget` field in `build-spec.json` controls which framework the pipeline generates code for:
+The `renderer` field in `build-spec.json` is the **authoritative** field controlling which framework the pipeline generates code for. Its valid values are the renderer names from the renderer registry (`node scripts/renderer-registry.js list --json`) — currently `nextjs`, `vite`, `astro`, `sveltekit`, `expo`.
 
 ```json
 {
   "source": "figma",
   "appType": "web-app",
-  "outputTarget": "vue",
+  "renderer": "vite",
+  "outputTarget": "react",
   "components": [...]
 }
 ```
 
-Valid values: `"react"` (default), `"vue"`, `"svelte"`, `"react-native"`.
+The `outputTarget` field is **retained** and **equals the resolved `renderer`'s `language`**. Each renderer manifest declares a `language`; resolving a renderer yields the matching `outputTarget`:
+
+| Renderer | `language` (= `outputTarget`) |
+|----------|------------------------------|
+| `nextjs` | `react` |
+| `vite` | `react` |
+| `astro` | `react` |
+| `sveltekit` | `svelte` |
+| `expo` | `react-native` |
+
+Valid `outputTarget` values: `"react"` (default), `"vue"`, `"svelte"`, `"react-native"`.
+
+> **`framework.type` is deprecated.** It has been folded into `renderer`. Older specs may still carry `framework.type`; it is kept for back-compat only and `renderer` wins on any conflict.
+
+### Back-compat: resolving `outputTarget` without `renderer`
+
+A build-spec carrying only `outputTarget` (no `renderer`) resolves to that language's **default renderer**:
+
+| `outputTarget` | Default renderer |
+|----------------|------------------|
+| `react` | `vite` |
+| `svelte` | `sveltekit` |
+| `react-native` | `expo` |
+| `vue` | _(no renderer yet — future/unsupported)_ |
 
 ## Framework Auto-Detection
 
-If `outputTarget` is not explicitly set during intake, the pipeline detects the framework from the project context:
+If `renderer` is not explicitly set during intake, the pipeline detects the framework from the project context via the renderer registry:
 
-| Signal | Detected Target |
-|--------|----------------|
-| `next.config.*` or `react-dom` in `package.json` | `react` |
-| `vue` in `package.json` dependencies | `vue` |
-| `svelte.config.*` or `svelte` in `package.json` | `svelte` |
-| `app.json` with Expo config or `react-native` in `package.json` | `react-native` |
-| No project context (greenfield) | `react` (default) |
+```bash
+node scripts/renderer-registry.js detect . --json
+# → { "renderer": "<name>", "language": "<lang>" }  or  { "renderer": null }
+```
 
-The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask the user to confirm or override the detected target during the interview phase.
+When a renderer is detected, both `renderer` (the detected name) and `outputTarget` (the resolved `language`) are written to the build-spec. The registry owns all detection logic — the intake skills no longer hand-sniff config files or `package.json` dependencies. When detection returns `null` (greenfield), the intake skills present the registry's renderer list to the user; the greenfield React default is `vite`.
+
+The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask the user to confirm or override the detected renderer during the interview phase.
 
 ## Output Targets
 
@@ -40,6 +63,27 @@ The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask
 - **Test library:** Vitest + @testing-library/react
 - **Templates:** `templates/nextjs/` (Next.js App Router) or `templates/vite/` (Vite + React)
 - **Component pattern:** Functional components with TypeScript, props interfaces, `children`/`className` passthrough
+
+### Astro (hybrid islands)
+
+- **Converter agent:** `astro-converter`
+- **Renderer:** `astro` (`language`/`outputTarget` = `react`)
+- **Styling:** Tailwind CSS via `@astrojs/tailwind`
+- **Test library:** Vitest + @testing-library/react (islands) + Astro Container API (`.astro` statics)
+- **Template:** `templates/astro/` (`@astrojs/react` islands + `@astrojs/tailwind`)
+- **Component pattern:** Hybrid — zero-JS static `.astro` files for presentational components, React islands (`.tsx`) for interactive ones, composed under file-based `src/pages/*.astro` routes.
+
+The `astro-converter` agent classifies every component from `build-spec.json`:
+- A component with an `action`, an interactive `category`, or any
+  `businessLogic` involvement → a **React island** (`.tsx`), referenced from the
+  page with a `client:*` directive (`client:load` above the fold,
+  `client:visible` below).
+- Otherwise → a **static `.astro`** component (zero JS), props typed via the
+  frontmatter `interface Props`.
+
+Islands are tested with Vitest + @testing-library/react (the React path);
+static `.astro` components are tested with the Astro Container API
+(`experimental_AstroContainer` from `astro/container`).
 
 ### Vue 3
 
@@ -100,7 +144,7 @@ Most pipeline phases are shared across all output targets. Only Phase 4 (Build) 
 | [1] Intake | Shared | Produces `outputTarget` in build-spec.json |
 | [2] Token Lock/Infer | Shared | Tokens map to Tailwind config (or NativeWind for React Native) |
 | [3] TDD (Gate) | Target-specific | Test file format and library vary by target |
-| [4] Build | **Target-specific** | Dispatches to `vue-converter`, `svelte-converter`, `react-native-converter`, or React converter |
+| [4] Build | **Target-specific** | Dispatches to the renderer manifest's `converter` (e.g. `vue-converter`, `svelte-converter`, `react-native-converter`, `astro-converter`, or a React converter) |
 | [4.5] Storybook | React/Vue only | Svelte uses SvelteKit stories; React Native skips |
 | [5] Visual Diff | Shared | Compares screenshots regardless of framework |
 | [5.5] Dark Mode | Shared | Theme token verification |
@@ -120,20 +164,25 @@ The `tdd-from-figma` skill generates framework-appropriate test files:
 | Vue | Vitest | @vue/test-utils | `.test.ts` |
 | Svelte | Vitest | @testing-library/svelte | `.test.ts` |
 | React Native | Jest | @testing-library/react-native | `.test.tsx` |
+| Astro | Vitest | @testing-library/react (islands) + Container API (static `.astro`) | `.test.tsx` / `.test.ts` |
 
 ## Phase 4: Agent Dispatch Table
 
-| outputTarget | Source: Figma | Source: Canva | Source: Screenshot |
-|-------------|--------------|--------------|-------------------|
-| `react` | figma-react-converter | canva-react-converter | figma-react-converter |
-| `vue` | vue-converter | vue-converter | vue-converter |
-| `svelte` | svelte-converter | svelte-converter | svelte-converter |
-| `react-native` | react-native-converter | react-native-converter | react-native-converter |
+Phase 4 dispatch now resolves through the renderer manifest: the pipeline reads `manifest.converter` for the resolved `renderer` rather than keying off `outputTarget` directly (see [`renderers.md`](./renderers.md)). The table below lists the converter each renderer's manifest currently points to.
 
-For Figma and screenshot sources with non-React targets, the converter agent reads the design tokens and build-spec, then generates framework-specific components directly (no intermediate React step).
+| renderer (outputTarget) | Source: Figma | Source: Canva | Source: Screenshot |
+|-------------|--------------|--------------|-------------------|
+| `nextjs` / `vite` (`react`) | figma-react-converter | canva-react-converter | figma-react-converter |
+| `sveltekit` (`svelte`) | svelte-converter | svelte-converter | svelte-converter |
+| `expo` (`react-native`) | react-native-converter | react-native-converter | react-native-converter |
+| `astro` (`react`) | astro-converter | astro-converter | astro-converter |
+| (`vue`) | vue-converter | vue-converter | vue-converter |
+
+For non-React targets (and for Astro's hybrid `.astro` + React islands output), the converter agent reads the design tokens and build-spec, then generates framework-specific components directly (no intermediate React step).
 
 ## Related Documentation
 
+- [`renderers.md`](./renderers.md) -- The renderer model (three-axis: outputTarget/renderer/appType), manifest field reference, registry CLI + validator, and how to add a renderer
 - `docs/figma-to-react/README.md` -- Figma conversion pipeline
 - `docs/canva-to-react/README.md` -- Canva conversion pipeline
 - `docs/screenshot-to-app/README.md` -- Screenshot/URL conversion pipeline

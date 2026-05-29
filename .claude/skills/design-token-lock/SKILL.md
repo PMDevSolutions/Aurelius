@@ -177,9 +177,22 @@ Write `src/styles/design-tokens.lock.json`:
 }
 ```
 
-### Step 4: Generate Tailwind Config
+### Step 4: Generate Framework Config
 
-Generate or update `tailwind.config.ts` from the lockfile:
+The lockfile and token extraction above are framework-agnostic; only the config target changes. Resolve the build-spec's `renderer` manifest to select it:
+
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+Use `manifest.language` to choose the styling approach and `manifest.template` to locate where the framework's config lives:
+
+- **`react` / `vue` / `svelte`** — Tailwind CSS-variable approach (the path documented here). Generate or update the Tailwind config (e.g. `tailwind.config.ts`, alongside `manifest.template`). Astro reuses this same React/Tailwind path (its language is `react`).
+- **`react-native`** — NativeWind: generate the NativeWind/Tailwind config plus a StyleSheet token module for the Expo template instead of a web `tokens.css`.
+
+The Figma pipeline targets React renderers (nextjs, vite), so in practice this resolves to the Tailwind path below.
+
+Generate or update the Tailwind config from the lockfile:
 
 ```typescript
 // Read design-tokens.lock.json and map to Tailwind theme

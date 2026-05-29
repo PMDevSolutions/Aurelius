@@ -108,7 +108,7 @@ Captures the page, analyzes it with vision, and builds a working app. Supports a
 
 ## 5. Using Claude Code Agents
 
-When you work with Claude Code in this repository, **53 specialized agents** are available automatically. You do not need to invoke them manually -- Claude Code selects the right agent based on your task.
+When you work with Claude Code in this repository, **54 specialized agents** are available automatically. You do not need to invoke them manually -- Claude Code selects the right agent based on your task.
 
 ### Examples
 
@@ -186,7 +186,7 @@ The pipeline auto-detects the framework from `package.json` if `outputTarget` is
 ```
 Aurelius/
 ├── .claude/
-│   ├── agents/              # 53 specialized agents
+│   ├── agents/              # 54 specialized agents
 │   ├── skills/              # 20 development skills
 │   ├── commands/            # Slash commands (/build-from-figma, /lint, /test)
 │   ├── hooks/               # Hook scripts (8 automated hooks)

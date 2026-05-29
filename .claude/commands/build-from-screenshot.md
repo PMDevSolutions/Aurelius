@@ -12,7 +12,7 @@ You are the master orchestrator for converting screenshots or a live URL into a 
 - **E2E tests are generated** — Phase 6 generates and runs Playwright E2E tests appropriate to the app type.
 - **App-type aware** — Chrome extensions, PWAs, and web apps each get tailored test strategies.
 - **Token inference requires confirmation** — Phase 2 extracts tokens via AI vision and MUST get user confirmation before locking.
-- **Output-target aware** — Phase 4 dispatches the correct converter agent based on `build-spec.json.outputTarget`.
+- **Renderer-driven** — Phase 4 dispatches the converter agent named by the resolved renderer manifest (`renderer-registry.js resolve <renderer>`), not a hardcoded `outputTarget` table.
 
 ## Input
 
@@ -51,7 +51,7 @@ Use `TodoWrite` to create a master checklist. Update each item as phases complet
 [ ] Phase 1: Intake — screenshot-intake skill → build-spec.json (with outputTarget)
 [ ] Phase 2: Token Inference — canva-token-inference skill → lockfile + config (requires user confirmation)
 [ ] Phase 3: TDD Scaffold — tdd-from-figma skill → failing tests (RED)
-[ ] Phase 4: Component Build — converter agent (per outputTarget) → tests pass (GREEN)
+[ ] Phase 4: Component Build — converter agent (per resolved renderer manifest) → tests pass (GREEN)
 [ ] Phase 4.5: Storybook — generate-stories.sh → auto-generated stories
 [ ] Phase 5: Visual Verification — pixel-diff loop (max N iterations, against source screenshots)
 [ ] Phase 5.5: Dark Mode — check-dark-mode.sh → dark mode visual verification
@@ -116,23 +116,29 @@ Identical to `/build-from-figma` Phase 3.
 
 After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
 
-**Read `build-spec.json` to determine `outputTarget` before dispatching.**
+**Read `renderer` from `build-spec.json` and resolve its manifest before dispatching:**
+
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+The manifest drives both converter dispatch (`manifest.converter`) and phase exclusion (`manifest.phases.exclude`).
 
 **Invoke the `parallel-orchestration` skill with:**
 - Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
-  - For `react-native` outputTarget: exclude `visual-diff`, `dark-mode`, `cross-browser`, `responsive`
-  - For `chrome-extension` appType: exclude `cross-browser`
+  - Drop any phase listed in `manifest.phases.exclude` (e.g. expo excludes `visual-diff`, `dark-mode`, `cross-browser`, `responsive`)
+  - For `chrome-extension` appType: also exclude `cross-browser`
 - Context:
   - Build spec: `.claude/plans/build-spec.json`
   - Lockfile: `src/styles/design-tokens.lock.json`
   - Test files: `src/components/**/*.test.*`
   - Pipeline source: `"screenshot"`
-  - Output target: from `build-spec.json.outputTarget`
+  - Renderer manifest: from `renderer-registry.js resolve <renderer> --json`
   - Reference screenshots: `.claude/visual-qa/screenshots/source/`
 - Config: `.claude/pipeline.config.json` → `orchestration` section
 
 The parallel orchestration skill will:
-1. Start `component-build` first (dispatches the correct converter agent per outputTarget)
+1. Start `component-build` first (dispatches the converter named in the resolved manifest, see Phase 4)
 2. After build completes, fan out independent phases in parallel (max 3 concurrent)
 3. Run `e2e-tests` after `visual-diff` completes (or after `component-build` if visual-diff excluded)
 4. Run `report` after both `quality-gate` and `e2e-tests` complete
@@ -143,35 +149,36 @@ The parallel orchestration skill will:
 
 The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
 
-## Phase 4: Component Build (Output-Target-Aware)
+## Phase 4: Component Build (Renderer-Driven)
 
-Read `build-spec.json` and dispatch the correct converter agent based on `outputTarget`:
+Read `renderer` from `build-spec.json`, resolve its manifest, and dispatch the converter it names:
 
-| outputTarget | Agent | Output |
-|---|---|---|
-| `react` | `canva-react-converter` | `src/components/**/*.tsx`, page files |
-| `vue` | `vue-converter` | `src/components/**/*.vue`, page files |
-| `svelte` | `svelte-converter` | `src/lib/components/**/*.svelte`, page files |
-| `react-native` | `react-native-converter` | `src/components/**/*.tsx` (RN), screen files |
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
 
-**Input:** build-spec.json, lockfile, existing test files, source screenshots
-**Output:** Component and page files for the target framework
+**Converter selection:**
+- If `manifest.language === "react"`, prefer the source-appropriate React converter. For the screenshot pipeline that is `figma-react-converter` (the generic React builder) — it builds React components from reference screenshots regardless of source. The shipped React manifests (nextjs, vite) already set `converter` to `figma-react-converter`.
+- Otherwise dispatch `manifest.converter` directly (e.g. `react-native-converter` for the expo renderer, and the future `vue-converter` / `svelte-converter`).
+
+The component file extension, directory, and page-routing convention come from `manifest.component` (`ext`, `dir`, `pageRouting`); the test command comes from `manifest.commands.test`.
+
+**Input:** build-spec.json, resolved renderer manifest, lockfile, existing test files, source screenshots
+**Output:** Component and page files for the renderer's framework
 
 This phase:
-1. Reads build-spec.json — verifies `source` is `"screenshot"` and reads `outputTarget`
-2. Dispatches the correct converter agent (see table above)
+1. Reads build-spec.json — verifies `source` is `"screenshot"` and reads `renderer`
+2. Resolves the manifest and dispatches the converter (see selection rule above)
 3. References lockfile for all token values (no approximating)
 4. Uses source screenshots for layout/structure decisions
-5. Generates components that satisfy the test files from Phase 3
-6. Runs the appropriate test command after each component batch to confirm GREEN:
-   - `react` / `vue` / `svelte`: `pnpm vitest run`
-   - `react-native`: `pnpm jest` or `pnpm vitest run` (per project config)
+5. Generates components (at `manifest.component.dir` with `manifest.component.ext`) that satisfy the test files from Phase 3
+6. Runs `manifest.commands.test` after each component batch to confirm GREEN
 
 **Critical rule:** If tests fail, fix the component — never modify the test files.
 
 ## Phase 4.5: Storybook Generation (Non-Blocking)
 
-Identical to `/build-from-figma` Phase 4.5. Skipped for `react-native` outputTarget.
+Identical to `/build-from-figma` Phase 4.5. Skipped when the renderer has no browser story (e.g. expo).
 
 ```bash
 ./scripts/generate-stories.sh
@@ -185,7 +192,7 @@ Same process as `/build-from-figma` Phase 5, but reference screenshots come from
 For each page:
 
 ```
-1. Start: pnpm dev (background) — skip if appType is chrome-extension or outputTarget is react-native
+1. Start: pnpm dev (background) — skip if appType is chrome-extension or the renderer excludes `visual-diff` (e.g. expo)
 2. Wait for server ready
 
 3. Reference screenshots already exist in .claude/visual-qa/screenshots/source/
@@ -211,17 +218,17 @@ For each page:
 5. Stop dev server
 ```
 
-**Note:** For `react-native` outputTarget, visual verification is skipped (no browser rendering). Mark as N/A in the checklist.
+**Note:** When the resolved renderer excludes `visual-diff` (e.g. expo, which has no browser rendering), this phase is skipped. Mark as N/A in the checklist.
 
 ## Phases 5.5 through 9
 
 Identical to `/build-from-figma`. All shared phases work the same regardless of design source:
 
-- **Phase 5.5:** Dark Mode verification (`check-dark-mode.sh`) — skipped for `react-native`
+- **Phase 5.5:** Dark Mode verification (`check-dark-mode.sh`) — skipped when the renderer excludes `dark-mode`
 - **Phase 6:** E2E test generation (`e2e-test-generator` skill)
-- **Phase 7:** Cross-browser screenshots (Firefox, WebKit) — skipped for `react-native`
+- **Phase 7:** Cross-browser screenshots (Firefox, WebKit) — skipped when the renderer excludes `cross-browser`
 - **Phase 8:** Quality gate (coverage, types, build, tokens, Lighthouse)
-- **Phase 8.5:** Responsive screenshots (`check-responsive.sh`) — skipped for `react-native`
+- **Phase 8.5:** Responsive screenshots (`check-responsive.sh`) — skipped when the renderer excludes `responsive`
 - **Phase 9:** Build report (`.claude/visual-qa/build-report.md`)
 
 The build report should note:
@@ -236,7 +243,7 @@ The build report should note:
 - **Screenshot capture fails:** Ask user to manually capture screenshots and provide file paths.
 - **Image files not found:** List missing files. Ask user to verify paths.
 - **Token inference low confidence:** Present all tokens with detailed confidence breakdown. Offer to accept user-provided brand guidelines as override.
-- **Converter agent missing:** If the requested outputTarget agent does not exist yet, inform the user and offer to fall back to `canva-react-converter` for React output.
+- **Converter agent missing:** If the converter named by the resolved manifest does not exist yet, inform the user. For `react` renderers, fall back to `figma-react-converter` (the generic React builder).
 - **Dev server will not start:** Check for port conflicts, missing dependencies. Run `pnpm install` if needed.
 - **Tests will not pass after 3 attempts:** Mark component as needing manual intervention, continue with remaining.
 - **Build fails:** Check TypeScript errors first, then dependency issues. Report blockers.

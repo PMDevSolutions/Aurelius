@@ -115,18 +115,28 @@ Process components in dependency order: UI primitives → Layout → Sections �
 
 After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
 
+**Read `renderer` from `build-spec.json` and resolve its manifest before dispatching:**
+
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+The manifest drives both converter dispatch (`manifest.converter`) and phase exclusion (`manifest.phases.exclude`).
+
 **Invoke the `parallel-orchestration` skill with:**
 - Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
+  - Drop any phase listed in `manifest.phases.exclude`
 - Context:
   - Build spec: `.claude/plans/build-spec.json`
   - Lockfile: `src/styles/design-tokens.lock.json`
   - Test files: `src/components/**/*.test.tsx`
   - Pipeline source: `"figma"`
+  - Renderer manifest: from `renderer-registry.js resolve <renderer> --json`
   - Figma screenshots: `.claude/visual-qa/screenshots/figma/`
 - Config: `.claude/pipeline.config.json` → `orchestration` section
 
 The parallel orchestration skill will:
-1. Start `component-build` first (all other phases depend on it)
+1. Start `component-build` first (dispatches the converter named in the resolved manifest, see Phase 4 — all other phases depend on it)
 2. After build completes, fan out independent phases in parallel (max 3 concurrent)
 3. Run `e2e-tests` after `visual-diff` completes
 4. Run `report` after both `quality-gate` and `e2e-tests` complete
@@ -137,18 +147,28 @@ The parallel orchestration skill will:
 
 The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
 
-## Phase 4: Component Build
+## Phase 4: Component Build (Renderer-Driven)
 
-Invoke the `figma-to-react-workflow` skill (which detects build-spec.json and lockfile automatically).
+Read `renderer` from `build-spec.json`, resolve its manifest, and dispatch the converter it names:
 
-**Input:** build-spec.json, lockfile, existing test files
-**Output:** `src/components/**/*.tsx`, page files
+```bash
+node scripts/renderer-registry.js resolve <renderer> --json
+```
+
+**Converter selection:**
+- If `manifest.language === "react"`, prefer the source-appropriate React builder. For the Figma pipeline that is `figma-react-converter`, driven by the `figma-to-react-workflow` skill (which detects build-spec.json and lockfile automatically). The shipped React manifests (nextjs, vite) already name `figma-react-converter` as their `converter`.
+- Otherwise dispatch `manifest.converter` directly (e.g. `react-native-converter` for expo, and the future `vue-converter` / `svelte-converter`).
+
+The component extension, directory, page-routing convention, and test command come from `manifest.component` and `manifest.commands.test`.
+
+**Input:** build-spec.json, resolved renderer manifest, lockfile, existing test files
+**Output:** Component and page files for the renderer's framework (React: `src/components/**/*.tsx`)
 
 This phase:
-1. Skips discovery (build-spec.json exists)
+1. Skips discovery (build-spec.json exists); reads `renderer` and resolves its manifest
 2. References lockfile for all token values (no approximating)
-3. Generates components that satisfy the test files from Phase 3
-4. Runs `pnpm vitest run` after each component batch to confirm GREEN
+3. Generates components (at `manifest.component.dir` with `manifest.component.ext`) that satisfy the test files from Phase 3
+4. Runs `manifest.commands.test` after each component batch to confirm GREEN
 
 **Critical rule:** If tests fail, fix the component — never modify the test files.
 

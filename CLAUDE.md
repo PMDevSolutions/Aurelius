@@ -17,12 +17,13 @@ The framework is designed for:
 ```
 project-root/
 ├── .claude/              # Claude Code configuration
-│   ├── agents/           # 53 specialized agents
+│   ├── agents/           # 54 specialized agents
 │   ├── skills/           # 20 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
 ├── scripts/              # Development automation scripts
+├── renderers/            # Pluggable framework renderer manifests (renderer.json + schema)
 ├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
 ├── docs/                 # Documentation
 │   ├── figma-to-react/   # Figma conversion pipeline docs
@@ -122,6 +123,10 @@ node scripts/validate-pipeline-config.js --config <path> --schema <path>
 # Export generated components as a publishable design-system workspace
 ./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
 
+# Renderer registry: list / resolve / detect framework renderers (see docs/multi-framework/renderers.md)
+node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
+node scripts/validate-renderer.js --dir <renderer-dir>     # or --all [--renderers-root <dir>]
+
 # Author / validate / install / test custom agents as versioned plugins
 node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
 node scripts/validate-agent-plugin.js --dir <plugin-dir>   # or --all [--plugins-root <dir>]
@@ -205,15 +210,15 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (53 Total)
+### Custom Agents (54 Total)
 
-53 specialized agents covering the full product lifecycle:
+54 specialized agents covering the full product lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
 | Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 6 | figma-react-converter, canva-react-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
+| Design-to-Code | 7 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -557,6 +562,12 @@ gh issue create               # Create issue
 ./scripts/verify-all.sh --ci            # CI mode: JSON output, exit 1 on any failure
 ```
 
+**Renderers** (pluggable framework renderers — see `docs/multi-framework/renderers.md`):
+```bash
+node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
+node scripts/validate-renderer.js --dir <renderer-dir>   # or --all
+```
+
 **Agent Plugins** (custom agents as versioned plugins — see `docs/guides/agent-plugins.md`):
 ```bash
 node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
@@ -580,6 +591,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-05-28
-**Architecture:** 53 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 38 scripts, 8 hooks
+**Architecture:** 54 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

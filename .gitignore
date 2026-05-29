@@ -41,6 +41,8 @@ playwright-report/
 test-results/
 scripts/__tests__/fixtures/*
 !scripts/__tests__/fixtures/agent-plugins/
+!scripts/__tests__/fixtures/renderers/
+!scripts/__tests__/fixtures/projects/
 
 # Environment
 .env

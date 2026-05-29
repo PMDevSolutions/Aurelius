@@ -69,6 +69,7 @@ ALL_CHECKS=(
   "security|./scripts/check-security.sh|"
   "bundle-size|./scripts/check-bundle-size.sh|"
   "agent-plugins|./scripts/verify-agent-plugins.sh|"
+  "renderers|./scripts/verify-renderers.sh|"
 )
 
 if [[ "$LIST_ONLY" == "true" ]]; then

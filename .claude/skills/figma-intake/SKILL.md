@@ -35,16 +35,14 @@ Run these Figma MCP calls to gather context automatically:
 Simultaneously scan the local project:
 
 ```
-1. Detect framework:
-   - next.config.* → Next.js (outputTarget: "react")
-   - vite.config.* + vue in package.json → Vue + Vite (outputTarget: "vue")
-   - nuxt.config.* → Nuxt (outputTarget: "vue")
-   - svelte.config.* → SvelteKit (outputTarget: "svelte")
-   - vite.config.* + svelte in package.json → Svelte + Vite (outputTarget: "svelte")
-   - app.json with "expo" → Expo (outputTarget: "react-native")
-   - vite.config.* → Vite + React (outputTarget: "react")
-   - remix.config.* → Remix (outputTarget: "react")
-   - None → New project needed (ask output target question)
+1. Detect framework via the renderer registry:
+   - Run: node scripts/renderer-registry.js detect . --json
+   - On { "renderer": "<name>", "language": "<lang>" }:
+       set build-spec renderer = <name>
+       set build-spec outputTarget = <language>  (react | vue | svelte | react-native)
+   - On { "renderer": null }:
+       no framework detected → New project needed (ask output target question)
+   Do not hand-sniff config files or package.json deps; the registry owns detection.
 
 2. Detect app type:
    - manifest.json with "manifest_version" → Chrome Extension
@@ -127,12 +125,12 @@ Only ask questions whose answers cannot be derived from the Figma file or local 
 > (Only ask if existing project detected)
 
 **Question 6 — Output Target (only if no framework detected):**
-> What framework should I build this in?
-> a) React (Next.js / Vite / Remix)
-> b) Vue 3 (Nuxt / Vite)
-> c) Svelte (SvelteKit / Vite)
-> d) React Native (Expo)
-> (Skip if existing project with framework detected — auto-detect from package.json)
+> Run `node scripts/renderer-registry.js list --json` and present the returned
+> renderer names as the choices (each entry has `name` and `language`):
+> "Which renderer should I build this in? [numbered list of registry renderers]"
+> - Greenfield React default: `vite`.
+> - Set build-spec `renderer` = the chosen name and `outputTarget` = its `language`.
+> (Skip if the registry already detected a framework for the existing project.)
 
 **Question 7 — App Type (only if ambiguous):**
 > I detected this as a [chrome-extension / web-app / pwa]. Is that correct?
@@ -147,7 +145,8 @@ Write the spec file that all downstream phases consume:
 {
   "version": "1.0.0",
   "source": "figma",              // "figma" | "canva"
-  "outputTarget": "react",    // "react" | "vue" | "svelte" | "react-native"
+  "renderer": "vite",             // registry renderer name (from `renderer-registry list`): "nextjs" | "vite" | "sveltekit" | "expo" | "astro" | ...
+  "outputTarget": "react",    // resolved language; equals the renderer's language. "react" | "vue" | "svelte" | "react-native"
   "createdAt": "2026-03-16T12:00:00Z",
   "figma": {
     "fileKey": "abc123",
@@ -156,7 +155,7 @@ Write the spec file that all downstream phases consume:
   },
   "appType": "web-app",          // "web-app" | "chrome-extension" | "pwa"
   "framework": {
-    "type": "vite",           // "nextjs-app" | "nextjs-pages" | "vite" | "remix" | "nuxt" | "sveltekit" | "expo"
+    "type": "vite",           // DEPRECATED — superseded by top-level `renderer`. Retained for back-compat only.
     "version": "6.0.0",
     "outputDir": "src"
   },
@@ -232,6 +231,12 @@ Write the spec file that all downstream phases consume:
   }
 }
 ```
+
+**Renderer fields:**
+- `renderer` (string) is the authoritative framework field. Valid values are the renderer names from `node scripts/renderer-registry.js list --json` (currently `nextjs`, `vite`, `sveltekit`, `expo`, `astro`).
+- `outputTarget` is retained and **equals the resolved renderer's `language`** (react / vue / svelte / react-native). Set both together from the registry `detect`/`resolve` output.
+- `framework.type` is **deprecated** — folded into `renderer`. Keep it only for back-compat with older specs; `renderer` wins on any conflict.
+- **Back-compat rule:** a build-spec carrying only `outputTarget` (no `renderer`) resolves to that language's DEFAULT renderer: `react → vite`, `svelte → sveltekit`, `react-native → expo`. (`vue` has no renderer yet — its default is unsupported/future.)
 
 ### Step 5: Confirm and Proceed
 

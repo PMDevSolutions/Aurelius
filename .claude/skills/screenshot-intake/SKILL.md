@@ -190,16 +190,14 @@ Store extracted data in working memory for Step 4 (questions) and Step 5 (build-
 ### Step 3: Local Project Scan
 
 ```
-1. Detect framework (in order):
-   - next.config.* → Next.js          (outputTarget: "react")
-   - remix.config.* → Remix           (outputTarget: "react")
-   - nuxt.config.* → Nuxt             (outputTarget: "vue")
-   - svelte.config.* → SvelteKit      (outputTarget: "svelte")
-   - app.json with "expo" → Expo      (outputTarget: "react-native")
-   - vite.config.* + vue in deps → Vite+Vue       (outputTarget: "vue")
-   - vite.config.* + svelte in deps → Vite+Svelte (outputTarget: "svelte")
-   - vite.config.* → Vite+React        (outputTarget: "react")
-   - None → ask user (Q3 below)
+1. Detect framework via the renderer registry:
+   - Run: node scripts/renderer-registry.js detect . --json
+   - On { "renderer": "<name>", "language": "<lang>" }:
+       set build-spec renderer = <name>
+       set build-spec outputTarget = <language>  (react | vue | svelte | react-native)
+   - On { "renderer": null }:
+       no framework detected → ask user (Q3 below)
+   Do not hand-sniff config files or package.json deps; the registry owns detection.
 
 2. Detect app type:
    - manifest.json with "manifest_version" → chrome-extension
@@ -240,12 +238,11 @@ Only ask what cannot be derived from captures or local scan. Use `AskUserQuestio
 > Since detection is vision-based, low-confidence rows are worth a second look.
 
 **Q3 — Output target (only if no framework detected):**
-> What framework should I build this in?
-> a) React (Next.js / Vite / Remix)
-> b) Vue 3 (Nuxt / Vite)
-> c) Svelte (SvelteKit / Vite)
-> d) React Native (Expo)
-> Default: React + Vite for new projects.
+> Run `node scripts/renderer-registry.js list --json` and present the returned
+> renderer names as the choices (each entry has `name` and `language`):
+> "Which renderer should I build this in? [numbered list of registry renderers]"
+> Default: `vite` (React) for new projects.
+> Set build-spec `renderer` = the chosen name and `outputTarget` = its `language`.
 
 **Q4 — Component reuse (only if existing components detected):**
 > I found N existing components that match detected components.
@@ -271,7 +268,8 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
 {
   "version": "1.0.0",
   "source": "screenshot",
-  "outputTarget": "react",
+  "renderer": "vite",          // registry renderer name (from `renderer-registry list`): "nextjs" | "vite" | "sveltekit" | "expo" | "astro" | ...
+  "outputTarget": "react",     // resolved language; equals the renderer's language
   "createdAt": "2026-05-21T14:30:00Z",
   "screenshot": {
     "inputType": "url",
@@ -288,7 +286,7 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
   },
   "appType": "web-app",
   "framework": {
-    "type": "vite",
+    "type": "vite",            // DEPRECATED — superseded by top-level `renderer`. Retained for back-compat only.
     "version": "6.0.0",
     "outputDir": "src"
   },
@@ -371,6 +369,12 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
 **File-mode variant:** set `screenshot.inputType` to `"files"`, `sourceUrl` to `null`, and `captureMode` to `"file"`. Record original paths in a `screenshot.originalPaths` array.
 
 **Manual-fallback variant:** set `captureMode` to `"manual"`.
+
+**Renderer fields:**
+- `renderer` (string) is the authoritative framework field. Valid values are the renderer names from `node scripts/renderer-registry.js list --json` (currently `nextjs`, `vite`, `sveltekit`, `expo`, `astro`).
+- `outputTarget` is retained and **equals the resolved renderer's `language`** (react / vue / svelte / react-native). Set both together from the registry `detect`/`resolve` output.
+- `framework.type` is **deprecated** — folded into `renderer`. Keep it only for back-compat with older specs; `renderer` wins on any conflict.
+- **Back-compat rule:** a build-spec carrying only `outputTarget` (no `renderer`) resolves to that language's DEFAULT renderer: `react → vite`, `svelte → sveltekit`, `react-native → expo`. (`vue` has no renderer yet — its default is unsupported/future.)
 
 ### Step 6: Confirm and Proceed
 

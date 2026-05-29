@@ -5,45 +5,116 @@ set -euo pipefail
 # Initialize a new project with standard tooling
 #
 # Usage:
-#   ./scripts/setup-project.sh my-app              # Interactive framework prompt
-#   ./scripts/setup-project.sh my-app --next        # Create Next.js app
-#   ./scripts/setup-project.sh my-app --vite        # Create Vite + React app
-#   ./scripts/setup-project.sh my-app --react       # Create plain React app (via Vite)
-#   ./scripts/setup-project.sh my-app --vue         # Create Vue 3 app
-#   ./scripts/setup-project.sh my-app --svelte      # Create SvelteKit app
-#   ./scripts/setup-project.sh my-app --expo        # Create Expo (React Native) app
+#   ./scripts/setup-project.sh my-app                    # Interactive framework prompt
+#   ./scripts/setup-project.sh my-app --renderer nextjs  # Create app for a registry renderer
+#   ./scripts/setup-project.sh my-app --next             # Alias for --renderer nextjs
+#   ./scripts/setup-project.sh my-app --vite             # Alias for --renderer vite
+#   ./scripts/setup-project.sh my-app --react            # Create plain React app (via Vite)
+#   ./scripts/setup-project.sh my-app --vue              # Create Vue 3 app
+#   ./scripts/setup-project.sh my-app --svelte           # Alias for --renderer sveltekit
+#   ./scripts/setup-project.sh my-app --expo             # Alias for --renderer expo
+#
+# The --renderer flag is backed by the renderer registry
+# (scripts/renderer-registry.js). The legacy framework flags above are kept as
+# aliases. Use --dry-run to print the resolved plan without creating anything.
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REGISTRY="$SCRIPT_DIR/renderer-registry.js"
+TEMPLATES_DIR="$SCRIPT_DIR/../templates"
+
+# List available renderers from the registry (space-separated names).
+list_renderers() {
+    node "$REGISTRY" list --json 2>/dev/null \
+        | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).renderers.map(r=>r.name).join(" "))}catch(e){process.exit(1)}})'
+}
+
+usage() {
+    local renderers
+    renderers="$(list_renderers || echo "nextjs vite sveltekit expo astro")"
+    echo "Usage: $0 <project-name> [--renderer <name>] [--dry-run]"
+    echo "       $0 <project-name> [--next|--vite|--react|--vue|--svelte|--expo] [--dry-run]"
+    echo ""
+    echo "Options:"
+    echo "  --renderer <name>  Create an app for a registry renderer (authoritative)"
+    echo "                     Available renderers: ${renderers}"
+    echo "  --next             Alias for --renderer nextjs"
+    echo "  --vite             Alias for --renderer vite"
+    echo "  --react            Create a plain React app (via Vite)"
+    echo "  --vue              Create a Vue 3 app"
+    echo "  --svelte           Alias for --renderer sveltekit"
+    echo "  --expo             Alias for --renderer expo"
+    echo "  --dry-run          Print the resolved plan and exit without creating anything"
+    echo "  -h, --help         Show this message"
+}
 
 PROJECT_NAME="${1:-}"
 FRAMEWORK=""
+RENDERER=""
+DRY_RUN=0
 
-if [[ -z "$PROJECT_NAME" ]]; then
-    echo "Usage: $0 <project-name> [--next|--vite|--react|--vue|--svelte|--expo]"
-    echo ""
-    echo "Options:"
-    echo "  --next     Create a Next.js app"
-    echo "  --vite     Create a Vite + React app"
-    echo "  --react    Create a plain React app (via Vite)"
-    echo "  --vue      Create a Vue 3 app"
-    echo "  --svelte   Create a SvelteKit app"
-    echo "  --expo     Create an Expo (React Native) app"
-    exit 1
+if [[ -z "$PROJECT_NAME" || "$PROJECT_NAME" == "-h" || "$PROJECT_NAME" == "--help" ]]; then
+    usage
+    [[ -z "$PROJECT_NAME" ]] && exit 1 || exit 0
 fi
 
-# Parse framework flag
-for arg in "${@:2}"; do
+# Parse flags
+args=("${@:2}")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    arg="${args[$i]}"
     case "$arg" in
-        --next) FRAMEWORK="next" ;;
-        --vite) FRAMEWORK="vite" ;;
+        --renderer)
+            i=$((i + 1))
+            RENDERER="${args[$i]:-}"
+            if [[ -z "$RENDERER" ]]; then
+                echo "Error: --renderer requires a value." >&2
+                usage
+                exit 1
+            fi
+            ;;
+        --next) RENDERER="nextjs" ;;
+        --vite) RENDERER="vite" ;;
+        --expo) RENDERER="expo" ;;
+        --svelte) RENDERER="sveltekit" ;;
         --react) FRAMEWORK="react" ;;
         --vue) FRAMEWORK="vue" ;;
-        --svelte) FRAMEWORK="svelte" ;;
-        --expo) FRAMEWORK="expo" ;;
-        *) echo "Unknown option: $arg"; exit 1 ;;
+        --dry-run) DRY_RUN=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown option: $arg" >&2; usage; exit 1 ;;
     esac
+    i=$((i + 1))
 done
 
-# Interactive prompt if no framework specified
-if [[ -z "$FRAMEWORK" ]]; then
+# A --renderer (or its alias) is authoritative and is resolved via the registry.
+# It maps onto an internal FRAMEWORK identity that drives dependency installation
+# and template copying below.
+TEMPLATE_PATH=""
+if [[ -n "$RENDERER" ]]; then
+    # Validate the renderer name against the registry and resolve its manifest.
+    if ! MANIFEST_JSON="$(node "$REGISTRY" resolve "$RENDERER" --json 2>/dev/null)"; then
+        AVAILABLE="$(list_renderers || echo "")"
+        echo "Error: unknown renderer '$RENDERER'." >&2
+        [[ -n "$AVAILABLE" ]] && echo "Available renderers: $AVAILABLE" >&2
+        exit 1
+    fi
+
+    # Extract manifest.template (e.g. "templates/astro") from the resolved manifest.
+    TEMPLATE_PATH="$(printf '%s' "$MANIFEST_JSON" \
+        | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).template||"")}catch(e){process.exit(1)}})')"
+
+    # Map the renderer onto the internal FRAMEWORK identity used for dep install.
+    case "$RENDERER" in
+        nextjs) FRAMEWORK="next" ;;
+        vite) FRAMEWORK="vite" ;;
+        sveltekit) FRAMEWORK="svelte" ;;
+        expo) FRAMEWORK="expo" ;;
+        astro) FRAMEWORK="astro" ;;
+        *) FRAMEWORK="$RENDERER" ;;
+    esac
+fi
+
+# Interactive prompt if nothing was specified
+if [[ -z "$FRAMEWORK" && -z "$RENDERER" ]]; then
     echo "Select a framework:"
     echo "  1) Next.js"
     echo "  2) Vite + React"
@@ -51,16 +122,18 @@ if [[ -z "$FRAMEWORK" ]]; then
     echo "  4) Vue 3"
     echo "  5) SvelteKit"
     echo "  6) Expo (React Native)"
+    echo "  7) Astro (hybrid islands)"
     echo ""
-    read -rp "Enter choice [1-6]: " CHOICE
+    read -rp "Enter choice [1-7]: " CHOICE
 
     case "$CHOICE" in
-        1) FRAMEWORK="next" ;;
-        2) FRAMEWORK="vite" ;;
+        1) RENDERER="nextjs"; FRAMEWORK="next" ;;
+        2) RENDERER="vite"; FRAMEWORK="vite" ;;
         3) FRAMEWORK="react" ;;
         4) FRAMEWORK="vue" ;;
-        5) FRAMEWORK="svelte" ;;
-        6) FRAMEWORK="expo" ;;
+        5) RENDERER="sveltekit"; FRAMEWORK="svelte" ;;
+        6) RENDERER="expo"; FRAMEWORK="expo" ;;
+        7) RENDERER="astro"; FRAMEWORK="astro" ;;
         *)
             echo "Invalid choice. Exiting."
             exit 1
@@ -68,11 +141,35 @@ if [[ -z "$FRAMEWORK" ]]; then
     esac
 fi
 
+# Determine the template directory for the framework.
+# A registry-resolved renderer supplies its own template path (manifest.template,
+# relative to the repo root); otherwise fall back to the legacy mapping.
+FRAMEWORK_TEMPLATE="$FRAMEWORK"
+case "$FRAMEWORK" in
+    react) FRAMEWORK_TEMPLATE="vite" ;;
+    svelte) FRAMEWORK_TEMPLATE="sveltekit" ;;
+esac
+if [[ -n "$TEMPLATE_PATH" ]]; then
+    # manifest.template is "templates/<name>"; strip the leading "templates/".
+    FRAMEWORK_TEMPLATE="${TEMPLATE_PATH#templates/}"
+fi
+
 echo ""
 echo "=== Project Setup ==="
 echo "Project: $PROJECT_NAME"
+[[ -n "$RENDERER" ]] && echo "Renderer: $RENDERER"
 echo "Framework: $FRAMEWORK"
+echo "Template: templates/$FRAMEWORK_TEMPLATE"
 echo ""
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "[dry-run] No project created. Would scaffold '$PROJECT_NAME' using:"
+    echo "[dry-run]   renderer:  ${RENDERER:-<none>}"
+    echo "[dry-run]   framework: $FRAMEWORK"
+    echo "[dry-run]   template:  templates/$FRAMEWORK_TEMPLATE"
+    echo "[dry-run]   shared:    templates/shared"
+    exit 0
+fi
 
 # Create the project
 case "$FRAMEWORK" in
@@ -99,6 +196,10 @@ case "$FRAMEWORK" in
     expo)
         echo "Creating Expo app..."
         pnpm create expo-app "$PROJECT_NAME" --template tabs
+        ;;
+    astro)
+        echo "Creating Astro app..."
+        pnpm create astro@latest "$PROJECT_NAME" -- --template basics --typescript strict --no-install --no-git
         ;;
 esac
 
@@ -131,6 +232,10 @@ case "$FRAMEWORK" in
     svelte)
         ADDITIONAL_DEPS+=(prettier vitest @testing-library/svelte jsdom @vitest/coverage-v8)
         ;;
+    astro)
+        # Astro hybrid: React islands + Tailwind + container-based testing
+        ADDITIONAL_DEPS+=(@astrojs/react @astrojs/tailwind tailwindcss prettier vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @vitest/coverage-v8)
+        ;;
     expo)
         ADDITIONAL_DEPS+=(prettier jest jest-expo @testing-library/react-native)
         ;;
@@ -141,16 +246,6 @@ if [[ ${#ADDITIONAL_DEPS[@]} -gt 0 ]]; then
 fi
 
 # Copy template configs from the framework repo
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TEMPLATES_DIR="$SCRIPT_DIR/../templates"
-
-# Determine the template directory for the framework
-FRAMEWORK_TEMPLATE="$FRAMEWORK"
-case "$FRAMEWORK" in
-    react) FRAMEWORK_TEMPLATE="vite" ;;
-    svelte) FRAMEWORK_TEMPLATE="sveltekit" ;;
-esac
-
 if [[ -d "$TEMPLATES_DIR" ]]; then
     echo ""
     echo "Copying template configurations..."
@@ -172,8 +267,8 @@ if [[ -d "$TEMPLATES_DIR" ]]; then
                             vitest.config.template.ts|tailwind.config.ts) continue ;;
                         esac
                         ;;
-                    vue)
-                        # Vue has its own tailwind.config.ts with Vue file extensions
+                    vue|astro)
+                        # Vue and Astro have their own tailwind config in the framework template
                         case "$FILENAME" in
                             tailwind.config.ts) continue ;;
                         esac
@@ -261,6 +356,12 @@ case "$FRAMEWORK" in
         echo "  pnpm vitest               # Run tests"
         echo "  pnpm vitest --coverage    # Run tests with coverage"
         ;;
+    astro)
+        echo "  pnpm dev                  # Start development server (port 4321)"
+        echo "  pnpm build                # Build for production"
+        echo "  pnpm vitest               # Run tests (React islands + Astro Container API)"
+        echo "  pnpm vitest --coverage    # Run tests with coverage"
+        ;;
     expo)
         echo "  pnpm start                # Start Expo dev server"
         echo "  pnpm ios                  # Run on iOS simulator"
@@ -280,5 +381,6 @@ case "$FRAMEWORK" in
     next|vite|react) echo "  - Vitest" ;;
     vue) echo "  - Volar (Vue)" ; echo "  - Vitest" ;;
     svelte) echo "  - Svelte for VS Code" ; echo "  - Vitest" ;;
+    astro) echo "  - Astro" ; echo "  - Vitest" ;;
     expo) echo "  - React Native Tools" ;;
 esac
