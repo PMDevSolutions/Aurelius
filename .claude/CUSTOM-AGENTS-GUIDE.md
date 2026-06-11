@@ -1,7 +1,7 @@
 # Custom Agents Guide
 
-**Last Updated:** 2026-03-25
-**Total Agents:** 54
+**Last Updated:** 2026-06-11
+**Total Agents:** 55
 **Location:** `.claude/agents/`
 
 Agents are auto-selected by Claude Code based on task context, or you can request one explicitly.
@@ -42,6 +42,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 | figma-react-converter | Figma-to-React conversion pipeline orchestration | Converting Figma designs into React components with Tailwind CSS |
 | canva-react-converter | Canva-to-React conversion from screenshots | Converting Canva designs into React components with Tailwind CSS |
 | astro-converter | Design-to-Astro hybrid conversion (zero-JS .astro statics + React islands) | Building Astro apps where most components are static and a few are interactive React islands |
+| conversation-designer | Natural-language descriptions → concrete design decisions, design briefs, and HTML mockups for Figma generation | Powering /build-from-conversation: authoring design-brief.json and the mockups captured into Figma |
 | asset-cataloger | Image/asset semantic mapping and validation | Mapping hash-named exports to meaningful names, validating asset usage |
 
 ## Testing & QA
@@ -140,7 +141,7 @@ User: "Use the accessibility-auditor agent to check this page"
 
 ## Agent + Skill Integration
 
-Agents work alongside the 20 custom skills in `.claude/skills/`:
+Agents work alongside the 22 custom skills in `.claude/skills/`:
 
 | Agent | Complementary Skill |
 |-------|-------------------|
@@ -156,6 +157,7 @@ Agents work alongside the 20 custom skills in `.claude/skills/`:
 | animation-optimizer | animation-motion |
 | bundle-analyzer | react-performance-optimization |
 | canva-react-converter | canva-token-inference |
+| conversation-designer | conversation-intake, design-brief-to-figma |
 
 **Skills Documentation:** `.claude/skills/README.md`
 
@@ -181,4 +183,5 @@ Agents work alongside the 20 custom skills in `.claude/skills/`:
 | Upgrade React/Next.js | migration-specialist |
 | Add internationalization | i18n-engineer |
 | Convert Canva to React | canva-react-converter |
+| Build an app from a description | conversation-designer (via /build-from-conversation) |
 | Ship a release | project-shipper |

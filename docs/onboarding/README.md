@@ -11,7 +11,7 @@ This guide will get you productive with the framework quickly, whether you are b
 | Document | What You Will Learn |
 |----------|-------------------|
 | [Quickstart Guide](quickstart.md) | Clone, install, create your first project, and run your first pipeline in under 10 minutes |
-| [Architecture Overview](architecture.md) | How the 54 agents, 20 skills, 3 pipelines, and 8 hooks fit together |
+| [Architecture Overview](architecture.md) | How the 55 agents, 22 skills, 4 pipelines, and 8 hooks fit together |
 | [Pipeline Configuration](pipeline-configuration.md) | Every setting in `pipeline.config.json` explained, with examples |
 | [Troubleshooting FAQ](troubleshooting.md) | Common issues, error messages, and how to resolve them |
 | [Framework Guides](../guides/README.md) | Deep dives into design tokens, visual QA, caching, hooks, error recovery, agent creation, and framework-specific workflows |
@@ -21,7 +21,7 @@ This guide will get you productive with the framework quickly, whether you are b
 ## Who Is This For?
 
 - **New contributors** who want to understand the project structure before making changes
-- **App developers** using Aurelius to build production applications from Figma, Canva, or screenshot designs
+- **App developers** using Aurelius to build production applications from Figma, Canva, or screenshot designs -- or from a plain conversation (`/build-from-conversation`)
 - **Claude Code users** who want to understand how the agents and skills enhance their workflow
 - **Framework maintainers** who need to add new agents, skills, or pipeline phases
 
@@ -52,14 +52,15 @@ Optional (for specific workflows):
 
 - [Main README](../../README.md) -- Project overview
 - [Contributing Guide](../../CONTRIBUTING.md) -- Branch naming, PR process, commit conventions
-- [Agent Catalog](../../.claude/CUSTOM-AGENTS-GUIDE.md) -- All 54 agents with use cases
-- [Skills Catalog](../../.claude/skills/README.md) -- All 20 skills with triggers
+- [Agent Catalog](../../.claude/CUSTOM-AGENTS-GUIDE.md) -- All 55 agents with use cases
+- [Skills Catalog](../../.claude/skills/README.md) -- All 22 skills with triggers
 - [Plugin Reference](../../.claude/PLUGINS-REFERENCE.md) -- Installed plugins and commands
 - [Pipeline Config](../../.claude/pipeline.config.json) -- Thresholds and app-type definitions
 - [React Development Standards](../react-development/README.md) -- TypeScript, Tailwind, testing conventions
 - [Figma Pipeline Guide](../figma-to-react/README.md) -- Figma-to-React pipeline deep dive
 - [Canva Pipeline Guide](../canva-to-react/README.md) -- Canva-to-React pipeline deep dive
 - [Screenshot Pipeline Guide](../screenshot-to-app/README.md) -- Screenshot/URL-to-app pipeline
+- [Conversation Pipeline Guide](../conversation-to-app/README.md) -- Conversational app creation via generated Figma designs
 - [Multi-Framework Guide](../multi-framework/README.md) -- Vue, Svelte, React Native output targets
 
 ---

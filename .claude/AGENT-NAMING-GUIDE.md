@@ -1,10 +1,10 @@
 # Agent Naming Guide
 
-**Last Updated:** 2026-04-02
+**Last Updated:** 2026-06-11
 
 ## Naming Convention
 
-All 54 agents use unique, hyphenated names (e.g., `frontend-developer`, `figma-react-converter`). There are no naming conflicts in the current agent set.
+All 55 agents use unique, hyphenated names (e.g., `frontend-developer`, `figma-react-converter`). There are no naming conflicts in the current agent set.
 
 Agent files live in `.claude/agents/` as `<agent-name>.md`.
 

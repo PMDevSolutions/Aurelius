@@ -22,6 +22,29 @@ Gather everything needed to build a React app from a Figma design in a single st
 
 ## Process
 
+### Step 0: Conversation Fast-Path (Skip the Interview)
+
+If `.claude/plans/build-spec.json` already exists with `"source": "conversation"`, the spec was produced by the `conversation-intake` skill and the Figma file was generated from it by `design-brief-to-figma` — the interview already happened in `/build-from-conversation`. Do **not** re-interview the user. Instead:
+
+```
+1. Verify the spec's figma block is populated (fileKey, url) and matches the
+   URL this skill was invoked with. Mismatch → ask which file wins.
+2. Verify the file is reachable: get_metadata(fileKey).
+3. Backfill any pages[].figmaNodeId that is still null from the metadata
+   (match generated frames to pages by name/order).
+4. Keep "source": "conversation" unchanged — downstream phases treat the spec
+   exactly like a Figma-sourced one; the source value preserves provenance.
+5. Expect no Figma variables in the generated file: token extraction
+   (design-token-lock) will fall back to computed styles, which is correct
+   here because the captured mockups were rendered from the design brief's
+   exact values.
+6. Skip Steps 1-3 below entirely and proceed to Step 4 validation /
+   Step 5 confirmation only if the spec is incomplete; otherwise report
+   "fast-path: spec reused" and hand control back to the pipeline (Phase 2).
+```
+
+If the file at `figma.url` no longer exists, fall through to the normal flow below using the URL the user provided.
+
 ### Step 1: Auto-Discovery (No User Input)
 
 Run these Figma MCP calls to gather context automatically:
@@ -144,7 +167,7 @@ Write the spec file that all downstream phases consume:
 // .claude/plans/build-spec.json
 {
   "version": "1.0.0",
-  "source": "figma",              // "figma" | "canva"
+  "source": "figma",              // "figma" | "canva" | "screenshot" | "conversation"
   "renderer": "vite",             // registry renderer name (from `renderer-registry list`): "nextjs" | "vite" | "sveltekit" | "expo" | "astro" | ...
   "outputTarget": "react",    // resolved language; equals the renderer's language. "react" | "vue" | "svelte" | "react-native"
   "createdAt": "2026-03-16T12:00:00Z",
@@ -270,4 +293,5 @@ Wait for user confirmation before the pipeline continues.
 ## Integration
 
 - **Consumed by:** `design-token-lock`, `tdd-from-figma`, `figma-to-react-workflow`, `/build-from-figma`
+- **Fast-path trigger:** a build-spec with `"source": "conversation"` (written by `conversation-intake` and completed by `design-brief-to-figma` in `/build-from-conversation`) skips the interview — see Step 0
 - **Uses:** Figma MCP (`get_metadata`, `get_variable_defs`, `get_screenshot`), Glob, Read

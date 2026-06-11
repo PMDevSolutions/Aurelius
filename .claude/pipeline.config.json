@@ -384,6 +384,34 @@
       ]
     }
   },
+  "conversation": {
+    "enabled": true,
+    "interview": {
+      "maxQuestions": 7,
+      "confirmBriefWithUser": true
+    },
+    "designGeneration": {
+      "mockupDir": ".claude/design-mockups",
+      "mockupServerPort": 4173,
+      "reviewBeforeHandoff": true,
+      "maxRegenerationAttempts": 2,
+      "capturePollIntervalMs": 5000,
+      "capturePollMaxAttempts": 10
+    },
+    "retry": {
+      "maxAttempts": 3,
+      "initialDelayMs": 2000,
+      "backoffMultiplier": 2,
+      "maxDelayMs": 30000,
+      "retryableErrors": [
+        "rate_limit",
+        "timeout",
+        "server_error",
+        "capture_failed",
+        "mcp_connection_lost"
+      ]
+    }
+  },
   "orchestration": {
     "enabled": true,
     "maxConcurrent": 3,
