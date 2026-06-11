@@ -108,7 +108,7 @@ Captures the page, analyzes it with vision, and builds a working app. Supports a
 
 ## 5. Using Claude Code Agents
 
-When you work with Claude Code in this repository, **54 specialized agents** are available automatically. You do not need to invoke them manually -- Claude Code selects the right agent based on your task.
+When you work with Claude Code in this repository, **55 specialized agents** are available automatically. You do not need to invoke them manually -- Claude Code selects the right agent based on your task.
 
 ### Examples
 
@@ -142,6 +142,7 @@ Skills are invoked with slash commands. Key ones:
 | `/build-from-figma <URL>` | Full Figma-to-app pipeline |
 | `/build-from-canva <URL>` | Full Canva-to-app pipeline |
 | `/build-from-screenshot <URL>` | Full screenshot-to-app pipeline |
+| `/build-from-conversation [description]` | Describe an app → generated Figma design → full pipeline |
 | `/commit` | Structured git commit |
 | `/commit-push-pr` | Commit, push, and create PR |
 | `/lint` | Run ESLint + Prettier |
@@ -186,8 +187,8 @@ The pipeline auto-detects the framework from `package.json` if `outputTarget` is
 ```
 Aurelius/
 ├── .claude/
-│   ├── agents/              # 54 specialized agents
-│   ├── skills/              # 20 development skills
+│   ├── agents/              # 55 specialized agents
+│   ├── skills/              # 22 development skills
 │   ├── commands/            # Slash commands (/build-from-figma, /lint, /test)
 │   ├── hooks/               # Hook scripts (8 automated hooks)
 │   ├── pipeline.config.json # All pipeline thresholds and behavior

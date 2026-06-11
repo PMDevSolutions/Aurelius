@@ -8,7 +8,7 @@ This is a **Claude Code-integrated multi-framework app development framework** p
 
 The framework is designed for:
 - Multi-framework app development (React/Next.js/Vite/Remix, Vue 3, SvelteKit, React Native/Expo)
-- Figma-to-code, Canva-to-code, and Screenshot/URL-to-code conversion with Tailwind CSS
+- Figma-to-code, Canva-to-code, Screenshot/URL-to-code, and Conversation-to-code (generated Figma designs) conversion with Tailwind CSS
 - Comprehensive testing (Vitest, React Testing Library, Playwright, Storybook)
 - Full product lifecycle support (engineering, design, testing, marketing, operations)
 
@@ -17,8 +17,8 @@ The framework is designed for:
 ```
 project-root/
 ├── .claude/              # Claude Code configuration
-│   ├── agents/           # 54 specialized agents
-│   ├── skills/           # 20 React-specific skills
+│   ├── agents/           # 55 specialized agents
+│   ├── skills/           # 22 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
@@ -29,6 +29,7 @@ project-root/
 │   ├── figma-to-react/   # Figma conversion pipeline docs
 │   ├── canva-to-react/   # Canva conversion pipeline docs
 │   ├── screenshot-to-app/ # Screenshot/URL conversion pipeline docs
+│   ├── conversation-to-app/ # Conversation pipeline docs (generated Figma designs)
 │   ├── multi-framework/  # Multi-framework output target docs
 │   └── react-development/# React development standards
 └── CLAUDE.md             # This file
@@ -210,15 +211,15 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (54 Total)
+### Custom Agents (55 Total)
 
-54 specialized agents covering the full product lifecycle:
+55 specialized agents covering the full product lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
 | Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 7 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter |
+| Design-to-Code | 8 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter, conversation-designer |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -234,7 +235,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (20 Total)
+### Skills (22 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -251,6 +252,8 @@ Agents are invoked automatically based on task context.
 | canva-intake | Canva design discovery → build-spec.json (with appType) | Phase 1 of /build-from-canva |
 | canva-token-inference | AI-powered token extraction from Canva/screenshot sources | Phase 2 of /build-from-canva and /build-from-screenshot |
 | screenshot-intake | URL/screenshot discovery → build-spec.json (with outputTarget) | "build from screenshot", "clone this site" |
+| conversation-intake | Conversational interview → build-spec.json + design-brief.json (no design file) | Phase C0 of /build-from-conversation |
+| design-brief-to-figma | Generates a real Figma file from design-brief.json via HTML-mockup capture | Phase C1 of /build-from-conversation |
 | state-management | State architecture: Zustand, TanStack Query, URL state | "state management", "zustand", "data fetching" |
 | form-handling | React Hook Form + Zod: typed forms, field arrays, wizards | "form", "validation", "react hook form" |
 | auth-flows | Auth.js, Clerk, Supabase Auth, RBAC, protected routes | "auth", "login", "session", "OAuth" |
@@ -353,6 +356,25 @@ Same 12-phase pipeline as Figma/Canva with screenshot-specific Phase 1:
 Supports all output targets: React, Vue 3, Svelte/SvelteKit, React Native (Expo).
 
 **Documentation:** `docs/screenshot-to-app/README.md`
+
+---
+
+### Conversation-to-App Pipeline
+
+**Single command:** `/build-from-conversation [optional description]`
+
+"Talk to build" — no pre-existing design file required. Two new phases generate a real Figma design from a structured conversation, then hand off to the unchanged `/build-from-figma` pipeline:
+
+- **Phase C0:** conversation-intake (max-7-question interview + conversation-designer agent → `build-spec.json` with `"source": "conversation"` + `design-brief.json`)
+- **Phase C1:** design-brief-to-figma (per-page HTML mockups → new Figma file via `create_new_file` + `generate_figma_design` capture → node IDs mapped into the build spec)
+- **Handoff:** `/build-from-figma <generated URL>` runs phases 0-9 as usual; figma-intake fast-paths on the conversation-sourced build spec (no second interview), and design-token-lock falls back to computed styles (generated files carry no Figma variables)
+
+**Key artifacts:**
+- `design-brief.json` — Style direction, color/typography/layout decisions, and natural-language component descriptions
+- `.claude/design-mockups/*.html` — Per-page mockups captured into Figma (kept for cheap re-capture)
+- `pipeline.config.json` → `conversation` — Interview cap, mockup server, capture polling, review gate, retry policy
+
+**Documentation:** `docs/conversation-to-app/README.md`
 
 ---
 
@@ -512,6 +534,7 @@ Claude: [Uses test-writer-fixer agent]
 /build-from-figma <URL>       # Full autonomous Figma pipeline
 /build-from-canva <URL>       # Full autonomous Canva pipeline
 /build-from-screenshot <URL or paths>  # Full autonomous screenshot pipeline
+/build-from-conversation [description] # Conversational pipeline: interview → generated Figma → build
 /export-design-system [flags] # Export components + tokens as publishable pnpm workspace
 ```
 
@@ -590,7 +613,7 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 
 ---
 
-**Last Updated:** 2026-05-28
-**Architecture:** 54 agents, 20 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Last Updated:** 2026-06-11
+**Architecture:** 55 agents, 22 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

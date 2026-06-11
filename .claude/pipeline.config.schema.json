@@ -438,6 +438,36 @@
       }
     },
 
+    "conversation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Conversation pipeline configuration: structured-interview limits and Figma design generation from the design brief.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "interview": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxQuestions": { "type": "integer", "minimum": 1, "maximum": 10, "description": "Upper bound on interview questions asked during conversation-intake." },
+            "confirmBriefWithUser": { "type": "boolean", "description": "Block before design generation until the user confirms the design brief and build plan." }
+          }
+        },
+        "designGeneration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mockupDir": { "type": "string", "description": "Directory where per-page HTML mockups are written before Figma capture." },
+            "mockupServerPort": { "type": "integer", "minimum": 1, "maximum": 65535, "description": "Local port for the static server that hosts mockups during generate_figma_design capture." },
+            "reviewBeforeHandoff": { "type": "boolean", "description": "Show the generated Figma file to the user for approval before invoking /build-from-figma." },
+            "maxRegenerationAttempts": { "type": "integer", "minimum": 0, "description": "Max brief-revision/regeneration loops when the user rejects the generated design." },
+            "capturePollIntervalMs": { "type": "integer", "minimum": 0, "description": "Delay between generate_figma_design capture status polls." },
+            "capturePollMaxAttempts": { "type": "integer", "minimum": 1, "description": "Max capture status polls per page before the capture is considered failed." }
+          }
+        },
+        "retry": { "$ref": "#/$defs/retryOptions" }
+      }
+    },
+
     "orchestration": {
       "type": "object",
       "additionalProperties": false,

@@ -1,7 +1,7 @@
 # Skills Catalog
 
-**Last Updated:** 2026-05-23
-**Total Skills:** 20
+**Last Updated:** 2026-06-11
+**Total Skills:** 22
 **Location:** `.claude/skills/`
 
 Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
@@ -68,58 +68,72 @@ These skills power the `/build-from-canva` and `/build-from-screenshot` autonomo
 - **Triggers:** Phase 1 of `/build-from-screenshot`, "build from screenshot", "clone this site"
 - **Output:** `.claude/plans/build-spec.json`
 
+### Conversation Pipeline Skills
+
+These skills power the `/build-from-conversation` autonomous pipeline. They run *before* the shared pipeline: Phase C0 produces the build spec and design brief from an interview, Phase C1 generates a real Figma file from the brief, and the standard `/build-from-figma` pipeline takes over from there (its `figma-intake` skill fast-paths on conversation-sourced build specs).
+
+#### 11. conversation-intake (Phase C0 -- Conversation)
+- **Purpose:** Structured interview (max 7 questions) that turns a natural-language app description into a `build-spec.json` with `source: "conversation"` plus a `design-brief.json`. Dispatches the conversation-designer agent to make concrete design decisions. No design file required.
+- **Triggers:** Phase C0 of `/build-from-conversation`, "describe an app", "talk to build"
+- **Output:** `.claude/plans/build-spec.json`, `.claude/plans/design-brief.json`
+
+#### 12. design-brief-to-figma (Phase C1 -- Conversation)
+- **Purpose:** Generates a real Figma file from the design brief: renders per-page HTML mockups (conversation-designer agent), serves them locally, creates a new Figma file, and captures each mockup into it via the Figma MCP `generate_figma_design` tool. Maps the generated node IDs back into the build spec.
+- **Triggers:** Phase C1 of `/build-from-conversation`, "generate a Figma design from a description"
+- **Output:** Figma file URL + updated `.claude/plans/build-spec.json`
+
 ### React Development Skills
 
 These skills provide patterns and best practices. They trigger on relevant keywords during any React development work.
 
-#### 11. react-component-development
+#### 13. react-component-development
 - **Purpose:** Component patterns, TypeScript conventions, custom hooks, composition, and Tailwind CSS best practices
 - **Triggers:** "create component", "component pattern", "custom hook", "React best practices"
 - **Works with:** frontend-developer agent, ui-designer agent
 
-#### 12. react-testing-workflows
+#### 14. react-testing-workflows
 - **Purpose:** Testing strategy with Vitest, React Testing Library, Playwright, and Storybook
 - **Triggers:** "write tests", "test coverage", "Vitest", "Playwright", "Storybook"
 - **Works with:** test-writer-fixer agent, test-results-analyzer agent
 
-#### 13. react-performance-optimization
+#### 15. react-performance-optimization
 - **Purpose:** Performance profiling, bundle analysis, code splitting, and Web Vitals
 - **Triggers:** "performance", "bundle size", "Web Vitals", "lazy loading", "profiling"
 - **Works with:** performance-benchmarker agent, analytics-reporter agent
 
-#### 14. react-accessibility
+#### 16. react-accessibility
 - **Purpose:** WCAG 2.1 AA patterns for React, ARIA usage, keyboard navigation, focus management
 - **Triggers:** "accessibility", "WCAG", "ARIA", "a11y", "keyboard navigation"
 - **Works with:** accessibility-auditor agent, ux-researcher agent
 
-#### 15. state-management
+#### 17. state-management
 - **Purpose:** State architecture decisions — Zustand for global UI state, TanStack Query for server state, URL state patterns, and anti-patterns to avoid
 - **Triggers:** "state management", "zustand", "tanstack query", "react query", "global state", "data fetching", "caching"
 - **Works with:** frontend-developer agent
 
-#### 16. form-handling
+#### 18. form-handling
 - **Purpose:** Form patterns with React Hook Form + Zod — typed forms, reusable field components, dynamic field arrays, multi-step wizards, server actions, and accessible error handling
 - **Triggers:** "form", "form handling", "react hook form", "zod", "validation", "multi-step form", "wizard"
 - **Works with:** frontend-developer agent, accessibility-auditor agent
 
-#### 17. auth-flows
+#### 19. auth-flows
 - **Purpose:** Authentication patterns — Auth.js v5 (NextAuth), Clerk, Supabase Auth. Covers session management, protected routes, OAuth, and role-based access control (RBAC)
 - **Triggers:** "auth", "authentication", "login", "sign in", "session", "protected route", "OAuth", "clerk", "supabase auth"
 - **Works with:** backend-architect agent, frontend-developer agent
 
-#### 18. animation-motion
+#### 20. animation-motion
 - **Purpose:** Animation patterns — Framer Motion (motion/react), CSS transitions, page transitions, scroll-driven animations, staggered lists, and reduced-motion accessibility
 - **Triggers:** "animation", "framer motion", "transition", "micro-interaction", "page transition", "scroll animation", "motion"
 - **Works with:** frontend-developer agent, whimsy-injector agent
 
-#### 19. seo-metadata
+#### 21. seo-metadata
 - **Purpose:** SEO patterns — Next.js Metadata API, Open Graph tags, dynamic OG images, structured data (JSON-LD), sitemaps, robots.txt, and Vite SPA SEO with react-helmet-async
 - **Triggers:** "SEO", "metadata", "open graph", "og image", "sitemap", "structured data", "json-ld", "meta tags"
 - **Works with:** frontend-developer agent, content-creator agent
 
 ### Export Skills
 
-#### 20. export-design-system
+#### 22. export-design-system
 - **Purpose:** Exports generated components + `design-tokens.lock.json` as a publishable pnpm workspace. Generates a framework-agnostic tokens package and a framework-specific component library (React/Vue/Svelte via Vite library mode, React Native via tsc), with Tailwind preset, ThemeProvider, and Changesets versioning.
 - **Triggers:** `/export-design-system`, "export design system", "publishable component library"
 - **Output:** `packages/` pnpm workspace (tokens + component library)
@@ -129,6 +143,15 @@ These skills provide patterns and best practices. They trigger on relevant keywo
 ## Pipeline Flow
 
 ```
+Conversation ("describe your app")
+    |
+    v
+[Phase C0] conversation-intake → build-spec.json + design-brief.json
+    |
+    v
+[Phase C1] design-brief-to-figma → generated Figma file
+    |
+    v  (figma-intake fast-paths conversation-sourced specs)
 Figma Design                    Canva Design
     |                               |
     v                               v

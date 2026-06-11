@@ -1,0 +1,136 @@
+{
+  "version": "1.0.0",
+  "source": "conversation",
+  "renderer": "vite",
+  "outputTarget": "react",
+  "createdAt": "2026-06-11T09:00:00Z",
+  "conversation": {
+    "description": "An analytics dashboard for a small SaaS team: revenue and usage stats at a glance, a sortable customer table, and a settings page. Clean and minimal, brand blue, needs auth and dark mode.",
+    "designBrief": ".claude/plans/design-brief.json",
+    "interviewQuestionCount": 6
+  },
+  "figma": {
+    "fileKey": "GENa1b2c3d4e5f6",
+    "fileName": "Pulse Analytics",
+    "url": "https://figma.com/design/GENa1b2c3d4e5f6/Pulse-Analytics",
+    "generated": true
+  },
+  "appType": "web-app",
+  "framework": {
+    "type": "vite",
+    "version": "8.0.0",
+    "outputDir": "src"
+  },
+  "styling": {
+    "approach": "tailwind",
+    "uiLibrary": "none",
+    "existingTokens": false
+  },
+  "pages": [
+    {
+      "figmaNodeId": "1:2",
+      "name": "Dashboard",
+      "route": "/",
+      "mockupPath": ".claude/design-mockups/dashboard.html",
+      "sections": ["sidebar", "stats-overview", "revenue-chart", "customer-table"]
+    },
+    {
+      "figmaNodeId": "1:48",
+      "name": "Settings",
+      "route": "/settings",
+      "mockupPath": ".claude/design-mockups/settings.html",
+      "sections": ["sidebar", "profile-form", "billing", "danger-zone"]
+    }
+  ],
+  "components": [
+    {
+      "reactName": "Sidebar",
+      "category": "layout",
+      "action": "generate",
+      "existingPath": null,
+      "variants": ["expanded", "collapsed"],
+      "props": ["activeRoute", "collapsed"]
+    },
+    {
+      "reactName": "Navbar",
+      "category": "layout",
+      "action": "generate",
+      "existingPath": null,
+      "variants": [],
+      "props": ["title", "user"]
+    },
+    {
+      "reactName": "StatsCard",
+      "category": "ui",
+      "action": "generate",
+      "existingPath": null,
+      "variants": ["positive", "negative", "neutral"],
+      "props": ["label", "value", "delta"]
+    },
+    {
+      "reactName": "DataTable",
+      "category": "ui",
+      "action": "generate",
+      "existingPath": null,
+      "variants": [],
+      "props": ["columns", "rows", "sortable"]
+    },
+    {
+      "reactName": "ChartPanel",
+      "category": "sections",
+      "action": "generate",
+      "existingPath": null,
+      "variants": [],
+      "props": ["title", "range", "data"]
+    },
+    {
+      "reactName": "SettingsForm",
+      "category": "sections",
+      "action": "generate",
+      "existingPath": null,
+      "variants": [],
+      "props": ["sections", "onSave"]
+    }
+  ],
+  "textContent": {
+    "app-name": "Pulse Analytics",
+    "nav-dashboard": "Dashboard",
+    "nav-settings": "Settings",
+    "stats-revenue-label": "Monthly Revenue",
+    "stats-users-label": "Active Users",
+    "table-heading": "Customers",
+    "settings-heading": "Workspace Settings"
+  },
+  "businessLogic": {
+    "forms": ["settings-profile", "settings-billing"],
+    "apiCalls": ["GET /api/stats", "GET /api/customers", "PATCH /api/settings"],
+    "auth": "required",
+    "stateManagement": "zustand"
+  },
+  "e2e": {
+    "strategy": "navigate-interact-verify",
+    "flows": [
+      {
+        "name": "page-navigation",
+        "description": "Navigate between dashboard and settings and verify rendering",
+        "steps": ["navigate to /", "verify stats cards visible", "click Settings nav item", "verify settings form visible"]
+      },
+      {
+        "name": "table-sorting",
+        "description": "Sort the customer table by a numeric column",
+        "steps": ["navigate to /", "click Revenue column header", "verify rows reorder"]
+      }
+    ]
+  },
+  "testStrategy": {
+    "unit": true,
+    "e2e": true,
+    "visual": true,
+    "crossBrowser": false,
+    "coverageThreshold": 80
+  },
+  "options": {
+    "componentReuse": "reuse",
+    "integration": "standalone"
+  }
+}

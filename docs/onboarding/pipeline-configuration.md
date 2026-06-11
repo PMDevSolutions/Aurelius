@@ -948,6 +948,70 @@ Screenshot/URL capture pipeline configuration.
 
 ---
 
+## Conversation Pipeline (`conversation`)
+
+Conversation pipeline configuration: structured-interview limits and Figma design generation for `/build-from-conversation`.
+
+| Field              | Type      | Default   | Description                                                  |
+| ------------------ | --------- | --------- | ------------------------------------------------------------ |
+| `enabled`          | `boolean` | `true`    | Enable the conversation pipeline.                            |
+| `interview`        | `object`  | see below | Interview limits (sub-table).                                |
+| `designGeneration` | `object`  | see below | HTML-mockup rendering and Figma capture options (sub-table). |
+| `retry`            | `retryOptions` | see below | Exponential-backoff retry for Figma MCP capture failures (shared type). |
+
+**`interview`:**
+
+| Field                  | Type             | Default | Description                                                              |
+| ---------------------- | ---------------- | ------- | ------------------------------------------------------------------------ |
+| `maxQuestions`         | `integer (1–10)` | `7`     | Upper bound on interview questions asked during `conversation-intake`.   |
+| `confirmBriefWithUser` | `boolean`        | `true`  | Block before design generation until the user confirms the design brief and build plan. |
+
+**`designGeneration`:**
+
+| Field                     | Type                | Default                     | Description                                                                    |
+| ------------------------- | ------------------- | --------------------------- | ------------------------------------------------------------------------------ |
+| `mockupDir`               | `string`            | `".claude/design-mockups"`  | Directory where per-page HTML mockups are written before Figma capture.        |
+| `mockupServerPort`        | `integer (1–65535)` | `4173`                      | Local port for the static server that hosts mockups during `generate_figma_design` capture. |
+| `reviewBeforeHandoff`     | `boolean`           | `true`                      | Show the generated Figma file to the user for approval before invoking `/build-from-figma`. |
+| `maxRegenerationAttempts` | `integer (≥0)`      | `2`                         | Max brief-revision/regeneration loops when the user rejects the generated design. |
+| `capturePollIntervalMs`   | `integer (≥0)`      | `5000`                      | Delay between `generate_figma_design` capture status polls.                    |
+| `capturePollMaxAttempts`  | `integer (≥1)`      | `10`                        | Max capture status polls per page before the capture is considered failed.     |
+
+**`retry`** (shared `retryOptions` type — same shape as `canva.retry`): `maxAttempts` `3`, `initialDelayMs` `2000`, `backoffMultiplier` `2`, `maxDelayMs` `30000`, `retryableErrors` `["rate_limit", "timeout", "server_error", "capture_failed", "mcp_connection_lost"]`.
+
+```json
+"conversation": {
+  "enabled": true,
+  "interview": {
+    "maxQuestions": 7,
+    "confirmBriefWithUser": true
+  },
+  "designGeneration": {
+    "mockupDir": ".claude/design-mockups",
+    "mockupServerPort": 4173,
+    "reviewBeforeHandoff": true,
+    "maxRegenerationAttempts": 2,
+    "capturePollIntervalMs": 5000,
+    "capturePollMaxAttempts": 10
+  },
+  "retry": {
+    "maxAttempts": 3,
+    "initialDelayMs": 2000,
+    "backoffMultiplier": 2,
+    "maxDelayMs": 30000,
+    "retryableErrors": [
+      "rate_limit",
+      "timeout",
+      "server_error",
+      "capture_failed",
+      "mcp_connection_lost"
+    ]
+  }
+}
+```
+
+---
+
 ## Orchestration (`orchestration`)
 
 Parallel phase-execution graph. Phase keys are arbitrary; each phase's `depends[]` entries must reference other keys in the same `phases` map.

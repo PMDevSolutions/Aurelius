@@ -15,15 +15,16 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   54 Agents   │   │    20 Skills    │   │    4 Plugins    │
+     │   55 Agents   │   │    22 Skills    │   │    4 Plugins    │
      │ (specialized  │   │  (workflow      │   │ (extensions:    │
      │  task workers) │   │   automation)  │   │  memory, git,   │
      └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
              │                    │            └────────┬────────┘
              │           ┌────────▼────────┐            │
-             │           │  3 Pipelines    │            │
+             │           │  4 Pipelines    │            │
              │           │ (Figma, Canva,  │            │
-             │           │  Screenshot)    │            │
+             │           │  Screenshot,    │            │
+             │           │  Conversation)  │            │
              │           └────────┬────────┘            │
              │                    │                      │
      ┌───────▼────────────────────▼──────────────────────▼───────┐
@@ -37,7 +38,7 @@ This document explains how Aurelius is structured and how its components work to
 
 ---
 
-## Agents (54 Total)
+## Agents (55 Total)
 
 Agents are specialized Claude Code sub-processes that handle complex, multi-step tasks. Each agent is a markdown file in `.claude/agents/` with frontmatter defining its tools, capabilities, and instructions. Claude Code selects agents automatically based on your task context.
 
@@ -68,11 +69,12 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 | `visual-storyteller` | Create data visualizations, infographics, presentations |
 | `whimsy-injector` | Add micro-interactions and delightful UI details (runs proactively after UI changes) |
 
-### Design-to-Code Agents (7)
+### Design-to-Code Agents (8)
 
 | Agent | Purpose | Output |
 |-------|---------|--------|
 | `figma-react-converter` | Convert Figma designs to React components via Figma MCP | React + TypeScript + Tailwind |
+| `conversation-designer` | Turn described intent into concrete design decisions and mockups for Figma generation | design-brief.json + HTML mockups |
 | `canva-react-converter` | Convert Canva designs using screenshots and vision analysis | React + TypeScript + Tailwind |
 | `vue-converter` | Convert designs to Vue 3 components | Vue 3 + `<script setup>` + TypeScript |
 | `svelte-converter` | Convert designs to Svelte 5 components | SvelteKit + TypeScript + Tailwind |
@@ -142,7 +144,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 
 ---
 
-## Skills (20 Total)
+## Skills (22 Total)
 
 Skills are automated workflows triggered by slash commands or keyword detection. Unlike agents (which are general-purpose workers), skills encode specific multi-step processes.
 
@@ -153,6 +155,8 @@ Skills are automated workflows triggered by slash commands or keyword detection.
 | `figma-intake` | Phase 1 (Figma) | Auto-discovers Figma file structure, asks 3-5 targeted questions, produces `build-spec.json` |
 | `canva-intake` | Phase 1 (Canva) | Vision-based discovery from Canva screenshots via MCP |
 | `screenshot-intake` | Phase 1 (Screenshot) | Captures URL or reads images, vision-based analysis |
+| `conversation-intake` | Phase C0 (Conversation) | Max-7-question interview → `build-spec.json` + `design-brief.json` (no design file) |
+| `design-brief-to-figma` | Phase C1 (Conversation) | Generates a real Figma file from the brief via HTML-mockup capture |
 | `design-token-lock` | Phase 2 | Extracts design tokens into `design-tokens.lock.json` + Tailwind config |
 | `canva-token-inference` | Phase 2 (Canva/Screenshot) | AI-powered token extraction with confidence scoring |
 | `tdd-from-figma` | Phase 3 | Writes failing tests for every component (RED phase, app-type-aware) |
@@ -180,13 +184,15 @@ Skills are automated workflows triggered by slash commands or keyword detection.
 
 ## Pipelines
 
-Three autonomous pipelines convert designs into working, tested applications. All three share phases 3-9; they differ only in how they discover the design and extract tokens.
+Four autonomous pipelines convert designs into working, tested applications. All of them share phases 3-9; they differ in how they obtain the design and extract tokens. The conversation pipeline is the special case: it has no input design at all, so it *generates* a real Figma file first (interview → design brief → HTML mockups → Figma capture) and then joins the Figma path, whose `figma-intake` skill fast-paths conversation-sourced build specs.
 
 ### Pipeline Flow
 
 ```
 INPUT SOURCE                    SHARED PIPELINE
 ─────────────                   ───────────────
+Conversation ─► conversation-intake → design-brief-to-figma
+                  (generates a real Figma file, then joins ▼)
 Figma URL ──► figma-intake      [3] TDD Scaffold (hard gate)
 Canva URL ──► canva-intake      [4] Component Build
 Screenshot ──► screenshot-intake [5] Visual Diff (pixelmatch loop)
@@ -198,7 +204,9 @@ Screenshot ──► screenshot-intake [5] Visual Diff (pixelmatch loop)
          Token Extraction
          (Figma: direct API,
           Canva/Screenshot:
-          AI inference)
+          AI inference,
+          Conversation: computed
+          styles from generated file)
               │
               ▼
          design-tokens.lock.json
@@ -366,7 +374,7 @@ Model Context Protocol servers provide external tool access to agents.
 | Server | Purpose | Required For |
 |--------|---------|-------------|
 | Figma Desktop MCP | Local Figma integration (port 3845) | Figma pipeline phases 1-2, 5 |
-| Figma Remote MCP | Fallback remote Figma access | Figma pipeline (when desktop unavailable) |
+| Figma Remote MCP | Fallback remote Figma access; file creation and design capture | Figma pipeline (when desktop unavailable); conversation pipeline design generation (`create_new_file`, `generate_figma_design`) |
 | Chrome DevTools MCP | Screenshots, Lighthouse, DOM inspection | Visual QA, quality gate |
 | Playwright MCP | Cross-browser testing (Chromium, Firefox, WebKit) | E2E and cross-browser phases |
 | Canva AI Connector | Search, export, interact with Canva designs | Canva pipeline phases 1-2 |
@@ -381,6 +389,7 @@ These files are generated and consumed by the pipeline:
 | File | Created By | Used By | Purpose |
 |------|-----------|---------|---------|
 | `build-spec.json` | Intake skills | All pipeline phases | Machine-readable build plan (app type, components, output target, E2E flows) |
+| `design-brief.json` | conversation-intake (via conversation-designer agent) | design-brief-to-figma | Style direction, color/typography/layout decisions, and component descriptions that drive Figma generation |
 | `design-tokens.lock.json` | Token lock / inference skills | Component build, token verification | Single source of truth for all design values |
 | `build-report.md` | Report phase | Developer review | Final pipeline report with screenshots and metrics |
 | `pipeline.config.json` | Manual configuration | All pipeline phases | Thresholds, app types, orchestration settings |
