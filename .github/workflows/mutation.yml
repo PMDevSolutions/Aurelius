@@ -1,0 +1,90 @@
+name: Mutation Testing
+
+# Mutation testing is slow (it re-runs the test suite per mutant), so it runs
+# nightly and on demand — never on pull requests — to avoid PR latency. It is
+# informational/non-blocking: the score is reported to the run summary and the
+# HTML report is uploaded as an artifact.
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # nightly, 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      mutate:
+        description: "Optional glob to scope mutation (e.g. src/tokens/**/*.ts)"
+        required: false
+        type: string
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stryker:
+    name: Stryker (packages/pipeline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Stryker mutation testing
+        working-directory: packages/pipeline
+        run: |
+          # Run from packages/pipeline so the pnpm-linked node_modules resolve in
+          # the Stryker sandbox; the config lives at the repo root.
+          if [ -n "${{ github.event.inputs.mutate }}" ]; then
+            npx stryker run ../../stryker.conf.json --mutate "${{ github.event.inputs.mutate }}"
+          else
+            npx stryker run ../../stryker.conf.json
+          fi
+
+      - name: Mutation score summary
+        if: always()
+        working-directory: packages/pipeline
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "reports/mutation/mutation-report.json";
+            if (!fs.existsSync(path)) { console.log("No mutation report produced."); process.exit(0); }
+            const report = JSON.parse(fs.readFileSync(path, "utf-8"));
+            const counts = { Killed: 0, Survived: 0, Timeout: 0, NoCoverage: 0, RuntimeError: 0, CompileError: 0, Ignored: 0 };
+            for (const file of Object.values(report.files || {})) {
+              for (const m of file.mutants || []) counts[m.status] = (counts[m.status] || 0) + 1;
+            }
+            const detected = counts.Killed + counts.Timeout;
+            const valid = detected + counts.Survived + counts.NoCoverage;
+            const score = valid ? ((detected / valid) * 100).toFixed(2) : "n/a";
+            const out = [
+              "## Mutation testing (packages/pipeline)",
+              "",
+              `**Mutation score: ${score}%**` + (score === "n/a" ? "" : ` (target 80%, opt-in)`),
+              "",
+              "| Status | Count |",
+              "| --- | --- |",
+              ...Object.entries(counts).map(([k, v]) => `| ${k} | ${v} |`),
+            ].join("\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY || "/dev/stdout", out + "\n");
+            console.log(`Mutation score: ${score}%`);
+          '
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: packages/pipeline/reports/mutation/
+          if-no-files-found: ignore
+          retention-days: 14
