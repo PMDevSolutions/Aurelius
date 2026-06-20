@@ -209,6 +209,36 @@ jobs:
       - name: Run script tests
         run: pnpm vitest run --config scripts/__tests__/vitest.config.js scripts/__tests__/ --reporter=verbose
 
+  # ── Pipeline package (TypeScript: InDesign IDML parser + IR) ───────────
+  pipeline-tests:
+    name: Pipeline Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm --filter @aurelius/pipeline typecheck
+
+      - name: Run pipeline tests
+        run: pnpm --filter @aurelius/pipeline test
+
+      - name: Build (tsc emit + declarations)
+        run: pnpm --filter @aurelius/pipeline build
+
   # ── Lint & format check (needs Node + project with eslint/prettier) ───
   lint:
     name: Lint & Format

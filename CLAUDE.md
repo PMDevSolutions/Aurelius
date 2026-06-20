@@ -23,6 +23,8 @@ project-root/
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
 ├── scripts/              # Development automation scripts
+├── packages/             # TypeScript pipeline packages (pnpm workspace)
+│   └── pipeline/         # Design-to-code core: InDesign IDML parser + IR (@aurelius/pipeline)
 ├── renderers/            # Pluggable framework renderer manifests (renderer.json + schema)
 ├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
 ├── docs/                 # Documentation
@@ -30,6 +32,7 @@ project-root/
 │   ├── canva-to-react/   # Canva conversion pipeline docs
 │   ├── screenshot-to-app/ # Screenshot/URL conversion pipeline docs
 │   ├── conversation-to-app/ # Conversation pipeline docs (generated Figma designs)
+│   ├── indesign-to-react/ # InDesign IDML conversion pipeline docs
 │   ├── multi-framework/  # Multi-framework output target docs
 │   └── react-development/# React development standards
 └── CLAUDE.md             # This file

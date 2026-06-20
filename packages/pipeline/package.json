@@ -1,0 +1,40 @@
+{
+  "name": "@aurelius/pipeline",
+  "version": "0.1.0",
+  "description": "Aurelius design-to-code pipeline core. Includes the InDesign IDML parser and intermediate representation (IR).",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "aurelius-indesign": "./dist/indesign/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./indesign": {
+      "types": "./dist/indesign/index.d.ts",
+      "import": "./dist/indesign/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.1",
+    "fflate": "^0.8.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.2"
+  }
+}
