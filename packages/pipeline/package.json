@@ -24,6 +24,10 @@
     "./pdf": {
       "types": "./dist/pdf/index.d.ts",
       "import": "./dist/pdf/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
     }
   },
   "files": [
@@ -46,7 +50,11 @@
   "devDependencies": {
     "@types/node": "^20.17.0",
     "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "pdf-lib": "^1.17.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^5.7.2",
     "vitest": "^4.1.2"
   }

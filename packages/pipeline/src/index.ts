@@ -7,6 +7,7 @@
  */
 export * as indesign from "./indesign/index.js";
 export * as pdf from "./pdf/index.js";
+export * as react from "./react/index.js";
 export * as tokens from "./tokens/index.js";
 export {
   parseSourceFile,
