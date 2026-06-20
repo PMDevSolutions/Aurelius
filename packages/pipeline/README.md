@@ -1,13 +1,29 @@
 # @aurelius/pipeline
 
 Core library for the Aurelius design-to-code pipeline. It reads Adobe InDesign
-Markup Language (`.idml`) packages into a normalized, typed intermediate
-representation (IR), and maps that IR to a coherent **design-token set**
-(`tokens.ts`, `tokens.css`, a Tailwind preset, and a Style Dictionary JSON).
+sources — both `.idml` packages and exported `.pdf` files — into a single
+normalized, typed intermediate representation (IR), and maps that IR to a
+coherent **design-token set** (`tokens.ts`, `tokens.css`, a Tailwind preset, and
+a Style Dictionary JSON).
 
 > Part of the [InDesign-to-React pipeline](../../docs/indesign-to-react/README.md)
-> epic. Shipped so far: the IDML parser + IR and the design-token mapper. The
-> React component generator is next.
+> epic. Shipped so far: the IDML parser + IR, the PDF parser (same IR), and the
+> design-token mapper. The React component generator is next.
+
+## Designer hands you a PDF
+
+A designer's normal handoff is a PDF, not an `.idml`. Point the pipeline at it:
+
+```bash
+pnpm --filter @aurelius/pipeline build
+# PDF → IR → design tokens, extracting embedded images to ./public/assets
+node packages/pipeline/dist/indesign/cli.js brochure.pdf \
+  --emit-tokens ./src/tokens --assets ./public/assets
+```
+
+PDF and IDML are **both first-class inputs**; the CLI auto-detects by extension.
+IDML is preferred when available (richer style metadata), but the pipeline never
+assumes it. See the [PDF fidelity guide](../../docs/pipeline/indesign-pdf-fidelity.md).
 
 ## Install / build
 
@@ -60,6 +76,31 @@ const validated = validateDocument(document); // throws ZodError on mismatch
 All geometry is normalized from IDML points to **pixels** at a configurable DPI
 (default 96): `px = pt × dpi / 72`. Transform translation is converted to pixels;
 scale/shear components are preserved.
+
+## PDF input
+
+The PDF parser produces the **same IR**, so the mapper and generator are
+source-agnostic. It clusters positioned glyph runs into text frames, infers
+heading/body/caption buckets from font sizes, derives a swatch palette from fills
+and image colors, and extracts embedded images to PNG.
+
+```ts
+import { parsePdfFile } from "@aurelius/pipeline/pdf";
+import { parseSourceFile } from "@aurelius/pipeline";
+
+// Directly…
+const { document, warnings } = await parsePdfFile("brochure.pdf", {
+  assetDir: "public/assets", // extract embedded images here
+});
+
+// …or source-agnostically (auto-detects .idml vs .pdf; force with sourcePriority).
+const result = await parseSourceFile("brochure.pdf", { sourcePriority: "pdf" });
+```
+
+Because PDF is a presentation format, structure is reconstructed heuristically and
+the parser emits fidelity warnings (`TEXT_FROM_GLYPHS`, `NO_EMBEDDED_FONTS`,
+`VECTOR_ONLY_PAGE`, …). See the
+[PDF fidelity guide](../../docs/pipeline/indesign-pdf-fidelity.md).
 
 ## Design tokens
 

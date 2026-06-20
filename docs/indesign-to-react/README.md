@@ -5,19 +5,21 @@ typed React components, design tokens, and assets — a print-first sibling to t
 Figma/Canva/Screenshot pipelines.
 
 > **Status:** in progress. This document tracks the epic and details the shipped
-> stages — the **IDML parser + IR** and the **style & design-token mapper**.
+> stages — the **IDML parser + IR**, the **PDF parser** (same IR), and the
+> **style & design-token mapper**.
 > See the epic for the full plan: _Add InDesign-to-React conversion pipeline_.
 
 ## Pipeline shape (target)
 
 ```
 .idml ──▶ [1] IDML parser ──▶ IR ──▶ [2] style/token mapper ──▶ tokens.ts + Tailwind preset
- .pdf ──▶ [1b] PDF fallback ─▶ IR ──┘                      └──▶ [3] component generator ──▶ *.tsx + Storybook
+ .pdf ──▶ [1b] PDF parser ──▶ IR ──┘                      └──▶ [3] component generator ──▶ *.tsx + Storybook
 ```
 
-Both inputs converge on a single normalized **IR**, so every later stage is input
-agnostic. The IDML path (this stage) is the primary, high-fidelity route; a PDF
-fallback is a separate sub-issue.
+Both inputs are **first-class** and converge on a single normalized **IR**, so
+every later stage is source-agnostic. IDML is preferred when available (richer
+style metadata), but the pipeline never assumes it — designers most often hand
+engineering a PDF.
 
 ## Stage 1 — IDML parser and IR (shipped)
 
@@ -76,6 +78,29 @@ node packages/pipeline/dist/indesign/cli.js your-design.idml --json   # full IR 
 See the [package README](../../packages/pipeline/README.md) for the library API,
 options, and known limitations.
 
+## Stage 1b — PDF parser (shipped)
+
+Implemented in [`packages/pipeline/src/pdf`](../../packages/pipeline/src/pdf). PDF
+is a **first-class input** — the artifact designers actually deliver. The parser
+(via `pdfjs-dist`) produces the same IR as the IDML path:
+
+1. **Extracts** text runs (positions, sizes, fonts), fill/stroke colors, and
+   embedded images from each page.
+2. **Clusters** runs → lines → columns → text frames, inferring heading / body /
+   caption buckets from font sizes (synthesized as paragraph styles).
+3. **Derives** a swatch palette from fills and dominant image colors.
+4. **Extracts** embedded images to PNG (with `--assets <dir>`).
+5. **Flips** PDF's bottom-left coordinates to the IR's top-left pixel space.
+6. **Surfaces fidelity warnings** for what was inferred vs. read.
+
+```bash
+# The CLI auto-detects .pdf vs .idml; --source-priority forces a path.
+node packages/pipeline/dist/indesign/cli.js brochure.pdf --emit-tokens ./src/tokens --assets ./public/assets
+```
+
+Fidelity caveats and warning codes are documented in the
+[PDF fidelity guide](../pipeline/indesign-pdf-fidelity.md).
+
 ## Stage 2 — Style & design-token mapper (shipped)
 
 Implemented in [`packages/pipeline/src/tokens`](../../packages/pipeline/src/tokens).
@@ -102,7 +127,6 @@ Font fallbacks and out-of-gamut conversions are listed in the generator report.
 
 ## Roadmap (remaining sub-issues)
 
-- [ ] PDF fallback parser and layout reconstruction (emits the same IR)
 - [ ] React component generator (TSX output, optional Tailwind/CSS Modules,
       Storybook stories)
 - [ ] `indesign-to-react` Claude Code agent + skill + end-to-end CLI command
@@ -110,4 +134,5 @@ Font fallbacks and out-of-gamut conversions are listed in the generator report.
 ## References
 
 - [Adobe IDML File Format Specification](https://www.adobe.com/devnet/indesign/documentation.html)
+- [PDF.js (`pdfjs-dist`)](https://mozilla.github.io/pdf.js/)
 ```

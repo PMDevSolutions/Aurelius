@@ -36,13 +36,18 @@ export interface RGB {
 
 /** Top-level facts about the parsed document. */
 export interface DocumentMeta {
+  /** Which ingestion path produced this IR. */
+  source?: "idml" | "pdf";
   /** IDML DOM version from `designmap.xml` (`@DOMVersion`), when present. */
   idmlVersion?: string;
-  /** Dots per inch used to convert IDML points to pixels. */
+  /** Dots per inch used to convert source points to pixels. */
   dpi: number;
-  /** Whether the package `mimetype` entry matched the IDML media type. */
+  /**
+   * Container validity. For IDML, whether the `mimetype` entry matched; for PDF,
+   * whether the document loaded successfully.
+   */
   mimetypeValid: boolean;
-  /** Absolute path the package was read from, when parsed from a file. */
+  /** Absolute path the source was read from, when parsed from a file. */
   sourcePath?: string;
 }
 

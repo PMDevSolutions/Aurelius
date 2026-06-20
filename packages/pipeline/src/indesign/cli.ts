@@ -9,13 +9,13 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { parseSourceFile, type SourcePriority } from "../source.js";
 import { emitAll } from "../tokens/emit.js";
 import type { FontMapOverrides } from "../tokens/font-map.js";
 import { mapDocumentToTokens } from "../tokens/mapper.js";
 import type { TokenMapResult } from "../tokens/model.js";
 import { IdmlParseError } from "./errors.js";
 import type { Document, Frame } from "./ir.js";
-import { parseIdmlFile } from "./parser.js";
 import type { ParseWarning } from "./warnings.js";
 
 export interface CliResult {
@@ -24,21 +24,23 @@ export interface CliResult {
   stderr: string;
 }
 
-const USAGE = `aurelius-indesign — parse an InDesign IDML package into a normalized IR
+const USAGE = `aurelius-indesign — parse an InDesign IDML or PDF into a normalized IR
 
 Usage:
-  aurelius-indesign <file.idml> [options]
+  aurelius-indesign <file.idml | file.pdf> [options]
 
 Options:
-  --json               Emit the full IR as JSON on stdout
-  --pretty             Pretty-print JSON (use with --json)
-  --dpi <number>       Pixel conversion DPI (default 96)
-  --no-validate        Skip zod validation of the produced IR
-  --emit-tokens <dir>  Map the IR to design tokens and write tokens.ts,
-                       tokens.css, tailwind.preset.ts, design-tokens.json
-  --no-tailwind        With --emit-tokens, skip tailwind.preset.ts
-  --font-map <file>    JSON file of font fallback overrides
-  -h, --help           Show this help
+  --json                   Emit the full IR as JSON on stdout
+  --pretty                 Pretty-print JSON (use with --json)
+  --dpi <number>           Pixel conversion DPI (default 96)
+  --no-validate            Skip zod validation of the produced IR
+  --source-priority <p>    Force ingestion path: pdf | idml | auto (default auto)
+  --assets <dir>           Extract embedded PDF images into <dir>
+  --emit-tokens <dir>      Map the IR to design tokens and write tokens.ts,
+                           tokens.css, tailwind.preset.ts, design-tokens.json
+  --no-tailwind            With --emit-tokens, skip tailwind.preset.ts
+  --font-map <file>        JSON file of font fallback overrides
+  -h, --help               Show this help
 `;
 
 interface ParsedArgs {
@@ -51,6 +53,8 @@ interface ParsedArgs {
   dpi?: number;
   emitTokens?: string;
   fontMap?: string;
+  sourcePriority?: SourcePriority;
+  assets?: string;
   error?: string;
 }
 
@@ -102,6 +106,19 @@ function parseArgs(argv: string[]): ParsedArgs {
         else args.fontMap = file;
         break;
       }
+      case "--source-priority": {
+        const value = argv[++i];
+        if (value === "pdf" || value === "idml" || value === "auto") args.sourcePriority = value;
+        else
+          args.error = `Invalid --source-priority: ${value ?? "(missing)"} (expected pdf|idml|auto)`;
+        break;
+      }
+      case "--assets": {
+        const dir = argv[++i];
+        if (!dir) args.error = "--assets requires a directory";
+        else args.assets = dir;
+        break;
+      }
       default:
         if (arg && arg.startsWith("-")) {
           args.error = `Unknown option: ${arg}`;
@@ -114,7 +131,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 /** Run the CLI against an argv array, returning captured output and exit code. */
-export function runCli(argv: string[]): CliResult {
+export async function runCli(argv: string[]): Promise<CliResult> {
   const args = parseArgs(argv);
 
   if (args.error) {
@@ -129,9 +146,11 @@ export function runCli(argv: string[]): CliResult {
 
   let document: Document;
   try {
-    const result = parseIdmlFile(args.input, {
+    const result = await parseSourceFile(args.input, {
       validate: args.validate,
       ...(args.dpi ? { dpi: args.dpi } : {}),
+      ...(args.sourcePriority ? { sourcePriority: args.sourcePriority } : {}),
+      ...(args.assets ? { assetDir: args.assets } : {}),
     });
     document = result.document;
   } catch (err) {
@@ -186,7 +205,7 @@ function emitTokens(document: Document, args: ParsedArgs): CliResult {
   const allWarnings = [...document.warnings, ...result.warnings];
   return {
     code: 0,
-    stdout: formatTokenReport(result, args.emitTokens!, Object.keys(files)),
+    stdout: formatTokenReport(result, args.emitTokens!, Object.keys(files), document.meta.source),
     stderr: formatWarningSummary(allWarnings),
   };
 }
@@ -218,7 +237,7 @@ export function formatReport(document: Document): string {
     document.masterSpreads.reduce((n, s) => n + s.pages.length, 0);
 
   const lines: string[] = [];
-  lines.push("InDesign IDML → IR");
+  lines.push(`InDesign ${(document.meta.source ?? "idml").toUpperCase()} → IR`);
   if (document.meta.sourcePath) lines.push(`  source:        ${document.meta.sourcePath}`);
   lines.push(`  IDML version:  ${document.meta.idmlVersion ?? "(unknown)"}`);
   lines.push(`  DPI:           ${document.meta.dpi}`);
@@ -248,10 +267,15 @@ export function formatReport(document: Document): string {
 }
 
 /** Build the human-readable design-token report (stdout under --emit-tokens). */
-export function formatTokenReport(result: TokenMapResult, dir: string, files: string[]): string {
+export function formatTokenReport(
+  result: TokenMapResult,
+  dir: string,
+  files: string[],
+  source?: "idml" | "pdf",
+): string {
   const t = result.tokens;
   const lines: string[] = [];
-  lines.push("InDesign IDML → Design Tokens");
+  lines.push(`InDesign ${(source ?? "idml").toUpperCase()} → Design Tokens`);
   lines.push(`  output:        ${dir}`);
   lines.push(`  files:         ${files.join(", ")}`);
   lines.push("");
@@ -312,8 +336,14 @@ function toMessage(err: unknown): string {
 
 const invokedPath = process.argv[1];
 if (invokedPath && import.meta.url === pathToFileURL(invokedPath).href) {
-  const result = runCli(process.argv.slice(2));
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  process.exit(result.code);
+  runCli(process.argv.slice(2))
+    .then((result) => {
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      process.exit(result.code);
+    })
+    .catch((err: unknown) => {
+      process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+      process.exit(1);
+    });
 }

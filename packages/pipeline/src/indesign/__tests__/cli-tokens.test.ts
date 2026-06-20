@@ -35,10 +35,10 @@ const UNMAPPED_FONTS = `<?xml version="1.0"?>
 </idPkg:Fonts>`;
 
 describe("runCli --emit-tokens", () => {
-  it("writes all four token artifacts and prints a report", () => {
+  it("writes all four token artifacts and prints a report", async () => {
     const idml = writeIdml(buildSampleIdml());
     const out = tempDir();
-    const result = runCli([idml, "--emit-tokens", out]);
+    const result = await runCli([idml, "--emit-tokens", out]);
 
     expect(result.code).toBe(0);
     expect(existsSync(join(out, "tokens.ts"))).toBe(true);
@@ -51,22 +51,22 @@ describe("runCli --emit-tokens", () => {
     expect(readFileSync(join(out, "tokens.ts"), "utf-8")).toContain("as const");
   });
 
-  it("skips the Tailwind preset with --no-tailwind", () => {
+  it("skips the Tailwind preset with --no-tailwind", async () => {
     const idml = writeIdml(buildSampleIdml());
     const out = tempDir();
-    const result = runCli([idml, "--emit-tokens", out, "--no-tailwind"]);
+    const result = await runCli([idml, "--emit-tokens", out, "--no-tailwind"]);
 
     expect(result.code).toBe(0);
     expect(existsSync(join(out, "tokens.ts"))).toBe(true);
     expect(existsSync(join(out, "tailwind.preset.ts"))).toBe(false);
   });
 
-  it("surfaces font fallback warnings in the report", () => {
+  it("surfaces font fallback warnings in the report", async () => {
     const files = sampleFiles();
     files["Resources/Fonts.xml"] = UNMAPPED_FONTS;
     const idml = writeIdml(buildIdml(files));
     const out = tempDir();
-    const result = runCli([idml, "--emit-tokens", out]);
+    const result = await runCli([idml, "--emit-tokens", out]);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("FONT_FALLBACK");

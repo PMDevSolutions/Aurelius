@@ -171,7 +171,7 @@ export function parsePackage(pkg: IdmlPackage, options: ParseOptions = {}): Pars
     ...masterSpreads.flatMap((s) => s.frames),
   ]);
 
-  const meta: Document["meta"] = { dpi, mimetypeValid };
+  const meta: Document["meta"] = { source: "idml", dpi, mimetypeValid };
   const idmlVersion = getAttr(documentEl, "DOMVersion");
   if (idmlVersion) meta.idmlVersion = idmlVersion;
   if (options.sourcePath) meta.sourcePath = options.sourcePath;

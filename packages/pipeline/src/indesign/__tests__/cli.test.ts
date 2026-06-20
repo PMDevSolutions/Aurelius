@@ -24,46 +24,46 @@ afterEach(() => {
 });
 
 describe("runCli", () => {
-  it("prints usage and exits 2 when no input is given", () => {
-    const result = runCli([]);
+  it("prints usage and exits 2 when no input is given", async () => {
+    const result = await runCli([]);
     expect(result.code).toBe(2);
     expect(result.stderr).toContain("no input file");
   });
 
-  it("prints help on --help", () => {
-    const result = runCli(["--help"]);
+  it("prints help on --help", async () => {
+    const result = await runCli(["--help"]);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("Usage:");
   });
 
-  it("exits 1 with an error for a missing file", () => {
-    const result = runCli([join(tmpdir(), "does-not-exist-xyz.idml")]);
+  it("exits 1 with an error for a missing file", async () => {
+    const result = await runCli([join(tmpdir(), "does-not-exist-xyz.idml")]);
     expect(result.code).toBe(1);
     expect(result.stderr).toMatch(/Error/);
   });
 
-  it("prints a human-readable report with counts for a valid package", () => {
+  it("prints a human-readable report with counts for a valid package", async () => {
     const path = writeIdml(buildSampleIdml());
-    const result = runCli([path]);
+    const result = await runCli([path]);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("InDesign IDML → IR");
     expect(result.stdout).toContain("swatches:          6");
     expect(result.stdout).toContain("Warnings (0)");
   });
 
-  it("surfaces collected parse warnings in the report", () => {
+  it("surfaces collected parse warnings in the report", async () => {
     const files = sampleFiles();
     delete files["Links/hero.png"];
     const path = writeIdml(buildIdml(files));
-    const result = runCli([path]);
+    const result = await runCli([path]);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("UNRESOLVED_LINK");
     expect(result.stderr).toContain("warning(s)");
   });
 
-  it("emits valid JSON with --json", () => {
+  it("emits valid JSON with --json", async () => {
     const path = writeIdml(buildSampleIdml());
-    const result = runCli([path, "--json"]);
+    const result = await runCli([path, "--json"]);
     expect(result.code).toBe(0);
     const parsed = JSON.parse(result.stdout);
     expect(parsed.meta.dpi).toBe(96);
@@ -71,8 +71,8 @@ describe("runCli", () => {
     expect(parsed.swatches).toHaveLength(6);
   });
 
-  it("rejects an invalid --dpi value", () => {
-    const result = runCli(["x.idml", "--dpi", "abc"]);
+  it("rejects an invalid --dpi value", async () => {
+    const result = await runCli(["x.idml", "--dpi", "abc"]);
     expect(result.code).toBe(2);
     expect(result.stderr).toContain("Invalid --dpi");
   });
