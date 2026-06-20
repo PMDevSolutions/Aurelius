@@ -241,6 +241,33 @@ Full catalog: `.claude/skills/README.md`
 ./scripts/setup-playwright.sh      # One-time browser engine setup
 ```
 
+### Mutation testing (Stryker)
+
+Mutation testing measures how well the test suite actually catches bugs. The
+framework's own TypeScript code (`packages/pipeline`) is mutation-tested via
+[Stryker](https://stryker-mutator.io/); `stryker.conf.json` lives at the repo
+root but **runs from `packages/pipeline`** so the pnpm-linked dependencies resolve
+inside Stryker's sandbox.
+
+```bash
+# Full run (slow — re-runs the suite per mutant)
+cd packages/pipeline && npx stryker run ../../stryker.conf.json
+
+# Scope to one area while iterating
+cd packages/pipeline && npx stryker run ../../stryker.conf.json --mutate "src/tokens/**/*.ts"
+```
+
+The HTML report is written to `packages/pipeline/reports/mutation/index.html`.
+
+- **Threshold (opt-in).** The target mutation score lives in
+  `.claude/pipeline.config.json` → `qualityGate.mutationScore`
+  (`{ "enabled": false, "threshold": 80, "blocking": false }`). It is **off by
+  default**; set `enabled: true` to treat it as a quality gate.
+- **CI.** `.github/workflows/mutation.yml` runs Stryker **nightly** and
+  **on demand** (`workflow_dispatch`) — never on PRs, to avoid latency. It is
+  informational: the score is posted to the run summary and the HTML report is
+  uploaded as an artifact.
+
 ### Pipeline Verification
 ```bash
 ./scripts/verify-tokens.sh         # Catch hardcoded design values
