@@ -4,8 +4,8 @@ Convert Adobe InDesign designs (brochures, pitch decks, editorial layouts) into
 typed React components, design tokens, and assets — a print-first sibling to the
 Figma/Canva/Screenshot pipelines.
 
-> **Status:** in progress. This document tracks the epic and details the first
-> shipped stage — the **IDML parser and intermediate representation (IR)**.
+> **Status:** in progress. This document tracks the epic and details the shipped
+> stages — the **IDML parser + IR** and the **style & design-token mapper**.
 > See the epic for the full plan: _Add InDesign-to-React conversion pipeline_.
 
 ## Pipeline shape (target)
@@ -76,11 +76,33 @@ node packages/pipeline/dist/indesign/cli.js your-design.idml --json   # full IR 
 See the [package README](../../packages/pipeline/README.md) for the library API,
 options, and known limitations.
 
+## Stage 2 — Style & design-token mapper (shipped)
+
+Implemented in [`packages/pipeline/src/tokens`](../../packages/pipeline/src/tokens).
+Maps the IR (from either input) to a coherent design-token set:
+
+- **Colors** — swatches → an sRGB hex palette, de-duplicated within a configurable
+  tolerance; CMYK/Lab colors outside the sRGB gamut are warned about.
+- **Typography** — paragraph styles clustered into a heading / body / caption
+  scale, preserving InDesign names; sizes, line heights, and letter spacing emitted
+  under aligned token keys.
+- **Spacing** — paragraph spacing and indents quantized to a grid (default 4px).
+- **Fonts** — families mapped to web font stacks via `config/font-map.json`
+  (override per call); unmapped families fall back generically and warn.
+
+It emits four artifacts — `tokens.ts` (typed, self-contained `as const`),
+`tokens.css` (`:root` custom properties), `tailwind.preset.ts` (a Tailwind v3+
+preset), and `design-tokens.json` (Style Dictionary compatible):
+
+```bash
+node packages/pipeline/dist/indesign/cli.js your-design.idml --emit-tokens ./src/tokens
+```
+
+Font fallbacks and out-of-gamut conversions are listed in the generator report.
+
 ## Roadmap (remaining sub-issues)
 
 - [ ] PDF fallback parser and layout reconstruction (emits the same IR)
-- [ ] Style and design-token mapper (paragraph/character styles + swatches →
-      `tokens.ts` + Tailwind preset)
 - [ ] React component generator (TSX output, optional Tailwind/CSS Modules,
       Storybook stories)
 - [ ] `indesign-to-react` Claude Code agent + skill + end-to-end CLI command

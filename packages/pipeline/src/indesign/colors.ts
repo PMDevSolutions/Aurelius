@@ -87,3 +87,51 @@ export function colorToRgb(space: string | undefined, values: number[]): RGB | u
       return undefined;
   }
 }
+
+/**
+ * Convert a swatch color to sRGB and report whether it lies inside the sRGB
+ * gamut. CMYK and Gray are representable by construction; an RGB input outside
+ * 0–255, or a Lab color whose linear sRGB lands outside [0, 1], is flagged out
+ * of gamut so the token mapper can warn.
+ */
+export function convertColor(
+  space: string | undefined,
+  values: number[],
+): { rgb: RGB; inGamut: boolean } | undefined {
+  const rgb = colorToRgb(space, values);
+  if (!rgb || !space) return undefined;
+  return { rgb, inGamut: isInGamut(space, values) };
+}
+
+function isInGamut(space: string, values: number[]): boolean {
+  switch (space.toUpperCase()) {
+    case "RGB":
+      return values.slice(0, 3).every((v) => v >= 0 && v <= 255);
+    case "LAB": {
+      if (values.length < 3) return true;
+      const linear = labToLinearSrgb(values[0]!, values[1]!, values[2]!);
+      const eps = 1e-4;
+      return [linear.r, linear.g, linear.b].every((c) => c >= -eps && c <= 1 + eps);
+    }
+    default:
+      return true;
+  }
+}
+
+function labToLinearSrgb(l: number, a: number, b: number): RGB {
+  const fy = (l + 16) / 116;
+  const fx = fy + a / 500;
+  const fz = fy - b / 200;
+  const inv = (t: number): number => {
+    const t3 = t ** 3;
+    return t3 > 0.008856 ? t3 : (t - 16 / 116) / 7.787;
+  };
+  const x = 0.96422 * inv(fx);
+  const y = 1.0 * inv(fy);
+  const z = 0.82521 * inv(fz);
+  return {
+    r: x * 3.1338561 + y * -1.6168667 + z * -0.4906146,
+    g: x * -0.9787684 + y * 1.9161415 + z * 0.033454,
+    b: x * 0.0719453 + y * -0.2289914 + z * 1.4052427,
+  };
+}

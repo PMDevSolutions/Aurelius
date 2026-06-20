@@ -16,10 +16,15 @@
     "./indesign": {
       "types": "./dist/indesign/index.d.ts",
       "import": "./dist/indesign/index.js"
+    },
+    "./tokens": {
+      "types": "./dist/tokens/index.d.ts",
+      "import": "./dist/tokens/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "config"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
