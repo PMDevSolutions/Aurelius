@@ -1,12 +1,13 @@
 # @aurelius/pipeline
 
-Core library for the Aurelius design-to-code pipeline. The first stage shipped
-here is the **InDesign IDML parser**, which reads Adobe InDesign Markup Language
-(`.idml`) packages and emits a normalized, typed intermediate representation
-(IR) that downstream stages (style/token mapper, component generator) consume.
+Core library for the Aurelius design-to-code pipeline. It reads Adobe InDesign
+Markup Language (`.idml`) packages into a normalized, typed intermediate
+representation (IR), and maps that IR to a coherent **design-token set**
+(`tokens.ts`, `tokens.css`, a Tailwind preset, and a Style Dictionary JSON).
 
 > Part of the [InDesign-to-React pipeline](../../docs/indesign-to-react/README.md)
-> epic. This package currently implements the foundational parser + IR only.
+> epic. Shipped so far: the IDML parser + IR and the design-token mapper. The
+> React component generator is next.
 
 ## Install / build
 
@@ -60,6 +61,41 @@ All geometry is normalized from IDML points to **pixels** at a configurable DPI
 (default 96): `px = pt × dpi / 72`. Transform translation is converted to pixels;
 scale/shear components are preserved.
 
+## Design tokens
+
+Map the IR to a framework-agnostic token set and emit it in four formats:
+
+```ts
+import { parseIdmlFile } from "@aurelius/pipeline/indesign";
+import { mapDocumentToTokens, emitAll } from "@aurelius/pipeline/tokens";
+
+const { document } = parseIdmlFile("brochure.idml");
+const { tokens, typography, fonts, warnings } = mapDocumentToTokens(document, {
+  grid: 4, // spacing quantization (px)
+  // fontMap: { "Trade Gothic": ["Trade Gothic", "Oswald", "sans-serif"] },
+});
+
+// { "tokens.ts", "tokens.css", "tailwind.preset.ts", "design-tokens.json" }
+const files = emitAll(tokens);
+```
+
+The mapper:
+
+- **Colors** — every swatch with a resolvable hex becomes a palette token,
+  de-duplicated within a configurable sRGB tolerance; CMYK/Lab colors outside the
+  sRGB gamut are flagged.
+- **Typography** — paragraph styles are clustered into a heading / body / caption
+  scale (largest sizes become the top heading levels), preserving InDesign names.
+  Sizes, line heights, and letter spacing share aligned token keys.
+- **Spacing** — paragraph spacing and indents are quantized to a grid (default
+  4px) and named on a t-shirt scale.
+- **Fonts** — families resolve to web font stacks via
+  [`config/font-map.json`](config/font-map.json) (override per call with
+  `fontMap`); unmapped families fall back to a generic stack and emit a warning.
+
+`tokens.ts` is emitted self-contained (`as const`) so it type-checks anywhere;
+the token shape is also published as the zod `DesignTokensSchema`.
+
 ## CLI
 
 The package ships an `aurelius-indesign` binary (built to `dist/indesign/cli.js`):
@@ -71,11 +107,17 @@ node dist/indesign/cli.js brochure.idml
 # Full IR as JSON (warnings summary goes to stderr so stdout stays pipeable)
 node dist/indesign/cli.js brochure.idml --json --pretty > ir.json
 
+# Map the IR to design tokens and write the four artifacts into a directory
+node dist/indesign/cli.js brochure.idml --emit-tokens ./src/tokens
+
 # Options
-#   --json          emit the IR as JSON on stdout
-#   --pretty        pretty-print JSON
-#   --dpi <number>  pixel conversion DPI (default 96)
-#   --no-validate   skip zod validation of the produced IR
+#   --json               emit the IR as JSON on stdout
+#   --pretty             pretty-print JSON
+#   --dpi <number>       pixel conversion DPI (default 96)
+#   --no-validate        skip zod validation of the produced IR
+#   --emit-tokens <dir>  map the IR to tokens and write the four artifacts
+#   --no-tailwind        with --emit-tokens, skip tailwind.preset.ts
+#   --font-map <file>    JSON file of font fallback overrides
 ```
 
 Example report:
@@ -118,4 +160,6 @@ Warnings (1)
 - Color conversion is a deterministic approximation (no ICC profiles). CMYK, RGB,
   Lab (D50), and Gray spaces are supported; others are recorded without a hex value.
 - Frame bounds are axis-aligned bounding boxes in spread (pasteboard) coordinates.
+- Spacing tokens are derived from paragraph spacing and indents; page margins and
+  inter-frame gutters are not yet mined from layout geometry.
 ```
