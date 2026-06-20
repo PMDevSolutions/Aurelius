@@ -534,10 +534,10 @@
     "directory": ".claude/pipeline-cache",
     "maxAgeDays": 7,
     "inputCategories": {
-      "source": ["src/**/*.{ts,tsx,js,jsx}", "components/**/*.{ts,tsx}"],
+      "source": ["src/**/*.{ts,tsx,js,jsx}", "src/**/*.astro", "components/**/*.{ts,tsx}"],
       "styles": ["src/**/*.css", "styles/**/*.css", "tailwind.config.*"],
       "tests": ["**/*.test.{ts,tsx,js,jsx}", "**/*.spec.{ts,tsx}"],
-      "config": ["package.json", "tsconfig.json", "vite.config.*", "next.config.*"],
+      "config": ["package.json", "tsconfig.json", "vite.config.*", "next.config.*", "astro.config.*"],
       "tokens": ["design-tokens.lock.json", "tailwind.config.*"],
       "figma": ["build-spec.json", "design-tokens.lock.json"]
     },

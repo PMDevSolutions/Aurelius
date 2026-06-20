@@ -61,6 +61,13 @@ describe("setup-project.sh", () => {
     expect(r.stdout).toMatch(/template:\s+templates\/sveltekit/);
   });
 
+  it("--astro alias maps to the astro renderer", () => {
+    const r = run(["my-app", "--astro", "--dry-run"]);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toMatch(/Renderer: astro/);
+    expect(r.stdout).toMatch(/template:\s+templates\/astro/);
+  });
+
   it("exits non-zero on an unknown renderer", () => {
     const r = run(["my-app", "--renderer", "does-not-exist", "--dry-run"]);
     expect(r.exitCode).not.toBe(0);
