@@ -10,3 +10,6 @@ templates/**/*.tpl linguist-generated=true
 
 # Lock files are vendored
 pnpm-lock.yaml linguist-generated=true
+
+# Binary test fixtures (InDesign packages are zip archives)
+*.idml binary

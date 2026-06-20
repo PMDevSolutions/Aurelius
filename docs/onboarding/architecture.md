@@ -15,7 +15,7 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   55 Agents   │   │    22 Skills    │   │    4 Plugins    │
+     │   56 Agents   │   │    23 Skills    │   │    4 Plugins    │
      │ (specialized  │   │  (workflow      │   │ (extensions:    │
      │  task workers) │   │   automation)  │   │  memory, git,   │
      └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
@@ -38,7 +38,7 @@ This document explains how Aurelius is structured and how its components work to
 
 ---
 
-## Agents (55 Total)
+## Agents (56 Total)
 
 Agents are specialized Claude Code sub-processes that handle complex, multi-step tasks. Each agent is a markdown file in `.claude/agents/` with frontmatter defining its tools, capabilities, and instructions. Claude Code selects agents automatically based on your task context.
 
@@ -144,7 +144,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 
 ---
 
-## Skills (22 Total)
+## Skills (23 Total)
 
 Skills are automated workflows triggered by slash commands or keyword detection. Unlike agents (which are general-purpose workers), skills encode specific multi-step processes.
 

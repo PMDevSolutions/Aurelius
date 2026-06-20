@@ -1,7 +1,7 @@
 # Custom Agents Guide
 
 **Last Updated:** 2026-06-11
-**Total Agents:** 55
+**Total Agents:** 56
 **Location:** `.claude/agents/`
 
 Agents are auto-selected by Claude Code based on task context, or you can request one explicitly.
@@ -44,6 +44,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 | astro-converter | Design-to-Astro hybrid conversion (zero-JS .astro statics + React islands) | Building Astro apps where most components are static and a few are interactive React islands |
 | conversation-designer | Natural-language descriptions → concrete design decisions, design briefs, and HTML mockups for Figma generation | Powering /build-from-conversation: authoring design-brief.json and the mockups captured into Figma |
 | asset-cataloger | Image/asset semantic mapping and validation | Mapping hash-named exports to meaningful names, validating asset usage |
+| indesign-to-react | InDesign (IDML/PDF) → typed React components, design tokens, and Storybook stories via @aurelius/pipeline | Converting an exported `.idml` or PDF handoff into a React starting point |
 
 ## Testing & QA
 
@@ -141,7 +142,7 @@ User: "Use the accessibility-auditor agent to check this page"
 
 ## Agent + Skill Integration
 
-Agents work alongside the 22 custom skills in `.claude/skills/`:
+Agents work alongside the 23 custom skills in `.claude/skills/`:
 
 | Agent | Complementary Skill |
 |-------|-------------------|

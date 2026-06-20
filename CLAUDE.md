@@ -17,8 +17,8 @@ The framework is designed for:
 ```
 project-root/
 ├── .claude/              # Claude Code configuration
-│   ├── agents/           # 55 specialized agents
-│   ├── skills/           # 22 React-specific skills
+│   ├── agents/           # 56 specialized agents
+│   ├── skills/           # 23 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
@@ -214,15 +214,15 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (55 Total)
+### Custom Agents (56 Total)
 
-55 specialized agents covering the full product lifecycle:
+56 specialized agents covering the full product lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
 | Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
 | Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 8 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter, conversation-designer |
+| Design-to-Code | 9 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter, conversation-designer, indesign-to-react |
 | Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
 | Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
 | Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
@@ -238,7 +238,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (22 Total)
+### Skills (23 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -539,6 +539,7 @@ Claude: [Uses test-writer-fixer agent]
 /build-from-screenshot <URL or paths>  # Full autonomous screenshot pipeline
 /build-from-conversation [description] # Conversational pipeline: interview → generated Figma → build
 /export-design-system [flags] # Export components + tokens as publishable pnpm workspace
+aurelius pipeline indesign <input> [--target ...] [--styling ...] [--output ...] # InDesign IDML/PDF → React
 ```
 
 **Quality Verification:**
@@ -616,7 +617,7 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 
 ---
 
-**Last Updated:** 2026-06-11
-**Architecture:** 55 agents, 22 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Last Updated:** 2026-06-20
+**Architecture:** 56 agents, 23 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.
