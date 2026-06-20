@@ -29,6 +29,7 @@ const MatrixSchema = z.tuple([
 const RGBSchema = z.object({ r: z.number(), g: z.number(), b: z.number() });
 
 const DocumentMetaSchema = z.object({
+  source: z.enum(["idml", "pdf"]).optional(),
   idmlVersion: z.string().optional(),
   dpi: z.number(),
   mimetypeValid: z.boolean(),
