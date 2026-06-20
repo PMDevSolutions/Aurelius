@@ -2,13 +2,15 @@
 
 Core library for the Aurelius design-to-code pipeline. It reads Adobe InDesign
 sources — both `.idml` packages and exported `.pdf` files — into a single
-normalized, typed intermediate representation (IR), and maps that IR to a
-coherent **design-token set** (`tokens.ts`, `tokens.css`, a Tailwind preset, and
-a Style Dictionary JSON).
+normalized, typed intermediate representation (IR), maps that IR to a coherent
+**design-token set** (`tokens.ts`, `tokens.css`, a Tailwind preset, and a Style
+Dictionary JSON), and generates **typed React components** (`.tsx` + Storybook
+stories) from it.
 
 > Part of the [InDesign-to-React pipeline](../../docs/indesign-to-react/README.md)
-> epic. Shipped so far: the IDML parser + IR, the PDF parser (same IR), and the
-> design-token mapper. The React component generator is next.
+> epic. Shipped so far: the IDML parser + IR, the PDF parser (same IR), the
+> design-token mapper, and the React component generator. A Claude Code agent +
+> skill that orchestrate the full pipeline are next.
 
 ## Designer hands you a PDF
 
@@ -137,6 +139,35 @@ The mapper:
 `tokens.ts` is emitted self-contained (`as const`) so it type-checks anywhere;
 the token shape is also published as the zod `DesignTokensSchema`.
 
+## React components
+
+Generate typed React components (one per spread) plus Storybook stories, a
+barrel `index.ts`, and a generation report:
+
+```ts
+import { parseIdmlFile } from "@aurelius/pipeline/indesign";
+import { mapDocumentToTokens } from "@aurelius/pipeline/tokens";
+import { generateComponents } from "@aurelius/pipeline/react";
+
+const { document } = parseIdmlFile("brochure.idml");
+const tokens = mapDocumentToTokens(document);
+const { files, report, a11y } = generateComponents(document, tokens, {
+  styleMode: "tailwind", // or "css-modules"
+  framework: "react", // or "next" (uses next/image)
+});
+// files: [{ path: "Spread1.tsx", contents }, { path: "Spread1.stories.tsx", … }, "index.ts", report]
+```
+
+- **Text frames** → semantic tags (`h1`–`h6` / `p` / `figcaption`) inferred from
+  the paragraph-style role; **image frames** → `<img>` or `next/image`.
+- **Explicit prop types** for all extracted content, so consumers override
+  content while keeping layout; extracted text/`src` become the prop defaults.
+- **Tailwind** classes resolve via the mapper's preset; **CSS Modules** emit a
+  co-located `.module.css` referencing the `tokens.css` custom properties.
+- **Deterministic** — the same IR always produces byte-identical output.
+- The report lists produced files, staged assets, unmapped IR nodes, and
+  accessibility TODOs (e.g. images missing alt text).
+
 ## CLI
 
 The package ships an `aurelius-indesign` binary (built to `dist/indesign/cli.js`):
@@ -151,14 +182,20 @@ node dist/indesign/cli.js brochure.idml --json --pretty > ir.json
 # Map the IR to design tokens and write the four artifacts into a directory
 node dist/indesign/cli.js brochure.idml --emit-tokens ./src/tokens
 
+# Generate React components (+ stories, barrel, report) from the IR
+node dist/indesign/cli.js brochure.idml --emit-components ./src/components --style tailwind
+
 # Options
-#   --json               emit the IR as JSON on stdout
-#   --pretty             pretty-print JSON
-#   --dpi <number>       pixel conversion DPI (default 96)
-#   --no-validate        skip zod validation of the produced IR
-#   --emit-tokens <dir>  map the IR to tokens and write the four artifacts
-#   --no-tailwind        with --emit-tokens, skip tailwind.preset.ts
-#   --font-map <file>    JSON file of font fallback overrides
+#   --json                   emit the IR as JSON on stdout
+#   --pretty                 pretty-print JSON
+#   --dpi <number>           pixel conversion DPI (default 96)
+#   --no-validate            skip zod validation of the produced IR
+#   --emit-tokens <dir>      map the IR to tokens and write the four artifacts
+#   --no-tailwind            with --emit-tokens, skip tailwind.preset.ts
+#   --emit-components <dir>  generate .tsx components, stories, and a report
+#   --style <mode>           component styling: tailwind | css-modules
+#   --framework <fw>         target framework: react | next
+#   --font-map <file>        JSON file of font fallback overrides
 ```
 
 Example report:

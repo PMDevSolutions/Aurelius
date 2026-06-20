@@ -5,8 +5,8 @@ typed React components, design tokens, and assets — a print-first sibling to t
 Figma/Canva/Screenshot pipelines.
 
 > **Status:** in progress. This document tracks the epic and details the shipped
-> stages — the **IDML parser + IR**, the **PDF parser** (same IR), and the
-> **style & design-token mapper**.
+> stages — the **IDML parser + IR**, the **PDF parser** (same IR), the **style &
+> design-token mapper**, and the **React component generator**.
 > See the epic for the full plan: _Add InDesign-to-React conversion pipeline_.
 
 ## Pipeline shape (target)
@@ -125,10 +125,33 @@ node packages/pipeline/dist/indesign/cli.js your-design.idml --emit-tokens ./src
 
 Font fallbacks and out-of-gamut conversions are listed in the generator report.
 
+## Stage 3 — React component generator (shipped)
+
+Implemented in [`packages/pipeline/src/react`](../../packages/pipeline/src/react).
+Turns the IR + tokens into importable React artifacts — one `.tsx` per spread:
+
+- **Frames → JSX** — text frames become semantic tags (`h1`–`h6` / `p` /
+  `figcaption`) inferred from the paragraph-style role; image frames become
+  `<img>` or `next/image`; layout is a token-spaced flow (grid for multi-column).
+- **Typed props** — explicit `…Props` for every extracted content field, with the
+  extracted text / image `src` as defaults, so consumers override content while
+  keeping layout.
+- **Two styling modes** — Tailwind classes that resolve via the mapper's preset,
+  or CSS Modules referencing the `tokens.css` custom properties.
+- **Storybook stories** per component, populated with the extracted content.
+- **Generation report** (`indesign-pipeline-report.md`) listing produced files,
+  staged assets, unmapped IR nodes, and accessibility TODOs.
+
+Generated components are deterministic and pass `tsc --noEmit` under strict React
+JSX (verified in CI for Tailwind, CSS Modules, and Next.js targets).
+
+```bash
+node packages/pipeline/dist/indesign/cli.js brochure.idml \
+  --emit-components ./src/components --style tailwind --framework react
+```
+
 ## Roadmap (remaining sub-issues)
 
-- [ ] React component generator (TSX output, optional Tailwind/CSS Modules,
-      Storybook stories)
 - [ ] `indesign-to-react` Claude Code agent + skill + end-to-end CLI command
 
 ## References

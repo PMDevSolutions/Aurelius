@@ -9,6 +9,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { generateComponents } from "../react/index.js";
+import type { Framework, GenerationResult, StyleMode } from "../react/model.js";
 import { parseSourceFile, type SourcePriority } from "../source.js";
 import { emitAll } from "../tokens/emit.js";
 import type { FontMapOverrides } from "../tokens/font-map.js";
@@ -39,6 +41,9 @@ Options:
   --emit-tokens <dir>      Map the IR to design tokens and write tokens.ts,
                            tokens.css, tailwind.preset.ts, design-tokens.json
   --no-tailwind            With --emit-tokens, skip tailwind.preset.ts
+  --emit-components <dir>  Generate .tsx components, stories, and a report
+  --style <mode>           Component styling: tailwind | css-modules (default tailwind)
+  --framework <fw>         Target framework: react | next (default react)
   --font-map <file>        JSON file of font fallback overrides
   -h, --help               Show this help
 `;
@@ -52,6 +57,9 @@ interface ParsedArgs {
   tailwind: boolean;
   dpi?: number;
   emitTokens?: string;
+  emitComponents?: string;
+  styleMode?: StyleMode;
+  framework?: Framework;
   fontMap?: string;
   sourcePriority?: SourcePriority;
   assets?: string;
@@ -98,6 +106,25 @@ function parseArgs(argv: string[]): ParsedArgs {
         const dir = argv[++i];
         if (!dir) args.error = "--emit-tokens requires a directory";
         else args.emitTokens = dir;
+        break;
+      }
+      case "--emit-components": {
+        const dir = argv[++i];
+        if (!dir) args.error = "--emit-components requires a directory";
+        else args.emitComponents = dir;
+        break;
+      }
+      case "--style": {
+        const value = argv[++i];
+        if (value === "tailwind" || value === "css-modules") args.styleMode = value;
+        else
+          args.error = `Invalid --style: ${value ?? "(missing)"} (expected tailwind|css-modules)`;
+        break;
+      }
+      case "--framework": {
+        const value = argv[++i];
+        if (value === "react" || value === "next") args.framework = value;
+        else args.error = `Invalid --framework: ${value ?? "(missing)"} (expected react|next)`;
         break;
       }
       case "--font-map": {
@@ -157,6 +184,10 @@ export async function runCli(argv: string[]): Promise<CliResult> {
     return { code: 1, stdout: "", stderr: `${errorLabel(err)}: ${toMessage(err)}\n` };
   }
 
+  if (args.emitComponents) {
+    return emitComponentsFlow(document, args);
+  }
+
   if (args.emitTokens) {
     return emitTokens(document, args);
   }
@@ -208,6 +239,53 @@ function emitTokens(document: Document, args: ParsedArgs): CliResult {
     stdout: formatTokenReport(result, args.emitTokens!, Object.keys(files), document.meta.source),
     stderr: formatWarningSummary(allWarnings),
   };
+}
+
+function emitComponentsFlow(document: Document, args: ParsedArgs): CliResult {
+  const tokens = mapDocumentToTokens(document, { ...(args.dpi ? { dpi: args.dpi } : {}) });
+  const result = generateComponents(document, tokens, {
+    ...(args.styleMode ? { styleMode: args.styleMode } : {}),
+    ...(args.framework ? { framework: args.framework } : {}),
+  });
+
+  try {
+    mkdirSync(args.emitComponents!, { recursive: true });
+    for (const file of result.files) {
+      writeFileSync(join(args.emitComponents!, file.path), file.contents);
+    }
+  } catch (err) {
+    return {
+      code: 1,
+      stdout: "",
+      stderr: `Error: cannot write components to "${args.emitComponents}": ${toMessage(err)}\n`,
+    };
+  }
+
+  return {
+    code: 0,
+    stdout: formatComponentReport(result, args.emitComponents!, args.styleMode ?? "tailwind"),
+    stderr: formatWarningSummary(document.warnings),
+  };
+}
+
+function formatComponentReport(result: GenerationResult, dir: string, styleMode: string): string {
+  const lines: string[] = [];
+  lines.push("InDesign → React Components");
+  lines.push(`  output:        ${dir}`);
+  lines.push(`  style mode:    ${styleMode}`);
+  lines.push(
+    `  components:    ${result.componentNames.length} (${result.componentNames.join(", ") || "none"})`,
+  );
+  lines.push(`  files:         ${result.files.length}`);
+  lines.push(`  assets:        ${result.assets.length}`);
+  lines.push(`  unmapped:      ${result.unmapped.length}`);
+  lines.push(`  a11y TODOs:    ${result.a11y.length}`);
+  lines.push(`  report:        ${join(dir, "indesign-pipeline-report.md")}`);
+  if (result.a11y.length > 0) {
+    lines.push("", "Accessibility TODOs");
+    for (const item of result.a11y) lines.push(`  ${item}`);
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 interface FrameCounts {
