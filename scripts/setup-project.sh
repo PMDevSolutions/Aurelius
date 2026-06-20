@@ -13,6 +13,7 @@ set -euo pipefail
 #   ./scripts/setup-project.sh my-app --vue              # Create Vue 3 app
 #   ./scripts/setup-project.sh my-app --svelte           # Alias for --renderer sveltekit
 #   ./scripts/setup-project.sh my-app --expo             # Alias for --renderer expo
+#   ./scripts/setup-project.sh my-app --astro            # Alias for --renderer astro
 #
 # The --renderer flag is backed by the renderer registry
 # (scripts/renderer-registry.js). The legacy framework flags above are kept as
@@ -32,7 +33,7 @@ usage() {
     local renderers
     renderers="$(list_renderers || echo "nextjs vite sveltekit expo astro")"
     echo "Usage: $0 <project-name> [--renderer <name>] [--dry-run]"
-    echo "       $0 <project-name> [--next|--vite|--react|--vue|--svelte|--expo] [--dry-run]"
+    echo "       $0 <project-name> [--next|--vite|--react|--vue|--svelte|--expo|--astro] [--dry-run]"
     echo ""
     echo "Options:"
     echo "  --renderer <name>  Create an app for a registry renderer (authoritative)"
@@ -43,6 +44,7 @@ usage() {
     echo "  --vue              Create a Vue 3 app"
     echo "  --svelte           Alias for --renderer sveltekit"
     echo "  --expo             Alias for --renderer expo"
+    echo "  --astro            Alias for --renderer astro"
     echo "  --dry-run          Print the resolved plan and exit without creating anything"
     echo "  -h, --help         Show this message"
 }
@@ -76,6 +78,7 @@ while [[ $i -lt ${#args[@]} ]]; do
         --vite) RENDERER="vite" ;;
         --expo) RENDERER="expo" ;;
         --svelte) RENDERER="sveltekit" ;;
+        --astro) RENDERER="astro" ;;
         --react) FRAMEWORK="react" ;;
         --vue) FRAMEWORK="vue" ;;
         --dry-run) DRY_RUN=1 ;;
@@ -198,8 +201,15 @@ case "$FRAMEWORK" in
         pnpm create expo-app "$PROJECT_NAME" --template tabs
         ;;
     astro)
-        echo "Creating Astro app..."
-        pnpm create astro@latest "$PROJECT_NAME" -- --template basics --typescript strict --no-install --no-git
+        # Astro ships a complete hybrid-islands starter under templates/astro
+        # (full package.json + src), so scaffold from it directly — deterministic
+        # and offline, unlike `pnpm create astro` which downloads the basics template.
+        echo "Creating Astro app from templates/astro..."
+        mkdir -p "$PROJECT_NAME"
+        cp -R "$TEMPLATES_DIR/astro/." "$PROJECT_NAME/"
+        # Personalize the package name.
+        sed -i.bak "s/\"my-astro-app\"/\"$PROJECT_NAME\"/" "$PROJECT_NAME/package.json" \
+            && rm -f "$PROJECT_NAME/package.json.bak"
         ;;
 esac
 
@@ -233,8 +243,8 @@ case "$FRAMEWORK" in
         ADDITIONAL_DEPS+=(prettier vitest @testing-library/svelte jsdom @vitest/coverage-v8)
         ;;
     astro)
-        # Astro hybrid: React islands + Tailwind + container-based testing
-        ADDITIONAL_DEPS+=(@astrojs/react @astrojs/tailwind tailwindcss prettier vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @vitest/coverage-v8)
+        # templates/astro already pins all runtime + test deps (React islands,
+        # Tailwind, vitest, testing-library, jsdom); nothing extra to add.
         ;;
     expo)
         ADDITIONAL_DEPS+=(prettier jest jest-expo @testing-library/react-native)

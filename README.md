@@ -18,8 +18,8 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 git clone <repository-url>
 cd aurelius
 
-# Initialize a new project (Next.js or Vite)
-./scripts/setup-project.sh my-app --vite    # or --next
+# Initialize a new project (Next.js, Vite, Astro, SvelteKit, or Expo)
+./scripts/setup-project.sh my-app --vite    # or --next, --astro, --svelte, --expo
 
 # Install dependencies
 cd app && pnpm install
@@ -79,6 +79,7 @@ project-root/
 │   ├── shared/                  # ESLint, Prettier, Tailwind, TS, Vitest
 │   ├── nextjs/                  # Next.js config
 │   ├── vite/                    # Vite config
+│   ├── astro/                   # Astro hybrid-islands starter (React + Tailwind)
 │   └── chrome-extension/        # Playwright E2E fixtures for extensions
 ├── docs/                 # Documentation
 │   ├── figma-to-react/          # Figma pipeline guide
@@ -258,6 +259,7 @@ Starter configuration files for new projects:
 | `templates/shared/` | ESLint, Prettier, Tailwind, TypeScript, Vitest configs |
 | `templates/nextjs/` | Next.js config |
 | `templates/vite/` | Vite config |
+| `templates/astro/` | Astro hybrid-islands starter (React islands + Tailwind, file-based routing) |
 | `templates/chrome-extension/` | Playwright E2E fixtures for Chrome extensions |
 
 Full reference: `templates/README.md`

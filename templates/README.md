@@ -11,6 +11,7 @@ templates/
 ├── shared/              # Framework-agnostic configs (used by all project types)
 ├── nextjs/              # Next.js-specific configs
 ├── vite/                # Vite-specific configs
+├── astro/               # Astro hybrid-islands starter (React islands + Tailwind)
 ├── vue/                 # Vue 3 + Vite configs
 ├── sveltekit/           # SvelteKit configs
 ├── expo/                # Expo + React Native configs
