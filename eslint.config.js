@@ -27,6 +27,14 @@ export default [
     },
   },
   {
-    ignores: ["node_modules/", "dist/", "build/", ".claude/", "templates/", "docs/", "app/"],
+    ignores: [
+      "**/node_modules/",
+      "**/dist/",
+      "**/build/",
+      ".claude/",
+      "templates/",
+      "docs/",
+      "app/",
+    ],
   },
 ];
