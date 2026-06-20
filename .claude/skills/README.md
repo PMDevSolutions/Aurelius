@@ -1,7 +1,7 @@
 # Skills Catalog
 
 **Last Updated:** 2026-06-11
-**Total Skills:** 22
+**Total Skills:** 23
 **Location:** `.claude/skills/`
 
 Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
@@ -137,6 +137,14 @@ These skills provide patterns and best practices. They trigger on relevant keywo
 - **Purpose:** Exports generated components + `design-tokens.lock.json` as a publishable pnpm workspace. Generates a framework-agnostic tokens package and a framework-specific component library (React/Vue/Svelte via Vite library mode, React Native via tsc), with Tailwind preset, ThemeProvider, and Changesets versioning.
 - **Triggers:** `/export-design-system`, "export design system", "publishable component library"
 - **Output:** `packages/` pnpm workspace (tokens + component library)
+
+### InDesign Skills
+
+#### 23. indesign-conversion
+
+- **Purpose:** Converts an exported InDesign IDML package or PDF into typed React components, design tokens (Tailwind preset + `tokens.css`/`tokens.ts` + Style Dictionary JSON), and Storybook stories via the `@aurelius/pipeline` InDesign pipeline; reads the generation report to propose follow-ups.
+- **Triggers:** "InDesign to React", "IDML", "PDF to React", "indesign pipeline", "brochure to React", "aurelius pipeline indesign"
+- **Output:** A React project (`components`, `stories`, `index.ts`, `tokens/`, extracted assets, plus Markdown + JSON reports)
 
 ---
 

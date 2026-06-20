@@ -8,3 +8,4 @@ templates/
 docs/
 app/
 *.md
+*.idml

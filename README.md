@@ -4,8 +4,8 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 
 ## What This Framework Provides
 
-- **55 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
-- **22 Development Skills** -- Automated workflows for Figma/Canva/screenshot/conversation conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
+- **56 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
+- **23 Development Skills** -- Automated workflows for Figma/Canva/screenshot/conversation conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
 - **10-Phase Design-to-React Pipeline** -- Convert Figma or Canva designs into fully working, tested React apps with a single command -- or just describe the app and let `/build-from-conversation` generate the Figma design first
 - **App-Type Awareness** -- Tailored build and test strategies for web apps, Chrome extensions, and PWAs
 - **Testing Stack** -- Vitest, React Testing Library, Playwright (cross-browser), Storybook, and pixel-diff visual QA
@@ -85,8 +85,8 @@ project-root/
 │   ├── canva-to-react/          # Canva pipeline guide
 │   └── react-development/       # Development standards
 ├── .claude/              # Claude Code configuration
-│   ├── agents/                  # 55 custom agents
-│   ├── skills/                  # 22 development skills
+│   ├── agents/                  # 56 custom agents
+│   ├── skills/                  # 23 development skills
 │   ├── commands/                # Slash commands (/build-from-figma, /lint, /test)
 │   ├── pipeline.config.json     # Pipeline thresholds and app-type definitions
 │   ├── CUSTOM-AGENTS-GUIDE.md   # Agent catalog
@@ -116,6 +116,18 @@ No design file needed -- describe the app and the pipeline designs it first:
 - Phase C0: Structured interview (max 7 questions) → `build-spec.json` + `design-brief.json`
 - Phase C1: The conversation-designer agent renders the brief as HTML mockups, which are captured into a **real Figma file** via the Figma MCP (`generate_figma_design`)
 - Handoff: The generated Figma URL feeds `/build-from-figma`, which runs unchanged (figma-intake fast-paths the interview)
+
+### Build from InDesign (IDML / PDF)
+
+```
+aurelius pipeline indesign brochure.pdf --target react --styling tailwind --output ./src/indesign
+```
+
+For print-first sources, InDesign joins Figma and Canva as a first-class input. An
+exported **IDML** package or **PDF** (the normal designer handoff) is parsed into the
+shared IR, mapped to design tokens, and turned into typed React components plus
+Storybook stories — driven by the `indesign-to-react` agent or the
+`indesign-conversion` skill. See [`docs/pipelines/indesign.md`](docs/pipelines/indesign.md).
 
 ## The Figma-to-React Pipeline
 
@@ -147,7 +159,7 @@ All thresholds and behavior are configurable in `.claude/pipeline.config.json`:
 - Lighthouse minimums (performance: 80, accessibility: 90)
 - App-type-specific E2E strategies
 
-## 55 Custom Agents
+## 56 Custom Agents
 
 Agents are auto-selected by Claude Code based on your task:
 
@@ -165,7 +177,7 @@ Agents are auto-selected by Claude Code based on your task:
 
 Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 
-## 22 Development Skills
+## 23 Development Skills
 
 ### Pipeline Skills
 
@@ -283,7 +295,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 |----------|----------|-------------|
 | **Developer onboarding** | `docs/onboarding/README.md` | Start here -- quickstart, architecture, configuration, troubleshooting |
 | Quickstart guide | `docs/onboarding/quickstart.md` | Clone to running project in 10 minutes |
-| Architecture overview | `docs/onboarding/architecture.md` | All 55 agents, 22 skills, 4 pipelines, and how they connect |
+| Architecture overview | `docs/onboarding/architecture.md` | All 56 agents, 23 skills, 4 pipelines, and how they connect |
 | Pipeline configuration | `docs/onboarding/pipeline-configuration.md` | Every setting in pipeline.config.json explained |
 | Troubleshooting FAQ | `docs/onboarding/troubleshooting.md` | Common issues and solutions |
 | Project instructions | `CLAUDE.md` | Full project config for Claude Code |
@@ -291,8 +303,9 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | React standards | `docs/react-development/README.md` | TypeScript, Tailwind, testing conventions |
 | Canva pipeline guide | `docs/canva-to-react/README.md` | Canva pipeline overview and troubleshooting |
 | Conversation pipeline guide | `docs/conversation-to-app/README.md` | Conversational app creation via generated Figma designs |
-| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 55 agents with use cases |
-| Skills catalog | `.claude/skills/README.md` | All 22 skills with triggers |
+| InDesign pipeline guide | `docs/pipelines/indesign.md` | Convert exported IDML/PDF into React components, tokens, and Storybook stories |
+| Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 56 agents with use cases |
+| Skills catalog | `.claude/skills/README.md` | All 23 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |
 | Templates reference | `templates/README.md` | Starter configs and how to use them |
