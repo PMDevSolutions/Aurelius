@@ -86,6 +86,21 @@ If the script exited non-zero, surface the exit code and the stderr message verb
 - **Output directory exists (exit 1):** Ask the user whether to `--force` overwrite or pick a new path.
 - **Unsupported framework (exit 3):** Only `react`, `vue`, `svelte`, `react-native` are supported.
 
+## Round-trip / re-import
+
+The export is reversible. To reconstruct a `design-tokens.lock.json` from an
+exported workspace — or to verify the round-trip in CI — use the inverse script:
+
+```bash
+./scripts/import-design-tokens.sh --from dist/design-system --out design-tokens.lock.json
+./scripts/import-design-tokens.sh --from dist/design-system --verify src/styles/design-tokens.lock.json
+```
+
+Only `tokens.json`/`tokens.ts` round-trip losslessly (`tokens.css` and the
+Tailwind preset are derived views). See `docs/design-system-export/consumers.md`
+for the interchange contract and how Flavian (WordPress `theme.json`) and Nerva
+(typed tokens) consume the export.
+
 ## Out of scope
 
 This command does NOT:

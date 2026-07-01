@@ -127,6 +127,9 @@ node scripts/validate-pipeline-config.js --config <path> --schema <path>
 # Export generated components as a publishable design-system workspace
 ./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
 
+# Re-import: reconstruct design-tokens.lock.json from an export (inverse of export; round-trip / consumer)
+./scripts/import-design-tokens.sh [--from dir|tokens.json] [--out path|-] [--verify lockfile] [--force] [--json]
+
 # Renderer registry: list / resolve / detect framework renderers (see docs/multi-framework/renderers.md)
 node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
 node scripts/validate-renderer.js --dir <renderer-dir>     # or --all [--renderers-root <dir>]
@@ -584,6 +587,7 @@ gh issue create               # Create issue
 ./scripts/capture-baselines.sh          # Capture regression baselines
 ./scripts/regression-test.sh            # Visual regression testing
 ./scripts/export-design-system.sh       # Export components + tokens as pnpm workspace
+./scripts/import-design-tokens.sh       # Reconstruct lockfile from an export (round-trip / consumer)
 ./scripts/validate-pipeline-config.sh   # Validate pipeline.config.json against schema
 ./scripts/check-doc-counts.sh           # Flag drift between documented agent/skill counts and disk
 ./scripts/verify-all.sh                 # Run all quality checks with summary
