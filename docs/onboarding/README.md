@@ -11,7 +11,7 @@ This guide will get you productive with the framework quickly, whether you are b
 | Document | What You Will Learn |
 |----------|-------------------|
 | [Quickstart Guide](quickstart.md) | Clone, install, create your first project, and run your first pipeline in under 10 minutes |
-| [Architecture Overview](architecture.md) | How the 56 agents, 23 skills, 4 pipelines, and 8 hooks fit together |
+| [Architecture Overview](architecture.md) | How the 56 agents, 24 skills, 4 pipelines, and 8 hooks fit together |
 | [Pipeline Configuration](pipeline-configuration.md) | Every setting in `pipeline.config.json` explained, with examples |
 | [Troubleshooting FAQ](troubleshooting.md) | Common issues, error messages, and how to resolve them |
 | [Framework Guides](../guides/README.md) | Deep dives into design tokens, visual QA, caching, hooks, error recovery, agent creation, and framework-specific workflows |
@@ -53,7 +53,7 @@ Optional (for specific workflows):
 - [Main README](../../README.md) -- Project overview
 - [Contributing Guide](../../CONTRIBUTING.md) -- Branch naming, PR process, commit conventions
 - [Agent Catalog](../../.claude/CUSTOM-AGENTS-GUIDE.md) -- All 56 agents with use cases
-- [Skills Catalog](../../.claude/skills/README.md) -- All 23 skills with triggers
+- [Skills Catalog](../../.claude/skills/README.md) -- All 24 skills with triggers
 - [Plugin Reference](../../.claude/PLUGINS-REFERENCE.md) -- Installed plugins and commands
 - [Pipeline Config](../../.claude/pipeline.config.json) -- Thresholds and app-type definitions
 - [React Development Standards](../react-development/README.md) -- TypeScript, Tailwind, testing conventions

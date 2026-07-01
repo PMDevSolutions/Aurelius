@@ -188,7 +188,7 @@ The pipeline auto-detects the framework from `package.json` if `outputTarget` is
 Aurelius/
 ├── .claude/
 │   ├── agents/              # 56 specialized agents
-│   ├── skills/              # 23 development skills
+│   ├── skills/              # 24 development skills
 │   ├── commands/            # Slash commands (/build-from-figma, /lint, /test)
 │   ├── hooks/               # Hook scripts (8 automated hooks)
 │   ├── pipeline.config.json # All pipeline thresholds and behavior

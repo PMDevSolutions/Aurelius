@@ -1,7 +1,7 @@
 # Skills Catalog
 
-**Last Updated:** 2026-06-11
-**Total Skills:** 23
+**Last Updated:** 2026-07-01
+**Total Skills:** 24
 **Location:** `.claude/skills/`
 
 Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
@@ -146,6 +146,14 @@ These skills provide patterns and best practices. They trigger on relevant keywo
 - **Triggers:** "InDesign to React", "IDML", "PDF to React", "indesign pipeline", "brochure to React", "aurelius pipeline indesign"
 - **Output:** A React project (`components`, `stories`, `index.ts`, `tokens/`, extracted assets, plus Markdown + JSON reports)
 
+### Storybook Skills
+
+#### 24. storybook-story-generation (Phase 4.5)
+
+- **Purpose:** Auto-generates Storybook 8 (CSF3) `.stories.tsx` and `.mdx` docs from built React components using a `ts-morph` AST. Emits prop-aware `argTypes`/controls, a `Default` story seeded with destructured defaults, one variant story per string-literal-union value, `True`/`False` stories for booleans, and action args for `on*` callbacks. Wraps `scripts/generate-stories.sh`. Non-blocking.
+- **Triggers:** Phase 4.5 of `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` (after component build), "generate Storybook stories", "auto-generate stories", "add MDX docs"
+- **Output:** `src/components/**/*.stories.tsx` and `src/components/**/*.mdx`
+
 ---
 
 ## Pipeline Flow
@@ -180,6 +188,8 @@ Figma Design                    Canva Design
     [Phase 4] figma-to-react-workflow (Figma)
               OR canva-react-converter (Canva)
               → components pass tests (GREEN)
+                    |
+        +-- [Phase 4.5] storybook-story-generation → stories + MDX (non-blocking)
                     |
                     v
     [Phase 5] visual-qa-verification → pixel-diff loop (max 5 iterations)

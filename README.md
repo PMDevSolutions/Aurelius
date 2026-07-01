@@ -5,7 +5,7 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 ## What This Framework Provides
 
 - **56 Custom Agents** -- Specialized AI agents for engineering, design, testing, marketing, operations, and more
-- **23 Development Skills** -- Automated workflows for Figma/Canva/screenshot/conversation conversion, TDD, E2E testing, visual QA, state management, forms, auth, animation, SEO, and more
+- **24 Development Skills** -- Automated workflows for Figma/Canva/screenshot/conversation conversion, TDD, E2E testing, visual QA, Storybook generation, state management, forms, auth, animation, SEO, and more
 - **10-Phase Design-to-React Pipeline** -- Convert Figma or Canva designs into fully working, tested React apps with a single command -- or just describe the app and let `/build-from-conversation` generate the Figma design first
 - **App-Type Awareness** -- Tailored build and test strategies for web apps, Chrome extensions, and PWAs
 - **Testing Stack** -- Vitest, React Testing Library, Playwright (cross-browser), Storybook, and pixel-diff visual QA
@@ -87,7 +87,7 @@ project-root/
 │   └── react-development/       # Development standards
 ├── .claude/              # Claude Code configuration
 │   ├── agents/                  # 56 custom agents
-│   ├── skills/                  # 23 development skills
+│   ├── skills/                  # 24 development skills
 │   ├── commands/                # Slash commands (/build-from-figma, /lint, /test)
 │   ├── pipeline.config.json     # Pipeline thresholds and app-type definitions
 │   ├── CUSTOM-AGENTS-GUIDE.md   # Agent catalog
@@ -178,7 +178,7 @@ Agents are auto-selected by Claude Code based on your task:
 
 Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 
-## 23 Development Skills
+## 24 Development Skills
 
 ### Pipeline Skills
 
@@ -221,6 +221,18 @@ Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 | # | Skill | Purpose |
 |---|-------|---------|
 | 22 | export-design-system | Export components + tokens as a publishable pnpm workspace |
+
+### InDesign Skills
+
+| # | Skill | Purpose |
+|---|-------|---------|
+| 23 | indesign-conversion | Convert an InDesign IDML/PDF into React components, design tokens, and stories |
+
+### Storybook Skills
+
+| # | Skill | Purpose |
+|---|-------|---------|
+| 24 | storybook-story-generation | Auto-generate Storybook stories + MDX docs from built components (Phase 4.5, non-blocking) |
 
 Full catalog: `.claude/skills/README.md`
 
@@ -324,7 +336,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 |----------|----------|-------------|
 | **Developer onboarding** | `docs/onboarding/README.md` | Start here -- quickstart, architecture, configuration, troubleshooting |
 | Quickstart guide | `docs/onboarding/quickstart.md` | Clone to running project in 10 minutes |
-| Architecture overview | `docs/onboarding/architecture.md` | All 56 agents, 23 skills, 4 pipelines, and how they connect |
+| Architecture overview | `docs/onboarding/architecture.md` | All 56 agents, 24 skills, 4 pipelines, and how they connect |
 | Pipeline configuration | `docs/onboarding/pipeline-configuration.md` | Every setting in pipeline.config.json explained |
 | Troubleshooting FAQ | `docs/onboarding/troubleshooting.md` | Common issues and solutions |
 | Project instructions | `CLAUDE.md` | Full project config for Claude Code |
@@ -334,7 +346,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | Conversation pipeline guide | `docs/conversation-to-app/README.md` | Conversational app creation via generated Figma designs |
 | InDesign pipeline guide | `docs/pipelines/indesign.md` | Convert exported IDML/PDF into React components, tokens, and Storybook stories |
 | Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 56 agents with use cases |
-| Skills catalog | `.claude/skills/README.md` | All 23 skills with triggers |
+| Skills catalog | `.claude/skills/README.md` | All 24 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |
 | Templates reference | `templates/README.md` | Starter configs and how to use them |
