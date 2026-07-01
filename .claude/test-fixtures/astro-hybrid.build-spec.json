@@ -11,7 +11,7 @@
     "capturedScreenshots": []
   },
   "appType": "web-app",
-  "framework": { "type": "astro", "version": "5.18.2", "outputDir": "src" },
+  "framework": { "type": "astro", "version": "6.4.8", "outputDir": "src" },
   "styling": { "approach": "tailwind", "uiLibrary": null, "existingTokens": false },
   "pages": [
     {

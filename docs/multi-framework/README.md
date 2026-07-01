@@ -70,9 +70,9 @@ The intake skills (`figma-intake`, `canva-intake`, `screenshot-intake`) also ask
 - **Renderer:** `astro` (`language`/`outputTarget` = `react`)
 - **App type:** `web-app` — Astro produces standard web output (static HTML + optional SSR), so it uses the **`web-app`** app type in `pipeline.config.json`. App type describes the _kind_ of app (web-app / chrome-extension / pwa / react-native); the framework choice (Next.js / Vite / **Astro**) is the orthogonal `renderer`, owned by the renderer registry. `pipeline.config.json` recognizes Astro inputs via `astro.config.*` and `src/**/*.astro` in its cache categories.
 - **Scaffold:** `./scripts/setup-project.sh <name> --astro` copies `templates/astro/` (a complete starter) and installs it.
-- **Styling:** Tailwind CSS via `@astrojs/tailwind`
+- **Styling:** Tailwind CSS v4 via `@tailwindcss/vite`
 - **Test library:** Vitest + @testing-library/react (islands) + Astro Container API (`.astro` statics)
-- **Template:** `templates/astro/` (`@astrojs/react` islands + `@astrojs/tailwind`)
+- **Template:** `templates/astro/` (`@astrojs/react` islands + `@tailwindcss/vite`)
 - **Component pattern:** Hybrid — zero-JS static `.astro` files for presentational components, React islands (`.tsx`) for interactive ones, composed under file-based `src/pages/*.astro` routes.
 
 The `astro-converter` agent classifies every component from `build-spec.json`:
