@@ -379,6 +379,32 @@ pnpm vitest run --reporter=verbose
 
 Iterate until all tests pass (Green phase of TDD).
 
+### Step 2.7: Generate Storybook Stories (Non-Blocking)
+
+Once components are built and their unit tests pass, auto-generate Storybook
+stories and MDX docs. Invoke the **storybook-story-generation** skill (or run the
+script directly). This is **Phase 4.5** of the pipeline and is **non-blocking** —
+a failure here logs a warning and the pipeline continues.
+
+```bash
+# Generate .stories.tsx + .mdx for every component (skips ones that already have stories)
+./scripts/generate-stories.sh
+
+# Preview without writing, or force-regenerate:
+./scripts/generate-stories.sh --dry-run
+./scripts/generate-stories.sh --force
+```
+
+The generator parses each component with a `ts-morph` AST and emits CSF3 stories
+with prop-aware controls, one variant story per string-literal-union value,
+`True`/`False` stories for booleans, action args for `on*` callbacks, and an MDX
+autodocs page. Behavior is configured by `.claude/pipeline.config.json` →
+`storybook`. See the storybook-story-generation skill for the full reference.
+
+When running under `parallel-orchestration`, this maps to the `storybook` phase
+(`depends: [component-build]`, `blocking: false`) and runs alongside the visual
+diff and dark-mode checks.
+
 ## Phase 3: Verification
 
 After generation completes, invoke verification checks.
@@ -650,6 +676,7 @@ This skill works with:
 - **design-token-lock skill** — Produces `design-tokens.lock.json` consumed by Phase 2
 - **tdd-from-figma skill** — Produces test files that Phase 2 MUST satisfy (hard gate)
 - **e2e-test-generator skill** — Generates Playwright E2E tests in Phase 3.3
+- **storybook-story-generation skill** — Auto-generates Storybook stories + MDX docs in Phase 4.5 (non-blocking)
 - **figma-react-converter agent** — Generates React components during Phase 2
 - **visual-qa-agent** — Performs screenshot comparison in Phase 3
 - **accessibility-auditor agent** — Validates ARIA and keyboard navigation
@@ -660,6 +687,7 @@ This skill works with:
 - **scripts/verify-tokens.sh** — Token integrity enforcement in quality gate
 - **scripts/verify-test-coverage.sh** — Test existence verification (TDD gate)
 - **scripts/cross-browser-test.sh** — Multi-browser screenshot capture
+- **scripts/generate-stories.sh** — AST-based Storybook story + MDX generation (Phase 4.5)
 - **.claude/pipeline.config.json** — Thresholds, iteration limits, app type config
 
 ---

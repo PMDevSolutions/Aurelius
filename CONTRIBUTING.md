@@ -137,7 +137,7 @@ Because the bump is derived from commit history, **conventional commit messages 
 
 ## Claude Code Agents
 
-Aurelius includes 56 specialized Claude Code agents and 23 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
+Aurelius includes 56 specialized Claude Code agents and 24 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
 
 If you have Claude Code installed, these agents and skills are available to you automatically when working in this repository. They can assist with component development, test writing, visual QA, and much more.
 

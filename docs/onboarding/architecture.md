@@ -15,7 +15,7 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   56 Agents   │   │    23 Skills    │   │    4 Plugins    │
+     │   56 Agents   │   │    24 Skills    │   │    4 Plugins    │
      │ (specialized  │   │  (workflow      │   │ (extensions:    │
      │  task workers) │   │   automation)  │   │  memory, git,   │
      └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
@@ -144,7 +144,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 
 ---
 
-## Skills (23 Total)
+## Skills (24 Total)
 
 Skills are automated workflows triggered by slash commands or keyword detection. Unlike agents (which are general-purpose workers), skills encode specific multi-step processes.
 
@@ -161,6 +161,7 @@ Skills are automated workflows triggered by slash commands or keyword detection.
 | `canva-token-inference` | Phase 2 (Canva/Screenshot) | AI-powered token extraction with confidence scoring |
 | `tdd-from-figma` | Phase 3 | Writes failing tests for every component (RED phase, app-type-aware) |
 | `figma-to-react-workflow` | Phase 4 | Orchestrates component generation with enforced TDD and visual QA |
+| `storybook-story-generation` | Phase 4.5 | Auto-generates Storybook stories + MDX from components via ts-morph AST (non-blocking) |
 | `e2e-test-generator` | Phase 6 | Generates Playwright E2E tests (web app, Chrome extension, PWA) |
 | `visual-qa-verification` | Phase 5 | Automated pixel-diff using pixelmatch, up to 5 iterations |
 | `parallel-orchestration` | Phases 4-9 | Concurrent phase execution with dependency graph |

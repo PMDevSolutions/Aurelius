@@ -18,7 +18,7 @@ The framework is designed for:
 project-root/
 ├── .claude/              # Claude Code configuration
 │   ├── agents/           # 56 specialized agents
-│   ├── skills/           # 23 React-specific skills
+│   ├── skills/           # 24 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
@@ -238,7 +238,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (23 Total)
+### Skills (24 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -247,6 +247,7 @@ Agents are invoked automatically based on task context.
 | design-token-lock | Extract + lock Figma values → lockfile | Phase 2 of /build-from-figma |
 | tdd-from-figma | Write tests FIRST, app-type-aware (Chrome ext, PWA) | Phase 3 of /build-from-figma |
 | e2e-test-generator | Generate Playwright E2E from build-spec (new) | Phase 6 of /build-from-figma |
+| storybook-story-generation | Auto-generate Storybook stories + MDX from components (AST-based, non-blocking) | Phase 4.5 of /build-from-figma, "generate stories" |
 | react-component-development | Component patterns and best practices | "create component", "custom hook" |
 | react-testing-workflows | Vitest, RTL, Playwright, Storybook | "write tests", "test coverage" |
 | react-performance-optimization | Profiling, bundle analysis, Web Vitals | "performance", "bundle size" |
@@ -617,7 +618,7 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 
 ---
 
-**Last Updated:** 2026-06-20
-**Architecture:** 56 agents, 23 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Last Updated:** 2026-07-01
+**Architecture:** 56 agents, 24 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.
