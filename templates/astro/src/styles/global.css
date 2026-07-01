@@ -1,0 +1,10 @@
+/*
+ * Global stylesheet for the Astro starter.
+ *
+ * Tailwind v4 is loaded here via its Vite plugin (@tailwindcss/vite, wired in
+ * astro.config.mjs). `@config` bridges the legacy `tailwind.config.mjs`, which
+ * stays the injection point for design tokens emitted by the token-lock and
+ * converter pipelines. Imported once from `src/pages/index.astro`.
+ */
+@import "tailwindcss";
+@config "../../tailwind.config.mjs";

@@ -2,6 +2,7 @@
 // A page composes both flavors: zero-JS .astro statics and hydrated React
 // islands. The `client:load` directive hydrates Counter on page load; use
 // `client:visible` instead for islands below the fold.
+import "../styles/global.css";
 import Hero from "../components/Hero.astro";
 import Counter from "../components/Counter.tsx";
 ---

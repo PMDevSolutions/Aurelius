@@ -79,7 +79,7 @@ Copies shared templates plus Vite-specific config.
 
 | File | Purpose |
 |------|---------|
-| `astro.config.mjs` | Astro config with `@astrojs/react` (islands) + `@astrojs/tailwind` |
+| `astro.config.mjs` | Astro config with `@astrojs/react` (islands) + `@tailwindcss/vite` (Tailwind v4) |
 | `package.json` | Astro + React island deps; Vitest + RTL + jsdom for tests |
 | `tsconfig.json` | Extends `astro/tsconfigs/strict`, `jsx: react-jsx` for islands |
 | `tailwind.config.mjs` | Tailwind content globs covering `.astro`, `.tsx`, `.ts`, `.md`, `.mdx` |
