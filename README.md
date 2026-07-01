@@ -345,6 +345,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | Canva pipeline guide | `docs/canva-to-react/README.md` | Canva pipeline overview and troubleshooting |
 | Conversation pipeline guide | `docs/conversation-to-app/README.md` | Conversational app creation via generated Figma designs |
 | InDesign pipeline guide | `docs/pipelines/indesign.md` | Convert exported IDML/PDF into React components, tokens, and Storybook stories |
+| Design system export | `docs/design-system-export/consumers.md` | Export format, round-trip re-import, and how Flavian/Nerva consume the tokens |
 | Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 56 agents with use cases |
 | Skills catalog | `.claude/skills/README.md` | All 24 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |

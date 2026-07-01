@@ -167,9 +167,33 @@ Common flag combinations:
 - **The script does not run `pnpm install` or `pnpm build`.** It only writes files. The user runs install/build to verify the workspace.
 - **Component file filtering is conservative.** `*.test.*`, `*.spec.*`, `*.stories.*`, `*.d.ts` are excluded. Co-located CSS modules and helper files with matching framework extensions ARE included.
 
+## Re-importing & Round-Trip
+
+The exported `tokens.json` is a **lossless** snapshot of the lockfile, so the
+export is fully reversible. `scripts/import-design-tokens.js` (the inverse of this
+skill) reconstructs a `design-tokens.lock.json` from an exported package:
+
+```bash
+# Reconstruct a lockfile from an exported workspace
+./scripts/import-design-tokens.sh --from dist/design-system --out design-tokens.lock.json
+
+# Verify the round-trip (exit 0 if identical to the source, 1 if it drifted)
+./scripts/import-design-tokens.sh --from dist/design-system --verify src/styles/design-tokens.lock.json
+```
+
+`--from` also accepts an installed package or a raw `tokens.json` path. Only
+`tokens.json`/`tokens.ts` round-trip; `tokens.css` and `tailwind-preset.ts` are
+derived, one-way views. See **`docs/design-system-export/consumers.md`** for the
+interchange contract and how the named consumers ingest the export — **Flavian**
+(WordPress/FSE `theme.json`) and **Nerva** (typed tokens in a Hono/Workers
+backend). The guarantee is proved by `scripts/__tests__/design-system-roundtrip.test.js`.
+
 ## Reference
 
 - Script: `scripts/export-design-system.js`
 - Wrapper: `scripts/export-design-system.sh`
 - Slash command: `/export-design-system`
+- Re-importer: `scripts/import-design-tokens.js` / `scripts/import-design-tokens.sh`
+- Round-trip test: `scripts/__tests__/design-system-roundtrip.test.js`
+- Consumer contract: `docs/design-system-export/consumers.md`
 - Inputs: `design-tokens.lock.json` (from `design-token-lock` skill), `build-spec.json` (from `figma-intake`/`canva-intake`/`screenshot-intake` skills)
