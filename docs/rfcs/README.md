@@ -22,6 +22,7 @@ features and fixes do not need one.
 
 ## Index
 
-| RFC                                       | Title                                 | Status   | Milestone |
-| ----------------------------------------- | ------------------------------------- | -------- | --------- |
-| [0001](0001-plugin-architecture.md)       | Plugin Architecture for Custom Agents | Proposed | v2.0.0    |
+| RFC                                                              | Title                                     | Status   | Milestone |
+| ---------------------------------------------------------------- | ----------------------------------------- | -------- | --------- |
+| [0001](0001-plugin-architecture.md)                              | Plugin Architecture for Custom Agents     | Proposed | v2.0.0    |
+| [0002](0002-cross-browser-screenshot-baseline-storage.md)        | Cross-Browser Screenshot Baseline Storage | Proposed | v2.0.0    |
