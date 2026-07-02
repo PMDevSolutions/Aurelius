@@ -3,7 +3,7 @@
 // Playwright-free thanks to compare --current-dir. Config is injected per
 // test through the CBB_CONFIG env var.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execFileSync } from "child_process";
+import { spawnSync } from "child_process";
 import { writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
@@ -104,16 +104,12 @@ function record(proj, overrides = {}) {
 
 function run(cliArgs, proj, { viaShell = false, env = {} } = {}) {
   const [bin, prefix] = viaShell ? ["bash", [SH_CLI]] : ["node", [JS_CLI]];
-  try {
-    const stdout = execFileSync(bin, [...prefix, ...cliArgs], {
-      encoding: "utf-8",
-      timeout: 30000,
-      env: { ...process.env, ...(proj ? { CBB_CONFIG: proj.configPath } : {}), ...env },
-    });
-    return { stdout, stderr: "", exitCode: 0 };
-  } catch (err) {
-    return { stdout: err.stdout ?? "", stderr: err.stderr ?? "", exitCode: err.status };
-  }
+  const result = spawnSync(bin, [...prefix, ...cliArgs], {
+    encoding: "utf-8",
+    timeout: 30000,
+    env: { ...process.env, ...(proj ? { CBB_CONFIG: proj.configPath } : {}), ...env },
+  });
+  return { stdout: result.stdout ?? "", stderr: result.stderr ?? "", exitCode: result.status };
 }
 
 function runJson(cliArgs, proj, options = {}) {
@@ -373,6 +369,16 @@ describe("compare (commit backend)", () => {
     expect(exitCode).toBe(0);
     expect(json.skipped).toBe(true);
     expect(json.reason).toMatch(/disabled/i);
+  });
+
+  it("warns when storage=lfs but no LFS filter covers the baselines", () => {
+    // The framework repo's .gitattributes has no LFS rule, so storage=lfs
+    // must surface a drift warning (setup-baseline-lfs.sh not run yet).
+    const proj = makeProject({ config: { storage: "lfs" } });
+    const { stderr, exitCode } = run(["compare", "--json"], proj);
+    expect(exitCode).toBe(0);
+    expect(stderr).toMatch(/lfs/i);
+    expect(stderr).toMatch(/setup-baseline-lfs/);
   });
 
   it("exits 2 for an unknown backend", () => {

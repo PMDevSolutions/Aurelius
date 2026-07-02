@@ -143,6 +143,35 @@ export function imageTagVersion(image) {
   return m ? m[1] : null;
 }
 
+/**
+ * storage ↔ .gitattributes drift (RFC 0002 §6.1): warn when storage=lfs but
+ * no LFS filter covers the baseline dir, or storage=git while one does.
+ */
+function lfsAttributesDrift(cfg) {
+  let attributes = "";
+  try {
+    attributes = readFileSync(join(repoRoot, ".gitattributes"), "utf-8");
+  } catch {
+    // no .gitattributes — only a problem when storage=lfs
+  }
+  const covered = attributes
+    .split("\n")
+    .some((line) => line.includes(cfg.baselineDir) && line.includes("filter=lfs"));
+  if (cfg.storage === "lfs" && !covered) {
+    return (
+      "storage is \"lfs\" but .gitattributes has no LFS filter for the baseline dir — " +
+      "run ./scripts/setup-baseline-lfs.sh"
+    );
+  }
+  if (cfg.storage === "git" && covered) {
+    return (
+      "storage is \"git\" but .gitattributes routes baselines through LFS — " +
+      "set visualBaselines.storage to \"lfs\" or remove the filter"
+    );
+  }
+  return null;
+}
+
 // --- Output ------------------------------------------------------------------
 
 function makeLogger(json) {
@@ -334,6 +363,9 @@ async function cmdCapture(args, cfg) {
   const url = args.url ?? "http://localhost:3000";
   const mode = args.local ? "local" : cfg.capture.mode;
 
+  const drift = lfsAttributesDrift(cfg);
+  if (drift) log(`⚠ ${drift}`);
+
   if (mode === "container" && !inContainer()) {
     return runContainerCapture(args, cfg, log);
   }
@@ -483,6 +515,9 @@ async function cmdCompare(args, cfg) {
     else log("⊘ visualBaselines disabled in config — skipping compare");
     return 0;
   }
+
+  const drift = lfsAttributesDrift(cfg);
+  if (drift) log(`⚠ ${drift}`);
 
   const backend = resolveBackend(cfg);
   const engines = args.engines ?? cfg.browsers;
