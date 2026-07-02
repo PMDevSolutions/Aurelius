@@ -29,6 +29,7 @@ import {
 import { execFileSync, spawnSync } from "child_process";
 import { createRequire } from "module";
 import { join, dirname, resolve, isAbsolute } from "path";
+import { tmpdir } from "os";
 import { fileURLToPath } from "url";
 
 import {
@@ -508,6 +509,31 @@ function writeCompareReport(reportPath, payload) {
   writeFileSync(reportPath, `${lines.join("\n")}\n`);
 }
 
+/**
+ * service backend: the provider owns capture, diff, and review — this run
+ * just validates the token and hands off to the provider CLI (RFC 0002 §8).
+ */
+function runDelegatedCompare(args, cfg, backend, log) {
+  backend.requireToken(process.env);
+  let snapshotsFile;
+  if (backend.provider === "percy") {
+    snapshotsFile = join(tmpdir(), `cbb-percy-snapshots-${process.pid}.json`);
+    writeFileSync(snapshotsFile, backend.buildSnapshots({ url: args.url ?? "http://localhost:3000" }));
+  }
+  const blocking = Boolean(args.blocking || cfg.blocking);
+  const argv = backend.providerArgv({ blocking, snapshotsFile });
+  log(`Delegating cross-browser comparison to ${backend.provider}: ${argv.join(" ")}`);
+  const spawned = spawnSync(argv[0], argv.slice(1), {
+    stdio: args.json ? ["ignore", "inherit", "inherit"] : "inherit",
+    shell: process.platform === "win32",
+  });
+  const exitCode = spawned.status ?? 2;
+  if (args.json) {
+    emitJson({ backend: "service", provider: backend.provider, delegated: true, exitCode });
+  }
+  return exitCode;
+}
+
 async function cmdCompare(args, cfg) {
   const log = makeLogger(args.json);
   if (!cfg.enabled) {
@@ -520,9 +546,20 @@ async function cmdCompare(args, cfg) {
   if (drift) log(`⚠ ${drift}`);
 
   const backend = resolveBackend(cfg);
+  if (backend.delegated) {
+    return runDelegatedCompare(args, cfg, backend, log);
+  }
+
   const engines = args.engines ?? cfg.browsers;
-  const { baselineRoot } = await backend.fetch({ baselineDir: resolvePath(cfg.baselineDir) });
-  const manifestPath = resolvePath(cfg.provenance.manifest);
+  const fetched = await backend.fetch({ baselineDir: resolvePath(cfg.baselineDir) });
+  if (!fetched.baselineRoot) {
+    if (args.json) emitJson({ skipped: true, reason: fetched.reason, backend: backend.name });
+    else log(`⊘ ${fetched.reason}`);
+    return 0;
+  }
+  const baselineRoot = fetched.baselineRoot;
+  const manifestPath = fetched.manifestPath ?? resolvePath(cfg.provenance.manifest);
+  if (fetched.source) log(`Baselines fetched from ${fetched.source}`);
 
   const rels = listBaselines(baselineRoot, engines);
   if (!rels.length) {

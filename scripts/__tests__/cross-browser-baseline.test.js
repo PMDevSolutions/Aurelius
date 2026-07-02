@@ -387,6 +387,18 @@ describe("compare (commit backend)", () => {
     expect(exitCode).toBe(2);
     expect(stderr).toMatch(/backend/i);
   });
+
+  it("service backend exits 2 with the env var name when the token is missing", () => {
+    const proj = makeProject({
+      config: {
+        backend: "service",
+        service: { provider: "chromatic", projectTokenEnv: "CBB_MISSING_TOKEN_XYZ" },
+      },
+    });
+    const { exitCode, stderr } = run(["compare", "--json"], proj);
+    expect(exitCode).toBe(2);
+    expect(stderr).toContain("CBB_MISSING_TOKEN_XYZ");
+  });
 });
 
 describe("verify", () => {
