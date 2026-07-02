@@ -26,7 +26,7 @@ import {
   mkdirSync,
   rmSync,
 } from "fs";
-import { execFileSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import { createRequire } from "module";
 import { join, dirname, resolve, isAbsolute } from "path";
 import { fileURLToPath } from "url";
@@ -201,6 +201,128 @@ async function captureTree({ url, outDir, engines, routes, breakpoints, waitMs, 
   return { failures, playwrightVersion: pw.version };
 }
 
+/**
+ * Build the docker invocation that reruns this CLI's capture inside the
+ * pinned Playwright image (RFC 0002 §5/§6.3). The image ships browsers at
+ * /ms-playwright but not the npm package, so @playwright/test (at the
+ * version embedded in the image tag) is installed into a scratch dir that
+ * resolvePlaywright() picks up via CBB_PLAYWRIGHT_DIR. The repo is mounted
+ * at /work; localhost URLs are rewritten so the container can reach the
+ * host's dev server.
+ */
+function buildDockerCaptureCommand({ cfg, url, engines }) {
+  const image = cfg.capture.image;
+  const playwrightVersion = imageTagVersion(image);
+  if (!playwrightVersion) {
+    throw new UsageError(
+      `cannot derive a Playwright version from visualBaselines.capture.image "${image}" — ` +
+        "pin a tag like mcr.microsoft.com/playwright:v1.61.1-noble",
+    );
+  }
+  const rewrittenUrl = url.replace(
+    /^(https?:\/\/)(localhost|127\.0\.0\.1)/,
+    "$1host.docker.internal",
+  );
+  const inner = [
+    "mkdir -p /tmp/cbb",
+    "cd /tmp/cbb",
+    "npm init -y >/dev/null 2>&1",
+    `npm i --no-fund --no-audit @playwright/test@${playwrightVersion} >/dev/null 2>&1`,
+    "cd /work",
+    `node scripts/cross-browser-baseline.js capture ${rewrittenUrl} --host container --no-manifest` +
+      (engines ? ` --engines ${engines.join(",")}` : ""),
+  ].join(" && ");
+  const docker = [
+    "docker",
+    "run",
+    "--rm",
+    "-v",
+    `${repoRoot}:/work`,
+    "-w",
+    "/work",
+    "--add-host=host.docker.internal:host-gateway",
+    "-e",
+    "CBB_IN_CONTAINER=1",
+    "-e",
+    "CBB_PLAYWRIGHT_DIR=/tmp/cbb",
+    image,
+    "bash",
+    "-lc",
+    inner,
+  ];
+  return { docker, url: rewrittenUrl, image, playwrightVersion };
+}
+
+async function runContainerCapture(args, cfg, log) {
+  const url = args.url ?? "http://localhost:3000";
+  const command = buildDockerCaptureCommand({ cfg, url, engines: args.engines });
+
+  if (args.dryRun) {
+    if (args.json) emitJson({ dryRun: true, ...command });
+    else {
+      log("Would run:");
+      log(`  ${command.docker.join(" ")}`);
+    }
+    return 0;
+  }
+
+  try {
+    execFileSync("docker", ["--version"], { stdio: "ignore" });
+  } catch {
+    throw new UsageError(
+      "docker is required for container capture (visualBaselines.capture.mode = \"container\") — " +
+        "install Docker, or pass --local for an untrusted local capture",
+    );
+  }
+
+  log(`Running pinned capture in ${command.image} ...`);
+  const spawned = spawnSync(command.docker[0], command.docker.slice(1), {
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+  if (spawned.status !== 0) {
+    throw new UsageError(`container capture failed (exit ${spawned.status ?? "unknown"})`);
+  }
+
+  // Provenance is recorded host-side: the container only wrote PNGs onto the
+  // mounted volume, while gitSha comes from the host checkout.
+  const engines = args.engines ?? cfg.browsers;
+  const baselineDir = resolvePath(cfg.baselineDir);
+  const manifest = recordBaselines({
+    baselineDir,
+    manifestPath: resolvePath(cfg.provenance.manifest),
+    engines,
+    routes: cfg.routes,
+    envelope: {
+      playwrightVersion: command.playwrightVersion,
+      image: command.image,
+      host: "container",
+      gitSha: currentGitSha(repoRoot),
+    },
+  });
+
+  const backend = resolveBackend(cfg);
+  if (args.json) {
+    emitJson({
+      captured: Object.keys(manifest.baselines).length,
+      host: "container",
+      image: command.image,
+      playwrightVersion: command.playwrightVersion,
+      backend: backend.name,
+    });
+  } else {
+    log("");
+    log(`Baselines captured to ${baselineDir} (host=container, ${command.image})`);
+    log("To persist them:");
+    for (const line of backend.storeInstructions({
+      baselineDir: cfg.baselineDir,
+      manifestPath: cfg.provenance.manifest,
+    })) {
+      log(`  ${line}`);
+    }
+  }
+  return 0;
+}
+
 async function cmdCapture(args, cfg) {
   const log = makeLogger(args.json);
   if (!cfg.enabled) {
@@ -213,11 +335,7 @@ async function cmdCapture(args, cfg) {
   const mode = args.local ? "local" : cfg.capture.mode;
 
   if (mode === "container" && !inContainer()) {
-    throw new UsageError(
-      "capture.mode is \"container\" but this run is not inside the pinned Playwright " +
-        "container. Docker-wrapped capture is not available in this build yet — run inside " +
-        `${cfg.capture.image} or pass --local for an untrusted local capture.`,
-    );
+    return runContainerCapture(args, cfg, log);
   }
 
   const host = args.host ?? detectHost();
@@ -531,6 +649,7 @@ Options:
   --engines <a,b>       Restrict to specific engines
   --json                Machine-readable output on stdout
   --local               capture: force local capture (recorded host=local, untrusted for firefox/webkit)
+  --dry-run             capture: print the docker command for container mode without running it
   --current-dir <dir>   compare: use existing screenshots instead of capturing
   --blocking            compare: exit 1 on failures regardless of config
   --host <h>            Override detected capture host (container|local)
@@ -547,6 +666,7 @@ function parseArgs(argv) {
     if (a === "--json") args.json = true;
     else if (a === "--local") args.local = true;
     else if (a === "--blocking") args.blocking = true;
+    else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--no-manifest") args.noManifest = true;
     else if (a === "--engines") args.engines = argv[++i]?.split(",").map((s) => s.trim()).filter(Boolean);
     else if (a === "--current-dir") args.currentDir = argv[++i];

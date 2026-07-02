@@ -102,13 +102,13 @@ function record(proj, overrides = {}) {
   });
 }
 
-function run(cliArgs, proj, { viaShell = false } = {}) {
+function run(cliArgs, proj, { viaShell = false, env = {} } = {}) {
   const [bin, prefix] = viaShell ? ["bash", [SH_CLI]] : ["node", [JS_CLI]];
   try {
     const stdout = execFileSync(bin, [...prefix, ...cliArgs], {
       encoding: "utf-8",
       timeout: 30000,
-      env: { ...process.env, ...(proj ? { CBB_CONFIG: proj.configPath } : {}) },
+      env: { ...process.env, ...(proj ? { CBB_CONFIG: proj.configPath } : {}), ...env },
     });
     return { stdout, stderr: "", exitCode: 0 };
   } catch (err) {
@@ -116,8 +116,8 @@ function run(cliArgs, proj, { viaShell = false } = {}) {
   }
 }
 
-function runJson(cliArgs, proj) {
-  const result = run(cliArgs, proj);
+function runJson(cliArgs, proj, options = {}) {
+  const result = run(cliArgs, proj, options);
   return { ...result, json: result.stdout ? JSON.parse(result.stdout) : null };
 }
 
@@ -414,4 +414,82 @@ describe("capture", () => {
       expect(stderr).toMatch(/@playwright\/test/);
     },
   );
+});
+
+describe("capture — pinned container wrapping (Phase B)", () => {
+  const containerConfig = {
+    capture: { mode: "container", image: IMAGE, waitAfterLoadMs: 0, fullPage: true },
+  };
+
+  it("builds the docker run command with the pinned image and rewritten URL (--dry-run)", () => {
+    const proj = makeProject({ config: containerConfig });
+    const { json, exitCode } = runJson(
+      ["capture", "http://localhost:3000", "--dry-run", "--json"],
+      proj,
+    );
+    expect(exitCode).toBe(0);
+    expect(json.dryRun).toBe(true);
+    expect(json.image).toBe(IMAGE);
+    expect(json.playwrightVersion).toBe("1.61.1");
+    expect(json.url).toBe("http://host.docker.internal:3000");
+
+    const argv = json.docker;
+    expect(argv.slice(0, 3)).toEqual(["docker", "run", "--rm"]);
+    expect(argv).toContain(IMAGE);
+    expect(argv).toContain("--add-host=host.docker.internal:host-gateway");
+    expect(argv).toContain("CBB_IN_CONTAINER=1");
+    expect(argv).toContain("CBB_PLAYWRIGHT_DIR=/tmp/cbb");
+    const mount = argv[argv.indexOf("-v") + 1];
+    expect(mount.endsWith(":/work")).toBe(true);
+    const inner = argv[argv.length - 1];
+    expect(inner).toContain("@playwright/test@1.61.1");
+    expect(inner).toContain("--host container");
+    expect(inner).toContain("--no-manifest");
+    expect(inner).toContain("http://host.docker.internal:3000");
+  });
+
+  it("rewrites 127.0.0.1 and forwards --engines into the container command", () => {
+    const proj = makeProject({ config: containerConfig });
+    const { json } = runJson(
+      ["capture", "http://127.0.0.1:4173", "--dry-run", "--json", "--engines", "firefox,webkit"],
+      proj,
+    );
+    expect(json.url).toBe("http://host.docker.internal:4173");
+    expect(json.docker[json.docker.length - 1]).toContain("--engines firefox,webkit");
+  });
+
+  it("does not wrap when already inside the container", () => {
+    const proj = makeProject({ config: containerConfig });
+    // In-container + no wrap → direct capture path → Playwright install hint
+    // (this repo does not have @playwright/test installed).
+    const { exitCode, stderr } = run(["capture", "http://localhost:3000"], proj, {
+      env: { CBB_IN_CONTAINER: "1" },
+    });
+    expect(exitCode).toBe(2);
+    expect(stderr).toMatch(/@playwright\/test/);
+    expect(stderr).not.toMatch(/docker/i);
+  });
+
+  it.skipIf(playwrightResolvable)("--local bypasses the container wrapper", () => {
+    const proj = makeProject({ config: containerConfig });
+    const { exitCode, stderr } = run(
+      ["capture", "http://127.0.0.1:9", "--local"],
+      proj,
+    );
+    expect(exitCode).toBe(2);
+    expect(stderr).toMatch(/@playwright\/test/);
+    expect(stderr).not.toMatch(/docker run/i);
+  });
+
+  it("rejects an image tag it cannot derive a Playwright version from", () => {
+    const proj = makeProject({
+      config: { capture: { mode: "container", image: "mcr.microsoft.com/playwright:latest", waitAfterLoadMs: 0, fullPage: true } },
+    });
+    const { exitCode, stderr } = run(
+      ["capture", "http://localhost:3000", "--dry-run"],
+      proj,
+    );
+    expect(exitCode).toBe(2);
+    expect(stderr).toMatch(/image/i);
+  });
 });
