@@ -507,9 +507,9 @@
       },
       "cross-browser": {
         "depends": ["component-build"],
-        "resources": [],
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
         "blocking": false,
-        "description": "Firefox and WebKit screenshot comparison"
+        "description": "Firefox and WebKit baseline comparison (cross-browser-baseline.sh compare)"
       },
       "quality-gate": {
         "depends": ["component-build"],

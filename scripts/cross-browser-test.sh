@@ -11,6 +11,10 @@
 # Results saved to .claude/visual-qa/screenshots/<browser>/
 #
 # Browsers: chromium, firefox, webkit
+#
+# NOTE: this is an ad-hoc capture utility only — it performs no comparison.
+# For baseline-backed cross-browser verification (pipeline Phase 7) use
+# ./scripts/cross-browser-baseline.sh (RFC 0002).
 
 set -e
 

@@ -137,6 +137,29 @@ common_csv_contains() {
   return 1
 }
 
+# --- Baseline discovery ---------------------------------------------------
+
+# common_find_baselines <baseline-dir> <csv-browsers>
+# Print baseline PNGs (sorted) under only the given browser subdirectories.
+# The baselines root is shared between regressionTesting (chromium) and
+# visualBaselines (cross-browser, RFC 0002), so each consumer walks only its
+# own engines instead of the whole tree.
+common_find_baselines() {
+  local dir="$1"
+  local csv="$2"
+  local parts part
+  [[ -z "$csv" ]] && return 0
+  IFS=',' read -ra parts <<< "$csv"
+  {
+    for part in "${parts[@]}"; do
+      part="$(echo "$part" | tr -d ' ')"
+      if [[ -n "$part" && -d "$dir/$part" ]]; then
+        find "$dir/$part" -name "*.png" -type f
+      fi
+    done
+  } | sort
+}
+
 # --- Build artifact detection --------------------------------------------
 
 # Returns 0 if any of dist/.next/build/out exists in the cwd.
