@@ -94,6 +94,8 @@ function formatSchemaError(err) {
  *   - caching.phaseInputs keys reference real inputCategories
  *   - storybook.viewports reference real visualDiff.breakpoints
  *   - e2e.requiredBreakpoints reference real visualDiff.breakpoints
+ *   - visualBaselines: storage=lfs only on the commit backend; threshold
+ *     equals e2e.crossBrowserDiffThreshold; browsers ⊆ e2e.crossBrowserBrowsers
  */
 function structuralChecks(config) {
   const issues = [];
@@ -179,7 +181,41 @@ function structuralChecks(config) {
     }
   }
 
-  // 4. qualityGate.mutationScore.threshold vs mutationTesting.scoreThreshold drift
+  // 4. visualBaselines cross-field rules (RFC 0002)
+  const vb = config.visualBaselines;
+  if (vb) {
+    if (vb.storage === "lfs" && vb.backend !== undefined && vb.backend !== "commit") {
+      issues.push({
+        path: "/visualBaselines/storage",
+        message: `"lfs" applies to the commit backend only (backend is "${vb.backend}")`,
+      });
+    }
+    const crossThreshold = config.e2e?.crossBrowserDiffThreshold;
+    if (
+      vb.threshold !== undefined &&
+      crossThreshold !== undefined &&
+      vb.threshold !== crossThreshold
+    ) {
+      issues.push({
+        path: "/visualBaselines/threshold",
+        message: `disagrees with /e2e/crossBrowserDiffThreshold (${vb.threshold} vs ${crossThreshold}) — a single cross-engine tolerance must apply`,
+      });
+    }
+    const crossBrowsers = config.e2e?.crossBrowserBrowsers;
+    if (vb.browsers && crossBrowsers) {
+      const allowed = new Set(crossBrowsers);
+      for (const b of vb.browsers) {
+        if (!allowed.has(b)) {
+          issues.push({
+            path: "/visualBaselines/browsers",
+            message: `"${b}" is not in /e2e/crossBrowserBrowsers — baselines would be captured for an engine the E2E matrix never exercises`,
+          });
+        }
+      }
+    }
+  }
+
+  // 5. qualityGate.mutationScore.threshold vs mutationTesting.scoreThreshold drift
   const gateThreshold = config.qualityGate?.mutationScore?.threshold;
   const runnerThreshold = config.mutationTesting?.scoreThreshold;
   if (
