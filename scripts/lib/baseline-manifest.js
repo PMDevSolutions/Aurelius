@@ -106,6 +106,13 @@ function scanEngine(baselineDir, engine) {
   return results.sort();
 }
 
+/** All baseline PNGs for the given engines, posix-relative to baselineDir. */
+export function listBaselines(baselineDir, engines) {
+  const results = [];
+  for (const engine of engines) results.push(...scanEngine(baselineDir, engine));
+  return results;
+}
+
 function buildEntry(baselineDir, relPath, { host, gitSha }, slugMap) {
   const parsed = parseBaselineRelPath(relPath);
   return {
