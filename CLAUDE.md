@@ -74,10 +74,18 @@ node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir di
 # Initialize a new React project
 ./scripts/setup-project.sh my-app --next  # or --vite
 
-# Cross-browser testing (Playwright)
+# Cross-browser testing (Playwright, ad-hoc capture only)
 ./scripts/cross-browser-test.sh chromium http://localhost:3000
 ./scripts/cross-browser-test.sh firefox http://localhost:3000
 ./scripts/cross-browser-test.sh webkit http://localhost:3000
+
+# Cross-browser baselines: pinned-container capture, provenance-verified compare (RFC 0002)
+./scripts/cross-browser-baseline.sh capture http://localhost:3000 [--local] [--dry-run]
+./scripts/cross-browser-baseline.sh compare http://localhost:3000 [--json] [--blocking]
+./scripts/cross-browser-baseline.sh verify [--json]
+
+# Route large baseline sets through Git LFS (visualBaselines.storage = "lfs")
+./scripts/setup-baseline-lfs.sh [--dry-run] [--force]
 
 # Setup Playwright browsers (one-time)
 ./scripts/setup-playwright.sh
@@ -292,7 +300,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
       ├─ [5]   VISUAL DIFF  → pixelmatch loop → max 5 iterations
       │   └─ [6] E2E TESTS  → e2e-test-generator skill
       ├─ [5.5] DARK MODE   → check-dark-mode.sh (non-blocking)
-      ├─ [7]   CROSS-BROWSER → Firefox/WebKit screenshots (non-blocking)
+      ├─ [7]   CROSS-BROWSER → cross-browser-baseline.sh compare (non-blocking)
       ├─ [7.5] REGRESSION  → regression-test.sh (non-blocking)
       ├─ [8]   QUALITY GATE → [coverage|types|build|tokens|lighthouse] in parallel
       └─ [8.5] RESPONSIVE  → check-responsive.sh (non-blocking)
@@ -306,6 +314,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
 - `verify-tokens.sh` — Catches hardcoded values and token drift
 - `verify-test-coverage.sh` — Ensures every component has tests
 - `visual-diff.js` — Pixel-level screenshot comparison with region analysis
+- `.claude/visual-qa/baselines/manifest.json` — Cross-browser baseline provenance (engine, Playwright version, pinned image, sha256, host — RFC 0002)
 - `sync-tokens.sh` — Detects token drift between lockfile and source
 - `check-dark-mode.sh` — Dark mode screenshot capture and visual comparison
 - `generate-stories.sh` — AST-based Storybook story + MDX generation with prop controls, variants, and action args
@@ -317,7 +326,7 @@ Autonomous 9-phase pipeline that converts a Figma design into a working, tested 
 - **App-type awareness** — Chrome extensions, PWAs, React Native, and web apps get tailored E2E strategies
 - **Chrome extension E2E** — Playwright persistent context with `--load-extension`
 - Design token extraction with lockfile enforcement
-- Cross-browser verification (Firefox, WebKit) with configurable thresholds
+- Cross-browser verification (Firefox, WebKit) — committed per-engine baselines diffed at the 0.03 cross-engine threshold, with pinned-container capture and per-baseline provenance (RFC 0002; backends: commit | ci-artifact | service)
 - Quality gate: 80%+ coverage, TypeScript, Lighthouse audit
 - Resumable: TodoWrite tracks progress across interrupted sessions
 - **Dark mode verification** — automated dark theme screenshot comparison (non-blocking)
@@ -586,6 +595,8 @@ gh issue create               # Create issue
 ./scripts/audit-cross-browser-css.sh   # Cross-browser CSS audit
 ./scripts/capture-baselines.sh          # Capture regression baselines
 ./scripts/regression-test.sh            # Visual regression testing
+./scripts/cross-browser-baseline.sh     # Cross-browser baseline capture/compare (RFC 0002)
+./scripts/setup-baseline-lfs.sh         # Git LFS opt-in for large baseline sets
 ./scripts/export-design-system.sh       # Export components + tokens as pnpm workspace
 ./scripts/import-design-tokens.sh       # Reconstruct lockfile from an export (round-trip / consumer)
 ./scripts/validate-pipeline-config.sh   # Validate pipeline.config.json against schema
@@ -623,6 +634,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-07-01
-**Architecture:** 56 agents, 24 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 40 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Architecture:** 56 agents, 24 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 55 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

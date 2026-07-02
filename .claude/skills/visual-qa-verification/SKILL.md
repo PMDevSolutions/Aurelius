@@ -143,35 +143,28 @@ When the diff reports failing regions, use this mapping to prioritize fixes:
 
 ### Step 2.5: Cross-Browser Verification
 
-After Chromium passes the visual diff loop, verify in Firefox and WebKit.
-
-**Using Playwright MCP or cross-browser-test.sh:**
+After Chromium passes the visual diff loop, diff Firefox and WebKit against
+their committed same-engine baselines (RFC 0002):
 
 ```bash
-# Capture Firefox screenshots
-./scripts/cross-browser-test.sh firefox http://localhost:3000
+# Compare current firefox/webkit screenshots against committed baselines,
+# with per-baseline provenance verification from baselines/manifest.json
+./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json
 
-# Capture WebKit screenshots
-./scripts/cross-browser-test.sh webkit http://localhost:3000
+# First time (no baselines committed yet): capture deterministically in the
+# pinned Playwright container, then commit
+./scripts/cross-browser-baseline.sh capture http://localhost:3000
+git add .claude/visual-qa/baselines
 
-# Compare Firefox against Chromium baseline (not Figma)
-node scripts/visual-diff.js --batch \
-  .claude/visual-qa/screenshots/firefox \
-  .claude/visual-qa/screenshots/chromium \
-  --output-dir .claude/visual-qa/diffs/firefox-vs-chromium \
-  --threshold 0.03
-
-# Compare WebKit against Chromium baseline
-node scripts/visual-diff.js --batch \
-  .claude/visual-qa/screenshots/webkit \
-  .claude/visual-qa/screenshots/chromium \
-  --output-dir .claude/visual-qa/diffs/webkit-vs-chromium \
-  --threshold 0.03
+# Provenance-only check (no dev server needed)
+./scripts/cross-browser-baseline.sh verify
 ```
 
-**Cross-browser threshold:** Use a slightly higher threshold (3% vs 2%) since browser rendering engines have legitimate differences in anti-aliasing, font rendering, and sub-pixel positioning.
+For ad-hoc engine captures without comparison, `./scripts/cross-browser-test.sh <browser> <url>` still works.
 
-**Cross-browser failures are NOT blocking** by default (configurable in `pipeline.config.json` → `qualityGate.crossBrowserScreenshotsRequired`). They are reported in the build report for manual review.
+**Cross-browser threshold:** `visualBaselines.threshold` (3% vs the 2% same-browser threshold) since browser rendering engines have legitimate differences in anti-aliasing, font rendering, and sub-pixel positioning.
+
+**Cross-browser failures are NOT blocking** by default (`visualBaselines.blocking`, and `qualityGate.crossBrowserScreenshotsRequired` for the gate). They are reported in the build report for manual review. Compares run outside the pinned container are marked *advisory* by the provenance check.
 
 **Common cross-browser differences to ignore:**
 - Font rendering (especially on macOS WebKit vs Windows Chromium)
@@ -349,7 +342,8 @@ This skill works with:
 - **Playwright MCP** -- Cross-browser screenshots (Firefox, WebKit) and automated interaction testing
 - **Figma MCP** -- Source design screenshots for comparison (`get_screenshot`, `get_design_context`)
 - **scripts/visual-diff.js** -- Pixel-level screenshot comparison with region analysis
-- **scripts/cross-browser-test.sh** -- Multi-browser screenshot capture
+- **scripts/cross-browser-baseline.sh** -- Cross-browser baseline capture + provenance-verified comparison (RFC 0002)
+- **scripts/cross-browser-test.sh** -- Ad-hoc multi-browser screenshot capture (no comparison)
 - **.claude/pipeline.config.json** -- Thresholds, iteration limits, breakpoint configuration
 
 ## Verification Report Template

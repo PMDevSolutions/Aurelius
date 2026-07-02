@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * pipeline-config.js — Read values from .claude/pipeline.config.json
  *

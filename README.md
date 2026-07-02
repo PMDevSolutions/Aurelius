@@ -65,7 +65,9 @@ project-root/
 │   ├── verify-tokens.sh         # Design token enforcement
 │   ├── verify-test-coverage.sh  # Component test verification
 │   ├── visual-diff.js           # Pixel-level screenshot comparison
-│   ├── cross-browser-test.sh    # Playwright multi-browser
+│   ├── cross-browser-test.sh    # Playwright multi-browser (ad-hoc capture)
+│   ├── cross-browser-baseline.sh # Cross-browser baselines + provenance (RFC 0002)
+│   ├── setup-baseline-lfs.sh    # Git LFS opt-in for large baseline sets
 │   ├── setup-playwright.sh      # One-time browser setup
 │   ├── check-dead-code.sh       # Dead code detection (knip)
 │   ├── check-security.sh        # Dependency audit + anti-patterns
@@ -249,7 +251,9 @@ Full catalog: `.claude/skills/README.md`
 ### Testing
 ```bash
 ./scripts/run-tests.sh             # Vitest unit/component tests
-./scripts/cross-browser-test.sh    # Playwright multi-browser screenshots
+./scripts/cross-browser-test.sh    # Playwright multi-browser screenshots (ad-hoc)
+./scripts/cross-browser-baseline.sh # Cross-browser baseline capture/compare (RFC 0002)
+./scripts/setup-baseline-lfs.sh    # Route large baseline sets through Git LFS
 ./scripts/setup-playwright.sh      # One-time browser engine setup
 ```
 

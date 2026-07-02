@@ -313,6 +313,41 @@
     "browsers": ["chromium"],
     "reportFile": "regression-report.md"
   },
+  "visualBaselines": {
+    "enabled": true,
+    "backend": "commit",
+    "storage": "git",
+    "baselineDir": ".claude/visual-qa/baselines",
+    "screenshotDir": ".claude/visual-qa/screenshots/cross-browser",
+    "diffDir": ".claude/visual-qa/diffs/cross-browser",
+    "browsers": ["chromium", "firefox", "webkit"],
+    "routes": ["/"],
+    "breakpoints": {
+      "mobile": 375,
+      "desktop": 1440
+    },
+    "threshold": 0.03,
+    "blocking": false,
+    "reportFile": "cross-browser-report.md",
+    "capture": {
+      "mode": "container",
+      "image": "mcr.microsoft.com/playwright:v1.61.1-noble",
+      "waitAfterLoadMs": 1500,
+      "fullPage": true
+    },
+    "provenance": {
+      "manifest": ".claude/visual-qa/baselines/manifest.json",
+      "policy": "warn"
+    },
+    "ciArtifact": {
+      "compareAgainst": "last-green-main",
+      "retentionDays": 30
+    },
+    "service": {
+      "provider": "chromatic",
+      "projectTokenEnv": "CHROMATIC_PROJECT_TOKEN"
+    }
+  },
   "deadCode": {
     "enabled": true,
     "tool": "knip",
@@ -472,9 +507,9 @@
       },
       "cross-browser": {
         "depends": ["component-build"],
-        "resources": [],
+        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
         "blocking": false,
-        "description": "Firefox and WebKit screenshot comparison"
+        "description": "Firefox and WebKit baseline comparison (cross-browser-baseline.sh compare)"
       },
       "quality-gate": {
         "depends": ["component-build"],

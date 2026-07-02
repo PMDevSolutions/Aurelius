@@ -278,21 +278,20 @@ Generate and run end-to-end tests appropriate to the app type.
 
 ## Phase 7: Cross-Browser Verification (Non-Blocking)
 
-Capture screenshots in Firefox and WebKit, compare against Chromium baseline.
+Diff Firefox and WebKit screenshots against their committed baselines with
+provenance verification (RFC 0002).
 
 ```bash
 # Only for web apps and PWAs (Chrome extensions are Chromium-only)
-./scripts/cross-browser-test.sh firefox http://localhost:3000
-./scripts/cross-browser-test.sh webkit http://localhost:3000
-
-node scripts/visual-diff.js --batch \
-  .claude/visual-qa/screenshots/firefox \
-  .claude/visual-qa/screenshots/chromium \
-  --output-dir .claude/visual-qa/diffs/firefox-vs-chromium \
-  --threshold 0.03
+./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json
 ```
 
-Cross-browser differences are logged in the build report but do NOT block the pipeline.
+If no cross-browser baselines are committed yet the compare skips with a
+capture hint (`./scripts/cross-browser-baseline.sh capture <url>` in the
+pinned Playwright container, then commit `.claude/visual-qa/baselines/`).
+
+Cross-browser differences are logged in the build report but do NOT block the
+pipeline (`visualBaselines.blocking: false`).
 
 ## Phase 8: Quality Gate
 

@@ -132,6 +132,14 @@ node "$TEMP_SCRIPT" "$URL" "$BASELINE_DIR" "$BREAKPOINTS_JSON" "$WAIT_MS" "$FULL
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
+  # Keep RFC 0002 provenance fresh for the engines just captured (no-op when
+  # no manifest exists yet).
+  MANIFEST_PATH=$(common_config_get 'visualBaselines.provenance.manifest' '.claude/visual-qa/baselines/manifest.json')
+  BROWSERS_CSV=$(node -e "try { console.log(JSON.parse(process.argv[1]).join(',')); } catch { console.log(process.argv[1]); }" "$BROWSERS_JSON")
+  node scripts/lib/baseline-manifest.js sync \
+    --baseline-dir "$BASELINE_DIR" --manifest "$MANIFEST_PATH" \
+    --engines "$BROWSERS_CSV" --routes "$ROUTES" --host local > /dev/null || true
+
   echo ""
   echo "=== Baselines saved to $BASELINE_DIR ==="
   echo ""

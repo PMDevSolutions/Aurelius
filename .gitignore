@@ -112,6 +112,9 @@ experiments/
 .claude/visual-qa/screenshots/regression/**/*.png
 .claude/visual-qa/diffs/regression/**/*.png
 .claude/visual-qa/regression-report.md
+.claude/visual-qa/screenshots/cross-browser/**/*.png
+.claude/visual-qa/diffs/cross-browser/**/*.png
+.claude/visual-qa/cross-browser-report.md
 
 # Taskmaster Files
 .taskmaster/tasks/*.json.bak

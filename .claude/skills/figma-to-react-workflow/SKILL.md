@@ -480,22 +480,28 @@ For each page in build-spec:
 
 ### Step 3.2.5: Cross-Browser Verification
 
-After Chromium passes the visual diff loop, verify in other browsers:
+After Chromium passes the visual diff loop, diff Firefox and WebKit against
+their committed baselines (RFC 0002):
 
 ```bash
-# Capture screenshots in Firefox and WebKit
-./scripts/cross-browser-test.sh firefox http://localhost:3000
-./scripts/cross-browser-test.sh webkit http://localhost:3000
-
-# Compare against Chromium baseline (higher threshold for browser differences)
-node scripts/visual-diff.js --batch \
-  .claude/visual-qa/screenshots/firefox \
-  .claude/visual-qa/screenshots/chromium \
-  --output-dir .claude/visual-qa/diffs/firefox-vs-chromium \
-  --threshold 0.03
+# Compare current firefox/webkit screenshots against committed baselines
+# (threshold from visualBaselines.threshold, 0.03 for cross-engine tolerance)
+./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json
 ```
 
-Cross-browser results are logged in the build report but are **not blocking** by default.
+If no cross-browser baselines exist yet, the compare skips with a hint —
+capture them deterministically first and commit the result:
+
+```bash
+./scripts/cross-browser-baseline.sh capture http://localhost:3000   # pinned Playwright container
+git add .claude/visual-qa/baselines && git commit -m "test: add cross-browser baselines"
+```
+
+Each baseline's provenance (engine, Playwright version, container image,
+sha256, host) is verified from `baselines/manifest.json` before diffing, so
+stale or locally-captured baselines are flagged instead of producing false
+pixel diffs. Results are logged in the build report but are **not blocking**
+by default (`visualBaselines.blocking`).
 
 ### Step 3.3: E2E Tests
 
@@ -686,7 +692,8 @@ This skill works with:
 - **scripts/visual-diff.js** — Pixel-level screenshot comparison with region analysis
 - **scripts/verify-tokens.sh** — Token integrity enforcement in quality gate
 - **scripts/verify-test-coverage.sh** — Test existence verification (TDD gate)
-- **scripts/cross-browser-test.sh** — Multi-browser screenshot capture
+- **scripts/cross-browser-baseline.sh** — Cross-browser baseline capture + provenance-verified comparison (RFC 0002)
+- **scripts/cross-browser-test.sh** — Ad-hoc multi-browser screenshot capture (no comparison)
 - **scripts/generate-stories.sh** — AST-based Storybook story + MDX generation (Phase 4.5)
 - **.claude/pipeline.config.json** — Thresholds, iteration limits, app type config
 

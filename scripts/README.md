@@ -30,10 +30,21 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Usage**: `./scripts/run-tests.sh` or `./scripts/run-tests.sh --watch`
 
 ### Cross-Browser Testing (`cross-browser-test.sh`)
-- **Purpose**: Capture screenshots across browsers at standard breakpoints
+- **Purpose**: Capture screenshots across browsers at standard breakpoints (ad-hoc; no comparison — see `cross-browser-baseline.sh` for the baseline-backed flow)
 - **Usage**: `./scripts/cross-browser-test.sh <browser> <url>`
 - **Browsers**: chromium, firefox, webkit
 - **Output**: Screenshots saved to `.claude/visual-qa/screenshots/<browser>/`
+
+### Cross-Browser Baselines (`cross-browser-baseline.sh`)
+- **Purpose**: Capture firefox/webkit/chromium baselines in the pinned Playwright container and diff current screenshots against them with per-baseline provenance verification (RFC 0002)
+- **Usage**: `./scripts/cross-browser-baseline.sh <capture|compare|verify> [url] [--json] [--engines a,b] [--local] [--current-dir dir] [--blocking] [--dry-run]`
+- **Config**: `pipeline.config.json` → `visualBaselines` (backend, storage, threshold, pinned image, provenance policy)
+- **Output**: Report at `.claude/visual-qa/cross-browser-report.md`; transient diffs under `.claude/visual-qa/diffs/cross-browser/`
+- **Docs**: `docs/regression-testing/cross-browser.md`
+
+### Baseline Git LFS Setup (`setup-baseline-lfs.sh`)
+- **Purpose**: Route the baseline directory through Git LFS for large baseline sets (`visualBaselines.storage: "lfs"`); idempotent, forward-only (history rewrite is printed as guidance, never executed)
+- **Usage**: `./scripts/setup-baseline-lfs.sh [--dry-run] [--force]` (run inside the app's repository)
 
 ### Setup Playwright (`setup-playwright.sh`)
 - **Purpose**: One-time setup for Playwright browser engines

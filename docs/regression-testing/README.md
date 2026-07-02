@@ -3,6 +3,12 @@
 Automated screenshot comparison testing that captures pipeline output and compares
 against committed baseline screenshots to catch visual regressions.
 
+> **Cross-browser baselines** (firefox/webkit, pinned-container capture,
+> provenance manifest, pluggable storage backends) are the RFC 0002 flow
+> documented in [cross-browser.md](cross-browser.md). This page covers the
+> same-browser chromium regression flow; the two share the baseline directory
+> but each walks only its own engines.
+
 ## Quick Start
 
 ```bash
@@ -69,14 +75,21 @@ The `visual-regression` job in `.github/workflows/ci.yml`:
 ```
 .claude/visual-qa/
 ├── baselines/                    # Git-tracked baseline PNGs
-│   └── chromium/
-│       └── home/
-│           ├── mobile_375px.png
-│           └── desktop_1440px.png
+│   ├── manifest.json             # Cross-browser provenance (see cross-browser.md)
+│   ├── chromium/                 # This flow (regressionTesting.browsers)
+│   │   └── home/
+│   │       ├── mobile_375px.png
+│   │       └── desktop_1440px.png
+│   ├── firefox/                  # Cross-browser flow (visualBaselines)
+│   └── webkit/                   # Cross-browser flow (visualBaselines)
 ├── screenshots/regression/       # Transient current captures (gitignored)
 ├── diffs/regression/             # Transient diff images (gitignored)
 └── regression-report.md          # Latest report
 ```
+
+When `--update-baselines` (or `capture-baselines.sh`) rewrites chromium
+baselines and a cross-browser provenance manifest exists, the affected entries
+are refreshed automatically so provenance stays truthful.
 
 ## Thresholds
 

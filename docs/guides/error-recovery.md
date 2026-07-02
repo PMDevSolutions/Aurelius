@@ -27,7 +27,7 @@ Every phase has characteristic failure patterns. The table below lists the most 
 | 5: Visual Diff | Screenshot capture fails, diff threshold exceeded after 5 iterations | Check dev server is running at expected port, lower threshold or fix components |
 | 5.5: Dark Mode | Dark theme not configured, screenshot fails | Non-blocking — add dark mode support or skip |
 | 6: E2E Tests | Browser not installed, test timeout, element not found | Run `./scripts/setup-playwright.sh`, increase timeout in `pipeline.config.json` |
-| 7: Cross-Browser | Firefox/WebKit not installed | Run `./scripts/setup-playwright.sh` to install all browsers |
+| 7: Cross-Browser | No committed baselines (compare skips), provenance flags, Firefox/WebKit not installed | Capture + commit baselines via `./scripts/cross-browser-baseline.sh capture` (pinned container); `./scripts/setup-playwright.sh` for local engines; see `docs/regression-testing/cross-browser.md` |
 | 7.5: Regression | No baselines captured yet | Run `./scripts/capture-baselines.sh` first, then `./scripts/regression-test.sh` |
 | 8: Quality Gate | Coverage below 80%, TypeScript errors, Lighthouse below thresholds | Write more tests, fix type errors, optimize performance |
 | 8.5: Responsive | Dev server not running, screenshot timeout | Start dev server first, check ports |

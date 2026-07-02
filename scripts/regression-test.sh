@@ -51,11 +51,15 @@ FULL_PAGE=$(common_config_get 'regressionTesting.fullPage' true)
 CONFIG_ROUTES_RAW=$(common_config_get 'regressionTesting.routes' '["/"]')
 CONFIG_ROUTES=$(node -e "try { console.log(JSON.parse(process.argv[1]).join(',')); } catch { console.log(process.argv[1]); }" "$CONFIG_ROUTES_RAW")
 BROWSERS_JSON=$(common_config_get 'regressionTesting.browsers' '["chromium"]')
+BROWSERS_CSV=$(node -e "try { console.log(JSON.parse(process.argv[1]).join(',')); } catch { console.log(process.argv[1]); }" "$BROWSERS_JSON")
 
 REPORT_PATH=".claude/visual-qa/$REPORT_FILE"
 
 # --- Check for baselines ---
-BASELINE_COUNT=$(find "$BASELINE_DIR" -name "*.png" 2>/dev/null | wc -l)
+# Walk only this section's browsers: the baselines root is shared with the
+# cross-browser visualBaselines tree (RFC 0002), whose firefox/webkit PNGs
+# are compared by cross-browser-baseline.sh, not here.
+BASELINE_COUNT=$(common_find_baselines "$BASELINE_DIR" "$BROWSERS_CSV" | wc -l)
 if [ "$BASELINE_COUNT" -eq 0 ]; then
   echo "No baseline screenshots found in $BASELINE_DIR"
   echo ""
@@ -177,14 +181,14 @@ while IFS= read -r baseline_file; do
   DIFF_OUTPUT=$(node scripts/visual-diff.js "$current_file" "$baseline_file" --output "$diff_file" --threshold "$THRESHOLD" --json 2>&1) || true
 
   # Parse mismatch and status from visual-diff.js JSON output
-  # Fields: mismatchPct (number), status ("PASS"/"FAIL"), pass (boolean)
+  # Fields: mismatchPct (a 0-1 RATIO despite the name), status ("PASS"/"FAIL")
   PARSED=$(echo "$DIFF_OUTPUT" | node -e "
     let data='';
     process.stdin.on('data',d=>data+=d);
     process.stdin.on('end',()=>{
       try {
         const j=JSON.parse(data);
-        const pct = j.mismatchPct ?? '?';
+        const pct = typeof j.mismatchPct === 'number' ? (j.mismatchPct * 100).toFixed(2) : '?';
         const status = (j.status || 'UNKNOWN').toUpperCase();
         console.log(pct + '|' + status);
       } catch { console.log('?|UNKNOWN'); }
@@ -208,7 +212,7 @@ while IFS= read -r baseline_file; do
     RESULTS="$RESULTS\n| $rel_path | WARN | ${MISMATCH}% | Unable to determine status |"
   fi
 
-done < <(find "$BASELINE_DIR" -name "*.png" -type f | sort)
+done < <(common_find_baselines "$BASELINE_DIR" "$BROWSERS_CSV")
 
 TOTAL=$((PASS_COUNT + FAIL_COUNT + WARN_COUNT + SKIP_COUNT))
 
@@ -269,6 +273,12 @@ if [ "$UPDATE_BASELINES" = "true" ] && [ "$FAIL_COUNT" -eq 0 ]; then
   echo "Updating baselines (all tests passed)..."
   cp -r "$SCREENSHOT_DIR"/* "$BASELINE_DIR"/
   echo "Baselines updated from current screenshots."
+  # Keep RFC 0002 provenance fresh for the engines this script rewrote
+  # (no-op when no manifest exists yet).
+  MANIFEST_PATH=$(common_config_get 'visualBaselines.provenance.manifest' '.claude/visual-qa/baselines/manifest.json')
+  node scripts/lib/baseline-manifest.js sync \
+    --baseline-dir "$BASELINE_DIR" --manifest "$MANIFEST_PATH" \
+    --engines "$BROWSERS_CSV" --routes "$CONFIG_ROUTES" --host local > /dev/null || true
 fi
 
 # --- Exit code ---

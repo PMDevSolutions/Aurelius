@@ -362,6 +362,78 @@
       }
     },
 
+    "visualBaselines": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Cross-browser (firefox/webkit) screenshot baseline storage per RFC 0002: pluggable backend, deterministic containerized capture, and per-baseline provenance. Same-browser chromium regression stays in regressionTesting.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "backend": {
+          "type": "string",
+          "enum": ["commit", "ci-artifact", "service"],
+          "description": "Where baselines live: committed to the repo (default), fetched from the last-green-main CI artifact, or delegated to a SaaS provider."
+        },
+        "storage": {
+          "type": "string",
+          "enum": ["git", "lfs"],
+          "description": "commit backend only: plain git-tracked PNGs, or Git LFS for large baseline sets (see scripts/setup-baseline-lfs.sh)."
+        },
+        "baselineDir": { "type": "string", "description": "Baseline root, shared with regressionTesting; per-engine subdirectories." },
+        "screenshotDir": { "type": "string", "description": "Transient current-capture directory (gitignored)." },
+        "diffDir": { "type": "string", "description": "Transient diff-image directory (gitignored)." },
+        "browsers": { "$ref": "#/$defs/browserList" },
+        "routes": { "type": "array", "items": { "type": "string" } },
+        "breakpoints": { "$ref": "#/$defs/breakpointMap" },
+        "threshold": { "$ref": "#/$defs/percentageRatio", "description": "Cross-engine mismatch tolerance. Must equal e2e.crossBrowserDiffThreshold (structural check)." },
+        "blocking": { "type": "boolean", "description": "When true, compare failures exit non-zero (Phase B teeth). Keep false until determinism is proven." },
+        "reportFile": { "type": "string" },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["container", "local"],
+              "description": "container (required for trustworthy firefox/webkit baselines) runs capture in the pinned Playwright image; local captures are recorded with host=local and flagged by provenance."
+            },
+            "image": { "type": "string", "description": "Pinned Playwright container image (authoritative; scripts warn on drift vs the resolved @playwright/test version)." },
+            "waitAfterLoadMs": { "type": "integer", "minimum": 0 },
+            "fullPage": { "type": "boolean" }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "manifest": { "type": "string", "description": "Committed provenance manifest path (engine, Playwright version, image, sha256, gitSha, host per baseline)." },
+            "policy": {
+              "type": "string",
+              "enum": ["warn", "enforce"],
+              "description": "warn: provenance mismatches are reported but baselines are still diffed. enforce: flagged baselines are excluded from diffing and counted as failures."
+            }
+          }
+        },
+        "ciArtifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "backend=ci-artifact only.",
+          "properties": {
+            "compareAgainst": { "type": "string", "enum": ["last-green-main"] },
+            "retentionDays": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "backend=service only. The provider owns capture, diffing, and review; opt-in, requires a token in CI secrets.",
+          "properties": {
+            "provider": { "type": "string", "enum": ["chromatic", "percy"] },
+            "projectTokenEnv": { "type": "string", "description": "Name of the environment variable holding the provider project token." }
+          }
+        }
+      }
+    },
+
     "deadCode": {
       "type": "object",
       "additionalProperties": false,

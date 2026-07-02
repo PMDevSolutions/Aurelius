@@ -785,6 +785,71 @@ Visual regression testing against stored baselines.
 
 ---
 
+## Cross-Browser Baselines (`visualBaselines`)
+
+Cross-browser (firefox/webkit) screenshot baseline storage per
+[RFC 0002](../rfcs/0002-cross-browser-screenshot-baseline-storage.md):
+pluggable backend, deterministic pinned-container capture, and per-baseline
+provenance. Shares `baselineDir` with `regressionTesting` (each flow walks
+only its own engines). Full guide:
+[docs/regression-testing/cross-browser.md](../regression-testing/cross-browser.md).
+
+| Field                     | Type                                             | Default                                        | Description                                                                                   |
+| ------------------------- | ------------------------------------------------ | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `enabled`                 | `boolean`                                        | `true`                                         | Enable the cross-browser baseline flow.                                                        |
+| `backend`                 | `string` (enum: `commit`, `ci-artifact`, `service`) | `"commit"`                                 | Where baselines live: git-tracked, last-green-main CI artifact, or a SaaS provider.            |
+| `storage`                 | `string` (enum: `git`, `lfs`)                    | `"git"`                                        | commit backend only — `lfs` routes PNGs through Git LFS (`setup-baseline-lfs.sh`).            |
+| `baselineDir`             | `string`                                         | `".claude/visual-qa/baselines"`                | Baseline root, shared with `regressionTesting`.                                                |
+| `screenshotDir`           | `string`                                         | `".claude/visual-qa/screenshots/cross-browser"`| Transient current captures (gitignored).                                                       |
+| `diffDir`                 | `string`                                         | `".claude/visual-qa/diffs/cross-browser"`      | Transient diff images (gitignored).                                                            |
+| `browsers`                | `browserList`                                    | `["chromium","firefox","webkit"]`              | Engines to baseline; must stay within `e2e.crossBrowserBrowsers` (structural check).           |
+| `routes`                  | `string[]`                                       | `["/"]`                                        | Routes to capture.                                                                             |
+| `breakpoints`             | `breakpointMap`                                  | `{ "mobile": 375, "desktop": 1440 }`           | Viewport name → pixel width.                                                                   |
+| `threshold`               | `percentageRatio` (0–1)                          | `0.03`                                         | Cross-engine tolerance; must equal `e2e.crossBrowserDiffThreshold` (structural check).         |
+| `blocking`                | `boolean`                                        | `false`                                        | When `true`, compare exits non-zero on failures (Phase B teeth).                               |
+| `reportFile`              | `string`                                         | `"cross-browser-report.md"`                    | Report filename under `.claude/visual-qa/`.                                                    |
+| `capture.mode`            | `string` (enum: `container`, `local`)            | `"container"`                                  | Container is required for trustworthy firefox/webkit baselines; local is recorded + flagged.   |
+| `capture.image`           | `string`                                         | `"mcr.microsoft.com/playwright:v1.61.1-noble"` | The determinism pin; scripts warn on drift vs the resolved Playwright version.                 |
+| `capture.waitAfterLoadMs` | `integer (≥0)`                                   | `1500`                                         | Wait time before capture, in ms.                                                               |
+| `capture.fullPage`        | `boolean`                                        | `true`                                         | Capture full page.                                                                             |
+| `provenance.manifest`     | `string`                                         | `".claude/visual-qa/baselines/manifest.json"`  | Committed provenance manifest (sha256, engine, image, host, gitSha per baseline).              |
+| `provenance.policy`       | `string` (enum: `warn`, `enforce`)               | `"warn"`                                       | `enforce` excludes flagged baselines from diffing and counts them as failures.                 |
+| `ciArtifact.compareAgainst` | `string` (enum: `last-green-main`)             | `"last-green-main"`                            | ci-artifact backend: which build's artifact PRs compare against.                               |
+| `ciArtifact.retentionDays`  | `integer (≥1)`                                 | `30`                                           | Retention of the published baselines artifact.                                                 |
+| `service.provider`        | `string` (enum: `chromatic`, `percy`)            | `"chromatic"`                                  | service backend: which provider owns capture/diff/review.                                      |
+| `service.projectTokenEnv` | `string`                                         | `"CHROMATIC_PROJECT_TOKEN"`                    | Env var holding the provider project token (set as a CI secret).                               |
+
+```json
+"visualBaselines": {
+  "enabled": true,
+  "backend": "commit",
+  "storage": "git",
+  "baselineDir": ".claude/visual-qa/baselines",
+  "screenshotDir": ".claude/visual-qa/screenshots/cross-browser",
+  "diffDir": ".claude/visual-qa/diffs/cross-browser",
+  "browsers": ["chromium", "firefox", "webkit"],
+  "routes": ["/"],
+  "breakpoints": { "mobile": 375, "desktop": 1440 },
+  "threshold": 0.03,
+  "blocking": false,
+  "reportFile": "cross-browser-report.md",
+  "capture": {
+    "mode": "container",
+    "image": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "waitAfterLoadMs": 1500,
+    "fullPage": true
+  },
+  "provenance": {
+    "manifest": ".claude/visual-qa/baselines/manifest.json",
+    "policy": "warn"
+  },
+  "ciArtifact": { "compareAgainst": "last-green-main", "retentionDays": 30 },
+  "service": { "provider": "chromatic", "projectTokenEnv": "CHROMATIC_PROJECT_TOKEN" }
+}
+```
+
+---
+
 ## Dead Code (`deadCode`)
 
 Unused export/dependency/file detection.

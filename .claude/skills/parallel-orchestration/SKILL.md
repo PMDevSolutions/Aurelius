@@ -145,7 +145,7 @@ function hasResourceConflict(candidatePhase, runningPhases):
 | `visual-diff` | **Agent:** invoke visual-qa-verification skill with pixel-diff loop (max iterations from `iterationLoop.maxVisualIterations`) |
 | `dark-mode` | **Bash:** `./scripts/check-dark-mode.sh http://localhost:3000` |
 | `e2e-tests` | **Agent:** invoke e2e-test-generator skill with flows from build-spec.json |
-| `cross-browser` | **Bash:** `./scripts/cross-browser-test.sh firefox http://localhost:3000 && ./scripts/cross-browser-test.sh webkit http://localhost:3000` |
+| `cross-browser` | **Bash:** `./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json` (diffs firefox/webkit against committed baselines with provenance checks — RFC 0002; skips with a capture hint when no baselines exist) |
 | `quality-gate` | **Parallel sub-dispatch:** run all `qualityGateSubtasks` concurrently (see below) |
 | `responsive` | **Bash:** `./scripts/check-responsive.sh http://localhost:3000` |
 | `report` | **Agent:** generate `build-report.md` in `.claude/visual-qa/` from all collected phase results, timings, and diff images |
