@@ -1,0 +1,329 @@
+name: Cross-Browser Baselines
+
+# RFC 0002 — cross-browser screenshot baselines.
+#
+#   pull_request      → compare current firefox/webkit/chromium screenshots
+#                       against stored baselines inside the pinned Playwright
+#                       container (deterministic envelope, provenance-checked)
+#   workflow_dispatch → recapture baselines deterministically and open a PR
+#                       with the refreshed PNGs + provenance manifest
+#   push to main      → when visualBaselines.backend is "ci-artifact",
+#                       capture and publish the baselines artifact that PRs
+#                       compare against (last-green-main)
+#
+# The pinned image comes from pipeline.config.json → visualBaselines.capture.image
+# (read by the prep job), so the config stays the single source of truth.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cross-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Read visualBaselines config on a bare runner ──────────────────────
+  prep:
+    name: Read Config
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.config.outputs.enabled }}
+      image: ${{ steps.config.outputs.image }}
+      backend: ${{ steps.config.outputs.backend }}
+      pwversion: ${{ steps.config.outputs.pwversion }}
+      retention: ${{ steps.config.outputs.retention }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Extract visualBaselines settings
+        id: config
+        run: |
+          get() { node scripts/lib/pipeline-config.js get "$1" "$2"; }
+          IMAGE=$(get visualBaselines.capture.image mcr.microsoft.com/playwright:v1.61.1-noble)
+          {
+            echo "enabled=$(get visualBaselines.enabled true)"
+            echo "image=$IMAGE"
+            echo "backend=$(get visualBaselines.backend commit)"
+            echo "retention=$(get visualBaselines.ciArtifact.retentionDays 30)"
+            echo "pwversion=$(echo "$IMAGE" | sed -n 's/.*:v\([0-9.]*\)-.*/\1/p')"
+          } >> "$GITHUB_OUTPUT"
+
+  # ── Compare against stored baselines inside the pinned image (PR) ─────
+  compare:
+    name: Compare (pinned container)
+    runs-on: ubuntu-latest
+    needs: prep
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request' && needs.prep.outputs.enabled == 'true'
+    container:
+      image: ${{ needs.prep.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Check for cross-browser baselines
+        id: baselines
+        run: |
+          COUNT=0
+          for engine in chromium firefox webkit; do
+            C=$(find ".claude/visual-qa/baselines/$engine" -name "*.png" 2>/dev/null | wc -l)
+            COUNT=$((COUNT + C))
+          done
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No cross-browser baselines found — skipping compare"
+          else
+            echo "Found $COUNT baseline screenshots"
+          fi
+
+      - name: Install repo dependencies
+        if: steps.baselines.outputs.count != '0'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install @playwright/test at the image version
+        if: steps.baselines.outputs.count != '0'
+        run: |
+          mkdir -p /tmp/cbb && cd /tmp/cbb
+          npm init -y >/dev/null 2>&1
+          npm i --no-fund --no-audit "@playwright/test@${{ needs.prep.outputs.pwversion }}"
+
+      - name: Install app dependencies
+        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm build
+
+      - name: Start app server
+        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
+        working-directory: app
+        run: |
+          pnpm start &
+          sleep 5
+
+      - name: Compare against baselines
+        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
+        env:
+          CBB_PLAYWRIGHT_DIR: /tmp/cbb
+          CBB_IN_CONTAINER: "1"
+        # Exit code honors visualBaselines.blocking: non-blocking runs exit 0
+        # and surface results in the report/PR comment (RFC 0002 Phase A→B).
+        run: node scripts/cross-browser-baseline.js compare http://localhost:3000 --json
+
+      - name: Upload diff artifacts
+        if: steps.baselines.outputs.count != '0' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-diffs
+          path: |
+            .claude/visual-qa/diffs/cross-browser/
+            .claude/visual-qa/cross-browser-report.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Comment PR with cross-browser results
+        if: steps.baselines.outputs.count != '0' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = '.claude/visual-qa/cross-browser-report.md';
+            let body = '## Cross-Browser Baseline Results\n\nNo report generated.';
+            if (fs.existsSync(reportPath)) {
+              body = '## Cross-Browser Baseline Results\n\n' + fs.readFileSync(reportPath, 'utf-8');
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Cross-Browser Baseline Results')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ── Recapture baselines deterministically and open a PR (manual) ──────
+  capture:
+    name: Capture & PR refreshed baselines
+    runs-on: ubuntu-latest
+    needs: prep
+    timeout-minutes: 15
+    if: github.event_name == 'workflow_dispatch' && needs.prep.outputs.enabled == 'true'
+    container:
+      image: ${{ needs.prep.outputs.image }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Mark workspace safe for git in-container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install repo dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install @playwright/test at the image version
+        run: |
+          mkdir -p /tmp/cbb && cd /tmp/cbb
+          npm init -y >/dev/null 2>&1
+          npm i --no-fund --no-audit "@playwright/test@${{ needs.prep.outputs.pwversion }}"
+
+      - name: Install app dependencies
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm build
+
+      - name: Start app server
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: |
+          pnpm start &
+          sleep 5
+
+      - name: Capture baselines in the pinned container
+        if: hashFiles('app/package.json') != ''
+        env:
+          CBB_PLAYWRIGHT_DIR: /tmp/cbb
+          CBB_IN_CONTAINER: "1"
+        run: node scripts/cross-browser-baseline.js capture http://localhost:3000
+
+      - name: Push refreshed baselines branch
+        if: hashFiles('app/package.json') != ''
+        id: push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/cross-browser-baselines-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git add .claude/visual-qa/baselines
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Baselines unchanged — nothing to PR"
+            exit 0
+          fi
+          git commit -m "test: refresh cross-browser baselines (pinned container capture)"
+          git push origin "$BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Open baselines PR
+        if: steps.push.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'test: refresh cross-browser baselines',
+              head: '${{ steps.push.outputs.branch }}',
+              base: 'main',
+              body: [
+                'Deterministic recapture of the cross-browser baselines inside the pinned',
+                'Playwright container (`${{ needs.prep.outputs.image }}`), including the',
+                'refreshed provenance manifest. Review the PNG diffs before merging (RFC 0002).',
+              ].join('\n'),
+            });
+
+  # ── Publish the baselines artifact from main (ci-artifact backend) ────
+  publish:
+    name: Publish baselines artifact
+    runs-on: ubuntu-latest
+    needs: prep
+    timeout-minutes: 15
+    if: github.event_name == 'push' && needs.prep.outputs.enabled == 'true' && needs.prep.outputs.backend == 'ci-artifact'
+    container:
+      image: ${{ needs.prep.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Mark workspace safe for git in-container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install repo dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install @playwright/test at the image version
+        run: |
+          mkdir -p /tmp/cbb && cd /tmp/cbb
+          npm init -y >/dev/null 2>&1
+          npm i --no-fund --no-audit "@playwright/test@${{ needs.prep.outputs.pwversion }}"
+
+      - name: Install app dependencies
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: pnpm build
+
+      - name: Start app server
+        if: hashFiles('app/package.json') != ''
+        working-directory: app
+        run: |
+          pnpm start &
+          sleep 5
+
+      - name: Capture baselines in the pinned container
+        if: hashFiles('app/package.json') != ''
+        env:
+          CBB_PLAYWRIGHT_DIR: /tmp/cbb
+          CBB_IN_CONTAINER: "1"
+        run: node scripts/cross-browser-baseline.js capture http://localhost:3000
+
+      - name: Upload baselines artifact (last-green-main)
+        if: hashFiles('app/package.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-baselines
+          path: .claude/visual-qa/baselines/
+          retention-days: ${{ fromJSON(needs.prep.outputs.retention) }}
+          if-no-files-found: warn
