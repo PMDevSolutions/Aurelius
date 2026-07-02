@@ -82,7 +82,9 @@ describe("ci-artifact backend", () => {
   });
 
   it("wraps a missing gh CLI in a BackendError", async () => {
-    const { exec } = recorder({ "gh run list": Object.assign(new Error("ENOENT"), { code: "ENOENT" }) });
+    const { exec } = recorder({
+      "gh run list": Object.assign(new Error("ENOENT"), { code: "ENOENT" }),
+    });
     const backend = resolveBackend(config, { execFile: exec });
     await expect(backend.fetch({ baselineDir: "/ignored" })).rejects.toThrow(BackendError);
   });

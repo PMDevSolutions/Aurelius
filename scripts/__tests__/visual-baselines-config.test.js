@@ -60,9 +60,7 @@ describe("visualBaselines config section", () => {
     expect(liveConfig.visualBaselines.backend).toBe("commit");
     expect(liveConfig.visualBaselines.storage).toBe("git");
     expect(liveConfig.visualBaselines.blocking).toBe(false);
-    expect(liveConfig.visualBaselines.threshold).toBe(
-      liveConfig.e2e.crossBrowserDiffThreshold,
-    );
+    expect(liveConfig.visualBaselines.threshold).toBe(liveConfig.e2e.crossBrowserDiffThreshold);
     expect(liveConfig.visualBaselines.provenance.manifest).toBe(
       ".claude/visual-qa/baselines/manifest.json",
     );
@@ -76,9 +74,7 @@ describe("visualBaselines config section", () => {
     expect(result.ok).toBe(false);
     expect(result.exitCode).toBe(1);
     const flagged = result.schemaErrors.some(
-      (e) =>
-        e.path.startsWith("/visualBaselines") &&
-        e.extras.some((x) => x.includes("bogusKey")),
+      (e) => e.path.startsWith("/visualBaselines") && e.extras.some((x) => x.includes("bogusKey")),
     );
     expect(flagged).toBe(true);
   });
@@ -89,9 +85,7 @@ describe("visualBaselines config section", () => {
     });
     const result = validate(config, "bad-backend");
     expect(result.ok).toBe(false);
-    expect(result.schemaErrors.some((e) => e.path === "/visualBaselines/backend")).toBe(
-      true,
-    );
+    expect(result.schemaErrors.some((e) => e.path === "/visualBaselines/backend")).toBe(true);
   });
 
   it("rejects an unknown provenance policy", () => {
@@ -100,9 +94,9 @@ describe("visualBaselines config section", () => {
     });
     const result = validate(config, "bad-policy");
     expect(result.ok).toBe(false);
-    expect(
-      result.schemaErrors.some((e) => e.path === "/visualBaselines/provenance/policy"),
-    ).toBe(true);
+    expect(result.schemaErrors.some((e) => e.path === "/visualBaselines/provenance/policy")).toBe(
+      true,
+    );
   });
 
   it("accepts storage=lfs on the commit backend", () => {
@@ -119,9 +113,7 @@ describe("visualBaselines config section", () => {
     });
     const result = validate(config, "bad-mode");
     expect(result.ok).toBe(false);
-    expect(
-      result.schemaErrors.some((e) => e.path === "/visualBaselines/capture/mode"),
-    ).toBe(true);
+    expect(result.schemaErrors.some((e) => e.path === "/visualBaselines/capture/mode")).toBe(true);
   });
 
   it("structural: storage=lfs requires the commit backend", () => {
@@ -131,9 +123,7 @@ describe("visualBaselines config section", () => {
     });
     const result = validate(config, "lfs-wrong-backend");
     expect(result.ok).toBe(false);
-    expect(
-      result.structuralIssues.some((e) => e.path === "/visualBaselines/storage"),
-    ).toBe(true);
+    expect(result.structuralIssues.some((e) => e.path === "/visualBaselines/storage")).toBe(true);
   });
 
   it("structural: threshold must match e2e.crossBrowserDiffThreshold", () => {
@@ -157,8 +147,6 @@ describe("visualBaselines config section", () => {
     });
     const result = validate(config, "browser-superset");
     expect(result.ok).toBe(false);
-    expect(
-      result.structuralIssues.some((e) => e.path === "/visualBaselines/browsers"),
-    ).toBe(true);
+    expect(result.structuralIssues.some((e) => e.path === "/visualBaselines/browsers")).toBe(true);
   });
 });

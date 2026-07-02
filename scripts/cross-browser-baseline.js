@@ -19,13 +19,7 @@
  *   2 — usage/environment error
  */
 
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  mkdirSync,
-  rmSync,
-} from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { execFileSync, spawnSync } from "child_process";
 import { createRequire } from "module";
 import { join, dirname, resolve, isAbsolute } from "path";
@@ -160,14 +154,14 @@ function lfsAttributesDrift(cfg) {
     .some((line) => line.includes(cfg.baselineDir) && line.includes("filter=lfs"));
   if (cfg.storage === "lfs" && !covered) {
     return (
-      "storage is \"lfs\" but .gitattributes has no LFS filter for the baseline dir — " +
+      'storage is "lfs" but .gitattributes has no LFS filter for the baseline dir — ' +
       "run ./scripts/setup-baseline-lfs.sh"
     );
   }
   if (cfg.storage === "git" && covered) {
     return (
-      "storage is \"git\" but .gitattributes routes baselines through LFS — " +
-      "set visualBaselines.storage to \"lfs\" or remove the filter"
+      'storage is "git" but .gitattributes routes baselines through LFS — ' +
+      'set visualBaselines.storage to "lfs" or remove the filter'
     );
   }
   return null;
@@ -300,7 +294,7 @@ async function runContainerCapture(args, cfg, log) {
     execFileSync("docker", ["--version"], { stdio: "ignore" });
   } catch {
     throw new UsageError(
-      "docker is required for container capture (visualBaselines.capture.mode = \"container\") — " +
+      'docker is required for container capture (visualBaselines.capture.mode = "container") — ' +
         "install Docker, or pass --local for an untrusted local capture",
     );
   }
@@ -447,7 +441,16 @@ function runVisualDiff(current, baseline, diffOut, threshold) {
   try {
     stdout = execFileSync(
       "node",
-      [VISUAL_DIFF, current, baseline, "--output", diffOut, "--threshold", String(threshold), "--json"],
+      [
+        VISUAL_DIFF,
+        current,
+        baseline,
+        "--output",
+        diffOut,
+        "--threshold",
+        String(threshold),
+        "--json",
+      ],
       { encoding: "utf-8", timeout: 60000 },
     );
   } catch (err) {
@@ -457,11 +460,16 @@ function runVisualDiff(current, baseline, diffOut, threshold) {
     const parsed = JSON.parse(stdout);
     return {
       status: (parsed.status ?? "UNKNOWN").toUpperCase(),
-      mismatchPct: parsed.mismatchPct ?? null,
+      // visual-diff.js names this "mismatchPct" but emits a 0-1 ratio.
+      mismatchRatio: parsed.mismatchPct ?? null,
     };
   } catch {
-    return { status: "WARN", mismatchPct: null };
+    return { status: "WARN", mismatchRatio: null };
   }
+}
+
+function formatPct(ratio) {
+  return ratio != null ? `${(ratio * 100).toFixed(2)}%` : "-";
 }
 
 function writeCompareReport(reportPath, payload) {
@@ -491,7 +499,7 @@ function writeCompareReport(reportPath, payload) {
     "|----------|--------|--------|----------|------------|",
     ...payload.results.map(
       (r) =>
-        `| ${r.path} | ${r.engine ?? "?"} | ${r.status} | ${r.mismatchPct ?? "-"}${r.mismatchPct != null ? "%" : ""} | ${r.provenance} |`,
+        `| ${r.path} | ${r.engine ?? "?"} | ${r.status} | ${formatPct(r.mismatchRatio)} | ${r.provenance} |`,
     ),
     "",
   ];
@@ -518,7 +526,10 @@ function runDelegatedCompare(args, cfg, backend, log) {
   let snapshotsFile;
   if (backend.provider === "percy") {
     snapshotsFile = join(tmpdir(), `cbb-percy-snapshots-${process.pid}.json`);
-    writeFileSync(snapshotsFile, backend.buildSnapshots({ url: args.url ?? "http://localhost:3000" }));
+    writeFileSync(
+      snapshotsFile,
+      backend.buildSnapshots({ url: args.url ?? "http://localhost:3000" }),
+    );
   }
   const blocking = Boolean(args.blocking || cfg.blocking);
   const argv = backend.providerArgv({ blocking, snapshotsFile });
@@ -596,7 +607,8 @@ async function cmdCompare(args, cfg) {
       fullPage: cfg.capture.fullPage,
       log,
     });
-    if (failures.length) log(`⚠ ${failures.length} capture failure(s) — affected baselines will be skipped`);
+    if (failures.length)
+      log(`⚠ ${failures.length} capture failure(s) — affected baselines will be skipped`);
   }
 
   const diffRoot = resolvePath(cfg.diffDir);
@@ -609,23 +621,37 @@ async function cmdCompare(args, cfg) {
     const provStatus = provenance.statuses[rel] ?? "untracked";
     if (enforce && provStatus !== "ok") {
       log(`PROVENANCE: ${rel} (${provStatus}) — excluded from diff`);
-      results.push({ path: rel, engine, status: "PROVENANCE", mismatchPct: null, provenance: provStatus });
+      results.push({
+        path: rel,
+        engine,
+        status: "PROVENANCE",
+        mismatchRatio: null,
+        provenance: provStatus,
+      });
       continue;
     }
     const currentFile = join(currentRoot, ...rel.split("/"));
     if (!existsSync(currentFile)) {
       log(`SKIP: ${rel} (no current screenshot)`);
-      results.push({ path: rel, engine, status: "SKIP", mismatchPct: null, provenance: provStatus });
+      results.push({
+        path: rel,
+        engine,
+        status: "SKIP",
+        mismatchRatio: null,
+        provenance: provStatus,
+      });
       continue;
     }
-    const { status, mismatchPct } = runVisualDiff(
+    const { status, mismatchRatio } = runVisualDiff(
       currentFile,
       join(baselineRoot, ...rel.split("/")),
       join(diffRoot, ...rel.split("/")),
       cfg.threshold,
     );
-    log(`${status}: ${rel}${mismatchPct != null ? ` (${mismatchPct}%)` : ""}${provStatus !== "ok" ? ` [provenance: ${provStatus}]` : ""}`);
-    results.push({ path: rel, engine, status, mismatchPct, provenance: provStatus });
+    log(
+      `${status}: ${rel}${mismatchRatio != null ? ` (${formatPct(mismatchRatio)})` : ""}${provStatus !== "ok" ? ` [provenance: ${provStatus}]` : ""}`,
+    );
+    results.push({ path: rel, engine, status, mismatchRatio, provenance: provStatus });
   }
 
   const count = (s) => results.filter((r) => r.status === s).length;
@@ -696,7 +722,9 @@ function cmdVerify(args, cfg) {
       if (status !== "ok") log(`  ${status}: ${rel}`);
     }
     if (!result.manifestFound && result.total > 0) {
-      log("  no manifest — run ./scripts/cross-browser-baseline.sh capture to establish provenance");
+      log(
+        "  no manifest — run ./scripts/cross-browser-baseline.sh capture to establish provenance",
+      );
     }
   }
   return result.violations > 0 ? 1 : 0;
@@ -740,7 +768,11 @@ function parseArgs(argv) {
     else if (a === "--blocking") args.blocking = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--no-manifest") args.noManifest = true;
-    else if (a === "--engines") args.engines = argv[++i]?.split(",").map((s) => s.trim()).filter(Boolean);
+    else if (a === "--engines")
+      args.engines = argv[++i]
+        ?.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     else if (a === "--current-dir") args.currentDir = argv[++i];
     else if (a === "--host") args.host = argv[++i];
     else if (a === "-h" || a === "--help") args.help = true;

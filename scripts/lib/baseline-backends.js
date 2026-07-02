@@ -31,8 +31,7 @@ const WORKFLOW_FILE = "cross-browser-baselines.yml";
 
 export function resolveBackend(config, deps = {}) {
   const name = config.backend ?? "commit";
-  const execFile =
-    deps.execFile ?? ((cmd, args) => execFileSync(cmd, args, { encoding: "utf-8" }));
+  const execFile = deps.execFile ?? ((cmd, args) => execFileSync(cmd, args, { encoding: "utf-8" }));
   if (name === "commit") return commitBackend(config);
   if (name === "ci-artifact") return ciArtifactBackend(config, execFile);
   if (name === "service") return serviceBackend(config);

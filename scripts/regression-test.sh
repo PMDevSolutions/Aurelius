@@ -181,14 +181,14 @@ while IFS= read -r baseline_file; do
   DIFF_OUTPUT=$(node scripts/visual-diff.js "$current_file" "$baseline_file" --output "$diff_file" --threshold "$THRESHOLD" --json 2>&1) || true
 
   # Parse mismatch and status from visual-diff.js JSON output
-  # Fields: mismatchPct (number), status ("PASS"/"FAIL"), pass (boolean)
+  # Fields: mismatchPct (a 0-1 RATIO despite the name), status ("PASS"/"FAIL")
   PARSED=$(echo "$DIFF_OUTPUT" | node -e "
     let data='';
     process.stdin.on('data',d=>data+=d);
     process.stdin.on('end',()=>{
       try {
         const j=JSON.parse(data);
-        const pct = j.mismatchPct ?? '?';
+        const pct = typeof j.mismatchPct === 'number' ? (j.mismatchPct * 100).toFixed(2) : '?';
         const status = (j.status || 'UNKNOWN').toUpperCase();
         console.log(pct + '|' + status);
       } catch { console.log('?|UNKNOWN'); }

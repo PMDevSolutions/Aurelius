@@ -22,13 +22,7 @@
  * Defaults come from pipeline.config.json → visualBaselines. Exit codes:
  * 0 ok, 1 provenance violations (verify), 2 usage/IO error.
  */
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  readdirSync,
-  mkdirSync,
-} from "fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from "fs";
 import { execFileSync } from "child_process";
 import { createHash } from "crypto";
 import { join, dirname, resolve, relative } from "path";
@@ -231,9 +225,9 @@ export function verifyBaselines({ baselineDir, manifestPath, engines, envelope =
   const drift = {
     version: Boolean(
       manifest &&
-        envelope.playwrightVersion &&
-        manifest.playwrightVersion &&
-        envelope.playwrightVersion !== manifest.playwrightVersion,
+      envelope.playwrightVersion &&
+      manifest.playwrightVersion &&
+      envelope.playwrightVersion !== manifest.playwrightVersion,
     ),
     image: Boolean(manifest && image && manifest.image && image !== manifest.image),
   };
@@ -258,10 +252,10 @@ export function verifyBaselines({ baselineDir, manifestPath, engines, envelope =
 
   const envelopeMatch = Boolean(
     manifest &&
-      envelope.host === "container" &&
-      (!envelope.playwrightVersion ||
-        !manifest.playwrightVersion ||
-        envelope.playwrightVersion === manifest.playwrightVersion),
+    envelope.host === "container" &&
+    (!envelope.playwrightVersion ||
+      !manifest.playwrightVersion ||
+      envelope.playwrightVersion === manifest.playwrightVersion),
   );
 
   return {
@@ -312,8 +306,16 @@ function parseCliArgs(argv) {
     if (a === "--json") opts.json = true;
     else if (a === "--baseline-dir") opts.baselineDir = resolve(argv[++i]);
     else if (a === "--manifest") opts.manifestPath = resolve(argv[++i]);
-    else if (a === "--engines") opts.engines = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
-    else if (a === "--routes") opts.routes = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
+    else if (a === "--engines")
+      opts.engines = argv[++i]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    else if (a === "--routes")
+      opts.routes = argv[++i]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     else if (a === "--host") opts.host = argv[++i];
     else if (a === "--playwright-version") opts.playwrightVersion = argv[++i];
     else if (a === "--image") opts.image = argv[++i];
@@ -338,11 +340,15 @@ function cliMain(argv) {
   }
   const opts = parseCliArgs(rest);
   const baselineDir =
-    opts.baselineDir ?? resolve(getValue("visualBaselines.baselineDir", ".claude/visual-qa/baselines"));
+    opts.baselineDir ??
+    resolve(getValue("visualBaselines.baselineDir", ".claude/visual-qa/baselines"));
   const manifestPath =
     opts.manifestPath ??
-    resolve(getValue("visualBaselines.provenance.manifest", ".claude/visual-qa/baselines/manifest.json"));
-  const engines = opts.engines ?? getValue("visualBaselines.browsers", ["chromium", "firefox", "webkit"]);
+    resolve(
+      getValue("visualBaselines.provenance.manifest", ".claude/visual-qa/baselines/manifest.json"),
+    );
+  const engines =
+    opts.engines ?? getValue("visualBaselines.browsers", ["chromium", "firefox", "webkit"]);
   const routes = opts.routes ?? getValue("visualBaselines.routes", ["/"]);
   const image = opts.image ?? getValue("visualBaselines.capture.image", null);
   const gitSha = opts.gitSha ?? currentGitSha();
@@ -361,7 +367,10 @@ function cliMain(argv) {
       },
     });
     if (opts.json) console.log(JSON.stringify(manifest, null, 2));
-    else console.log(`Recorded ${Object.keys(manifest.baselines).length} baseline(s) → ${manifestPath}`);
+    else
+      console.log(
+        `Recorded ${Object.keys(manifest.baselines).length} baseline(s) → ${manifestPath}`,
+      );
     return;
   }
 
@@ -393,11 +402,14 @@ function cliMain(argv) {
   if (opts.json) {
     console.log(JSON.stringify(result, null, 2));
   } else {
-    console.log(`Provenance: ${result.total} baseline(s) checked, ${result.violations} violation(s)`);
+    console.log(
+      `Provenance: ${result.total} baseline(s) checked, ${result.violations} violation(s)`,
+    );
     for (const [rel, status] of Object.entries(result.statuses)) {
       if (status !== "ok") console.log(`  ${status}: ${rel}`);
     }
-    if (result.drift.version) console.log("  drift: manifest Playwright version differs from current");
+    if (result.drift.version)
+      console.log("  drift: manifest Playwright version differs from current");
     if (result.drift.image) console.log("  drift: manifest image differs from configured image");
     if (!result.manifestFound && result.total > 0) {
       console.log("  no manifest — run cross-browser-baseline.sh capture to establish provenance");

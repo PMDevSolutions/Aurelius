@@ -2,14 +2,7 @@
 // manifest (record / sync / verify) for cross-browser screenshot baselines.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync } from "child_process";
-import {
-  writeFileSync,
-  readFileSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  existsSync,
-} from "fs";
+import { writeFileSync, readFileSync, mkdirSync, mkdtempSync, rmSync, existsSync } from "fs";
 import { createHash } from "crypto";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
@@ -397,12 +390,18 @@ describe("CLI", () => {
     const { stdout, exitCode } = runCli([
       "verify",
       "--json",
-      "--baseline-dir", baselineDir,
-      "--manifest", manifestPath,
-      "--engines", "firefox",
-      "--host", "container",
-      "--playwright-version", "1.61.1",
-      "--image", ENVELOPE.image,
+      "--baseline-dir",
+      baselineDir,
+      "--manifest",
+      manifestPath,
+      "--engines",
+      "firefox",
+      "--host",
+      "container",
+      "--playwright-version",
+      "1.61.1",
+      "--image",
+      ENVELOPE.image,
     ]);
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
@@ -424,12 +423,18 @@ describe("CLI", () => {
     const { stdout, exitCode } = runCli([
       "verify",
       "--json",
-      "--baseline-dir", baselineDir,
-      "--manifest", manifestPath,
-      "--engines", "firefox",
-      "--host", "container",
-      "--playwright-version", "1.61.1",
-      "--image", ENVELOPE.image,
+      "--baseline-dir",
+      baselineDir,
+      "--manifest",
+      manifestPath,
+      "--engines",
+      "firefox",
+      "--host",
+      "container",
+      "--playwright-version",
+      "1.61.1",
+      "--image",
+      ENVELOPE.image,
     ]);
     expect(exitCode).toBe(1);
     const parsed = JSON.parse(stdout);

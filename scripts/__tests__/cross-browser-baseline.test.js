@@ -198,12 +198,17 @@ describe("compare (commit backend)", () => {
       currents: { "firefox/home/desktop_1440px.png": pngBytes(BLUE) },
     });
     record(proj);
-    const { exitCode, json } = runJson(
+    const { exitCode, json, stderr } = runJson(
       ["compare", "--json", "--blocking", "--current-dir", proj.currentDir, "--host", "container"],
       proj,
     );
     expect(exitCode).toBe(1);
     expect(json.blocking).toBe(true);
+    // visual-diff.js emits a mismatch RATIO; the CLI must report a true percent
+    // (a fully-different image is 100%, not "1%").
+    expect(json.results[0].mismatchRatio).toBe(1);
+    expect(stderr).toContain("(100.00%)");
+    expect(readFileSync(proj.reportFile, "utf-8")).toContain("100.00%");
   });
 
   it("exits 1 on failures when config sets blocking: true (Phase B teeth)", () => {
@@ -228,10 +233,7 @@ describe("compare (commit backend)", () => {
     });
     record(proj);
     // Rewrite the baseline after recording provenance → sha mismatch.
-    writeFileSync(
-      join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"),
-      tampered,
-    );
+    writeFileSync(join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"), tampered);
     const { json, exitCode } = runJson(
       ["compare", "--json", "--current-dir", proj.currentDir, "--host", "container"],
       proj,
@@ -257,10 +259,7 @@ describe("compare (commit backend)", () => {
     writeFileSync(proj.configPath, JSON.stringify(configRaw, null, 2));
 
     record(proj);
-    writeFileSync(
-      join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"),
-      tampered,
-    );
+    writeFileSync(join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"), tampered);
     const { json, exitCode } = runJson(
       ["compare", "--json", "--current-dir", proj.currentDir, "--host", "container"],
       proj,
@@ -327,7 +326,16 @@ describe("compare (commit backend)", () => {
     });
     record(proj);
     const { json } = runJson(
-      ["compare", "--json", "--engines", "firefox", "--current-dir", proj.currentDir, "--host", "container"],
+      [
+        "compare",
+        "--json",
+        "--engines",
+        "firefox",
+        "--current-dir",
+        proj.currentDir,
+        "--host",
+        "container",
+      ],
       proj,
     );
     expect(json.results).toHaveLength(1);
@@ -409,10 +417,7 @@ describe("verify", () => {
     record(proj);
     expect(run(["verify", "--json", "--host", "container"], proj).exitCode).toBe(0);
 
-    writeFileSync(
-      join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"),
-      pngBytes(BLUE),
-    );
+    writeFileSync(join(proj.baselineDir, "firefox", "home", "desktop_1440px.png"), pngBytes(BLUE));
     const { exitCode, json } = runJson(["verify", "--json", "--host", "container"], proj);
     expect(exitCode).toBe(1);
     expect(json.statuses["firefox/home/desktop_1440px.png"]).toBe("modified");
@@ -424,10 +429,7 @@ describe("capture", () => {
     "fails with an install hint when Playwright is not resolvable",
     () => {
       const proj = makeProject({});
-      const { exitCode, stderr } = run(
-        ["capture", "http://127.0.0.1:9", "--local"],
-        proj,
-      );
+      const { exitCode, stderr } = run(["capture", "http://127.0.0.1:9", "--local"], proj);
       expect(exitCode).toBe(2);
       expect(stderr).toMatch(/@playwright\/test/);
     },
@@ -490,10 +492,7 @@ describe("capture — pinned container wrapping (Phase B)", () => {
 
   it.skipIf(playwrightResolvable)("--local bypasses the container wrapper", () => {
     const proj = makeProject({ config: containerConfig });
-    const { exitCode, stderr } = run(
-      ["capture", "http://127.0.0.1:9", "--local"],
-      proj,
-    );
+    const { exitCode, stderr } = run(["capture", "http://127.0.0.1:9", "--local"], proj);
     expect(exitCode).toBe(2);
     expect(stderr).toMatch(/@playwright\/test/);
     expect(stderr).not.toMatch(/docker run/i);
@@ -501,12 +500,16 @@ describe("capture — pinned container wrapping (Phase B)", () => {
 
   it("rejects an image tag it cannot derive a Playwright version from", () => {
     const proj = makeProject({
-      config: { capture: { mode: "container", image: "mcr.microsoft.com/playwright:latest", waitAfterLoadMs: 0, fullPage: true } },
+      config: {
+        capture: {
+          mode: "container",
+          image: "mcr.microsoft.com/playwright:latest",
+          waitAfterLoadMs: 0,
+          fullPage: true,
+        },
+      },
     });
-    const { exitCode, stderr } = run(
-      ["capture", "http://localhost:3000", "--dry-run"],
-      proj,
-    );
+    const { exitCode, stderr } = run(["capture", "http://localhost:3000", "--dry-run"], proj);
     expect(exitCode).toBe(2);
     expect(stderr).toMatch(/image/i);
   });
