@@ -291,7 +291,9 @@ Located in `scripts/`. These are the automation backbone that agents and pipelin
 | Script | Purpose |
 |--------|---------|
 | `run-tests.sh` | Vitest with coverage |
-| `cross-browser-test.sh` | Playwright multi-browser screenshots |
+| `cross-browser-test.sh` | Playwright multi-browser screenshots (ad-hoc capture, no comparison) |
+| `cross-browser-baseline.sh` | Cross-browser baseline capture/compare with provenance (RFC 0002) |
+| `setup-baseline-lfs.sh` | Route large baseline sets through Git LFS (storage="lfs") |
 | `setup-playwright.sh` | One-time browser engine installation |
 | `capture-baselines.sh` | Capture baseline screenshots for regression |
 | `regression-test.sh` | Visual regression testing against baselines |
