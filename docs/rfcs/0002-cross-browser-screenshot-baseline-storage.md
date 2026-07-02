@@ -4,7 +4,7 @@
 | ------------ | ----------------------------------------------------------------------- |
 | **RFC**      | 0002                                                                    |
 | **Title**    | Cross-Browser Screenshot Baseline Storage                               |
-| **Status**   | **Proposed** — awaiting review & acceptance                             |
+| **Status**   | **Accepted** — 2026-07-01                                               |
 | **Milestone**| v2.0.0                                                                  |
 | **Tracking** | #85                                                                    |
 | **Author**   | Aurelius maintainers                                                    |
@@ -13,9 +13,9 @@
 
 > **Acceptance gate.** Per #85, the acceptance criteria are (1) the decision is
 > documented in `docs/rfcs/` and (2) implementation is tracked as a follow-up
-> issue. This RFC satisfies (1). It is **Accepted** when a maintainer approves the
-> PR and updates the Status row (see §12); the implementation lands in follow-up
-> PRs that reference the tracking issue created for (2).
+> issue. This RFC satisfies (1). It was **Accepted** on maintainer approval and
+> merge of its PR (#112, 2026-07-01 — see §12); the implementation lands in
+> follow-up PRs that reference the tracking issue created for (2), #111.
 
 ---
 
@@ -356,12 +356,12 @@ accept the exposure and cost knowingly, via explicit config.
 
 ## 12. Acceptance & sign-off
 
-This RFC is **Proposed**. It is **Accepted** when a maintainer approves the PR and
-updates the Status row to `Accepted` with date and approver. On acceptance, the
-follow-up implementation issue (§14) is the entry point for Phases A–C.
+This RFC is **Accepted**. Acceptance = maintainer approval of the RFC PR plus this
+Status-row update with date and approver. The follow-up implementation issue
+(§14) is the entry point for Phases A–C.
 
-- Decision: _pending_
-- Approver / date: _pending_
+- Decision: **Accepted as proposed**
+- Approver / date: PAMulligan (maintainer) · 2026-07-01 — RFC PR #112 approved & merged
 
 ## 13. Open questions (for reviewers)
 
