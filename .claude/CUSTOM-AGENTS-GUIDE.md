@@ -1,106 +1,90 @@
 # Custom Agents Guide
 
-**Last Updated:** 2026-06-11
-**Total Agents:** 56
+**Last Updated:** 2026-07-21
+**Total Agents:** 42
 **Location:** `.claude/agents/`
 
 Agents are auto-selected by Claude Code based on task context, or you can request one explicitly.
 
 ---
 
-## Engineering
+## Strategy & Research
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| frontend-developer | React component implementation, styling, and client-side logic | Building UI components, pages, Tailwind styling, client-side state |
-| backend-architect | API design, server architecture, and data modeling | Designing REST/GraphQL APIs, database schemas, server-side patterns |
-| ai-engineer | AI/ML integration, prompt engineering, and model pipelines | Adding AI features, LLM integrations, embeddings, inference workflows |
-| devops-automator | CI/CD pipelines, Docker, deployment automation | Setting up GitHub Actions, containerization, deployment scripts |
-| mobile-app-builder | React Native and mobile-first development | Building cross-platform mobile apps, responsive mobile experiences |
-| rapid-prototyper | Quick proof-of-concept implementations | Validating ideas fast, throwaway prototypes, spike solutions |
-| test-writer-fixer | Write tests, run them, fix failures iteratively | Unit tests, integration tests, increasing coverage, fixing flaky tests |
-| error-boundary-architect | Error handling strategy, React error boundaries, fallback UIs, Sentry integration | Making React apps resilient to runtime failures, graceful degradation |
-| migration-specialist | Framework upgrades, dependency migrations, codemods | Upgrading React/Next.js versions, CRA to Vite, Redux to Zustand, Jest to Vitest |
-| i18n-engineer | Internationalization setup, translation management, RTL support | Adding i18n (next-intl, react-i18next, vue-i18n, svelte-i18n, expo-localization), locale formatting, RTL layouts |
-| animation-optimizer | Animation performance profiling, jank elimination, reduced-motion compliance | Optimizing animations for 60fps, motion design systems, framework-specific animation patterns |
-| bundle-analyzer | Bundle size analysis, tree-shaking audits, code splitting optimization | Analyzing bundle composition, finding oversized dependencies, enforcing bundle budgets |
+| brand-strategist | Brand architecture, platform, and long-term equity building | Defining purpose/values/personality, brand audits, rebrand strategy, brand-guidelines.json foundations |
+| positioning-messaging | Positioning statements, message houses, and value propositions | Defining what the product is and why it wins, messaging hierarchy, claim substantiation |
+| market-researcher | Category intelligence, trend detection, and audience evidence | Market sizing, trend radar, search demand analysis, voice-of-customer mining |
+| competitive-analyst | Competitor monitoring, teardowns, and battlecards | Landscape mapping, competitor teardowns, win/loss synthesis, share-of-voice tracking |
+| customer-persona-builder | Data-driven personas and buyer journey mapping | Persona development, journey maps, segmentation, customer language capture |
 
-## Design
+## Content
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| ui-designer | UI component design, layout systems, visual hierarchy | Designing component libraries, page layouts, design system tokens |
-| ux-researcher | User experience research, usability analysis | User flow analysis, heuristic evaluation, accessibility reviews |
-| brand-guardian | Brand consistency enforcement across assets | Ensuring colors, typography, tone, and imagery match brand guidelines |
-| visual-storyteller | Data visualization and narrative-driven UI | Charts, dashboards, infographics, storytelling through design |
-| whimsy-injector | Micro-interactions, animations, delightful UI details | Adding loading animations, transitions, easter eggs, playful touches |
+| content-strategist | Content pillars, funnel-mapped planning, repurposing systems | Content strategy, calendar strategy, content audits, brief creation |
+| copywriter | Conversion copy: headlines, landing pages, ads, CTAs, microcopy | Any copy meant to convert, headline generation, variant writing |
+| blog-writer | Long-form articles with argument, evidence, and craft | Blog posts, guides, thought leadership, case-study narratives |
+| seo-content-writer | Search-intent content that ranks and converts | SEO articles, on-page optimization, content refreshes, snippet targeting |
+| email-marketer | Broadcast campaigns, newsletters, list health, deliverability | Campaign emails, newsletters, segmentation, subject-line testing |
+| video-script-writer | Scripts for shorts, explainers, ads, and webinars | Video hooks, retention structure, production-ready scripts |
+| content-creator | Cross-platform content generation and repurposing | Adapting one idea across formats, multi-format content batches |
 
-## Design-to-Code
-
-| Agent | Purpose | When to Use |
-|-------|---------|-------------|
-| figma-react-converter | Figma-to-React conversion pipeline orchestration | Converting Figma designs into React components with Tailwind CSS |
-| canva-react-converter | Canva-to-React conversion from screenshots | Converting Canva designs into React components with Tailwind CSS |
-| astro-converter | Design-to-Astro hybrid conversion (zero-JS .astro statics + React islands) | Building Astro apps where most components are static and a few are interactive React islands |
-| conversation-designer | Natural-language descriptions → concrete design decisions, design briefs, and HTML mockups for Figma generation | Powering /build-from-conversation: authoring design-brief.json and the mockups captured into Figma |
-| asset-cataloger | Image/asset semantic mapping and validation | Mapping hash-named exports to meaningful names, validating asset usage |
-| indesign-to-react | InDesign (IDML/PDF) → typed React components, design tokens, and Storybook stories via @aurelius/pipeline | Converting an exported `.idml` or PDF handoff into a React starting point |
-
-## Testing & QA
+## Channel
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| api-tester | API endpoint testing and validation | Testing REST/GraphQL endpoints, response schemas, error handling |
-| performance-benchmarker | Performance profiling and optimization | Bundle size analysis, Lighthouse audits, runtime profiling |
-| test-results-analyzer | Test suite analysis and trend reporting | Analyzing CI test results, identifying flaky tests, coverage trends |
-| tool-evaluator | Evaluate libraries, frameworks, and tools | Comparing NPM packages, assessing dependencies, tech stack decisions |
-| workflow-optimizer | Development process improvement | Streamlining build pipelines, reducing dev friction, automation gaps |
-| visual-qa-agent | Visual regression testing and cross-browser verification | Comparing rendered output against Figma designs, screenshot diffing |
-| accessibility-auditor | WCAG 2.1 AA compliance auditing (React, Vue, Svelte, React Native) | Color contrast, ARIA labels, keyboard navigation, Lighthouse a11y, framework-specific a11y |
+| social-media-manager | Cross-platform social strategy and specialist coordination | Platform selection, social calendar, community standards, crisis protocol |
+| paid-ads-specialist | Paid media across Google/Meta/LinkedIn/TikTok | Campaign architecture, audience/creative testing, budget pacing (spend gated) |
+| seo-specialist | Technical SEO, architecture, keyword strategy, authority | SEO audits, keyword research direction, cannibalization checks, link strategy |
+| pr-outreach | Earned media: releases, pitches, media relations | Press releases, media lists, journalist pitches, crisis communications |
+| instagram-curator | Instagram content strategy and visual planning | Stories/Reels strategy, grid planning, hashtag strategy |
+| tiktok-strategist | TikTok content strategy and trends | Short-form video ideas, trend participation, creator collaboration |
+| twitter-engager | X/Twitter engagement and thought leadership | Threads, real-time engagement, audience growth |
+| reddit-community-builder | Reddit engagement and community growth | Subreddit strategy, authentic participation, community norms |
+| app-store-optimizer | App store listing optimization (ASO) | App descriptions, keyword research, screenshot strategy |
 
-## Product
-
-| Agent | Purpose | When to Use |
-|-------|---------|-------------|
-| sprint-prioritizer | Backlog prioritization and sprint planning | Ordering features by impact, planning sprints, scope management |
-| feedback-synthesizer | User feedback analysis and insight extraction | Aggregating survey data, support tickets, feature requests |
-| trend-researcher | Market and technology trend analysis | Researching competitors, emerging tech, industry benchmarks |
-
-## Marketing
+## Lifecycle & Growth
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| content-creator | Marketing copy, blog posts, and content strategy | Writing landing pages, blog content, email campaigns |
-| growth-hacker | Growth experiments and conversion optimization | A/B test ideas, funnel analysis, user acquisition strategies |
-| app-store-optimizer | App store listing optimization (ASO) | Writing app descriptions, keyword research, screenshot strategy |
-| instagram-curator | Instagram content strategy and visual planning | Post scheduling, hashtag strategy, visual grid planning |
-| reddit-community-builder | Reddit engagement and community growth | Subreddit strategy, authentic engagement, community building |
-| tiktok-strategist | TikTok content strategy and trends | Video content ideas, trending sounds, audience targeting |
-| twitter-engager | Twitter/X engagement and thought leadership | Tweet threads, engagement strategy, audience growth |
+| growth-marketer | Full-funnel growth strategy and experiment design | Growth loops, funnel optimization, channel validation, AARRR analysis |
+| conversion-optimizer | CRO: landing pages, funnel friction, A/B testing | Conversion research, test design, landing page optimization |
+| lifecycle-email | Automated email journeys: onboarding, nurture, winback | Welcome flows, abandonment recovery, trigger-based sequences |
+| retention-specialist | Churn analysis, loyalty, advocacy, community | Cohort retention, loyalty programs, referral/advocacy systems |
 
-## Project Management
+## Analytics & Operations
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| studio-producer | End-to-end project production management | Coordinating multi-phase projects, resource allocation, timelines |
-| project-shipper | Getting projects from 90% to shipped | Final polish, launch checklists, shipping blockers, release prep |
-| experiment-tracker | A/B test and experiment tracking | Logging experiments, tracking results, statistical significance |
+| marketing-analytics-reporter | Campaign metrics, reports, and insight generation | Performance reports, funnel diagnostics, measurement plans |
+| attribution-analyst | Attribution models, UTM governance, incrementality | Channel truth, tracking taxonomy, holdout design, double-counting audits |
+| budget-planner | Marketing budget allocation, pacing, unit economics | Channel-mix budgets, CAC/LTV analysis, spend forecasting (spend gated) |
+| marketing-ops | Martech stack, workflows, data hygiene, automation | Tool evaluation, process design, naming conventions, integrations |
+| brand-compliance-checker | Enforcement of brand-guidelines.json across all output | Voice/claims/visual compliance review, editorial QA verdicts |
 
-## Operations
-
-| Agent | Purpose | When to Use |
-|-------|---------|-------------|
-| analytics-reporter | Metrics dashboards and data reporting | Building analytics views, KPI tracking, report generation |
-| finance-tracker | Financial tracking and budget management | Cost tracking, subscription management, budget forecasting |
-| infrastructure-maintainer | Server and infrastructure maintenance | Monitoring, uptime, dependency updates, security patches |
-| legal-compliance-checker | Legal and regulatory compliance review | Privacy policies, GDPR, terms of service, license compliance |
-| support-responder | Customer support response drafting | Drafting support replies, FAQ creation, escalation handling |
-
-## Documentation
+## Creative Direction
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| docusaurus-expert | Docusaurus documentation site creation | Building docs sites, MDX content, versioned documentation |
+| art-director | Campaign creative concepts, briefs, and visual direction | Creative territories, creative briefs, data visualization, deck design |
+| campaign-producer | End-to-end campaign production management | Multi-channel coordination, timelines, gate scheduling, resource allocation |
+
+## Insights & Planning
+
+| Agent | Purpose | When to Use |
+|-------|---------|-------------|
+| feedback-synthesizer | Customer feedback analysis and insight extraction | Aggregating surveys, reviews, support themes into marketing insight |
+| experiment-tracker | A/B test and campaign experiment tracking | Logging experiments, statistical validity, learning databases |
+| sprint-prioritizer | Campaign cycle planning and initiative prioritization | RICE scoring, cycle planning, scope trade-offs |
+| project-shipper | Launch coordination and go-to-market execution | Launch timelines, go/no-go reviews, launch-week operations |
+
+## Operations & Support
+
+| Agent | Purpose | When to Use |
+|-------|---------|-------------|
+| legal-compliance-checker | Legal and regulatory compliance review | Claims review, privacy/GDPR, FTC disclosure, sweepstakes, regulated topics |
+| support-responder | Customer support response drafting | Support replies, FAQ creation, escalation handling |
 
 ## Meta
 
@@ -114,7 +98,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
 | joker | Comic relief and creative brainstorming | When you need a laugh or creative lateral thinking |
-| studio-coach | Development coaching and mentorship | Code review mentoring, learning paths, skill development |
+| studio-coach | Team coaching and momentum management | Complex multi-agent campaigns, morale, focus under deadline |
 
 ---
 
@@ -123,44 +107,49 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 Agents are invoked through Claude Code's Task tool. They are automatically selected based on task context:
 
 ```
-User: "Help me optimize this component's rendering"
-Claude: [Uses performance-benchmarker agent]
+User: "Plan a launch campaign for our new feature"
+Claude: [Uses campaign-producer + strategy agents]
 
-User: "Convert this Figma design to React"
-Claude: [Uses figma-react-converter agent]
+User: "Write a landing page for this offer"
+Claude: [Uses copywriter agent]
 
-User: "Write tests for the auth hook"
-Claude: [Uses test-writer-fixer agent]
+User: "Why did email performance drop last month?"
+Claude: [Uses marketing-analytics-reporter agent]
 ```
 
 You can also request a specific agent:
 ```
-User: "Use the accessibility-auditor agent to check this page"
+User: "Use the competitive-analyst to tear down competitor X"
 ```
 
 ---
 
 ## Agent + Skill Integration
 
-Agents work alongside the 24 custom skills in `.claude/skills/`:
+Agents work alongside the 13 skills in `.claude/skills/`:
 
 | Agent | Complementary Skill |
 |-------|-------------------|
-| figma-react-converter | figma-to-react-workflow |
-| frontend-developer | react-component-development |
-| test-writer-fixer | react-testing-workflows |
-| performance-benchmarker | react-performance-optimization |
-| accessibility-auditor | react-accessibility |
-| visual-qa-agent | visual-qa-verification |
-| error-boundary-architect | (works with Sentry integration in pipeline.config.json) |
-| migration-specialist | (uses WebSearch for changelog/codemod lookup) |
-| i18n-engineer | (works with frontend-developer for component i18n) |
-| animation-optimizer | animation-motion |
-| bundle-analyzer | react-performance-optimization |
-| canva-react-converter | canva-token-inference |
-| conversation-designer | conversation-intake, design-brief-to-figma |
+| campaign-producer | campaign-brief-intake, parallel-orchestration |
+| brand-compliance-checker | brand-voice-lock, editorial-qa |
+| content-strategist | content-calendar |
+| copywriter | ad-copy-variants, landing-page-copy |
+| seo-specialist / seo-content-writer | seo-keyword-research |
+| email-marketer / lifecycle-email | email-sequence |
+| social-media-manager | social-content-batching |
+| competitive-analyst | competitor-teardown |
+| customer-persona-builder | persona-research |
+| marketing-analytics-reporter | analytics-report |
+| blog-writer | editorial-qa |
+| conversion-optimizer | landing-page-copy |
 
 **Skills Documentation:** `.claude/skills/README.md`
+
+---
+
+## The Approval Gate
+
+Every agent that produces external-facing output (publishing, sending, or spending) operates behind the human approval gate defined in `.claude/pipeline.config.json`. Agents draft, stage, and schedule — humans approve. No agent publishes, sends, or spends autonomously.
 
 ---
 
@@ -168,21 +157,26 @@ Agents work alongside the 24 custom skills in `.claude/skills/`:
 
 | Task | Best Agent |
 |------|-----------|
-| Build a React component | frontend-developer |
-| Convert Figma to React | figma-react-converter |
-| Write unit tests | test-writer-fixer |
-| Optimize bundle size | bundle-analyzer |
-| Optimize animations | animation-optimizer |
-| WCAG compliance audit | accessibility-auditor |
-| Visual regression check | visual-qa-agent |
-| Map exported assets | asset-cataloger |
-| Design a component | ui-designer |
-| Set up CI/CD | devops-automator |
-| API endpoint testing | api-tester |
-| Create documentation site | docusaurus-expert |
-| Add error boundaries | error-boundary-architect |
-| Upgrade React/Next.js | migration-specialist |
-| Add internationalization | i18n-engineer |
-| Convert Canva to React | canva-react-converter |
-| Build an app from a description | conversation-designer (via /build-from-conversation) |
-| Ship a release | project-shipper |
+| Plan a campaign | campaign-producer |
+| Define positioning | positioning-messaging |
+| Research the market | market-researcher |
+| Build personas | customer-persona-builder |
+| Tear down a competitor | competitive-analyst |
+| Write conversion copy | copywriter |
+| Write a blog post | blog-writer |
+| Write SEO content | seo-content-writer |
+| Plan the content calendar | content-strategist |
+| Build an email sequence | lifecycle-email |
+| Send a newsletter | email-marketer |
+| Script a video | video-script-writer |
+| Run paid ads | paid-ads-specialist |
+| Audit SEO | seo-specialist |
+| Pitch press | pr-outreach |
+| Optimize conversions | conversion-optimizer |
+| Reduce churn | retention-specialist |
+| Report performance | marketing-analytics-reporter |
+| Untangle attribution | attribution-analyst |
+| Plan budgets | budget-planner |
+| Check brand compliance | brand-compliance-checker |
+| Direct campaign creative | art-director |
+| Ship a launch | project-shipper |

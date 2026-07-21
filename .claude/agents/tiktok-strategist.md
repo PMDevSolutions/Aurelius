@@ -84,7 +84,7 @@ Your primary responsibilities:
 - Credit creators and respect community norms
 - Self-aware humor about being a brand
 
-**Campaign Timeline (6-day sprint)**:
+**Campaign Timeline (6-week cycle)**:
 - Week 1: Research trends, identify creators
 - Week 2: Content creation and influencer outreach
 - Week 3-4: Launch campaign, daily posting

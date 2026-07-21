@@ -1,10 +1,10 @@
 # Agent Naming Guide
 
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-07-21
 
 ## Naming Convention
 
-All 56 agents use unique, hyphenated names (e.g., `frontend-developer`, `figma-react-converter`). There are no naming conflicts in the current agent set.
+All 42 agents use unique, hyphenated names (e.g., `copywriter`, `brand-compliance-checker`). There are no naming conflicts in the current agent set.
 
 Agent files live in `.claude/agents/` as `<agent-name>.md`.
 
@@ -16,25 +16,25 @@ Claude Code automatically selects agents based on task context. You do not need 
 
 | Your Request | Agent Selected |
 |-------------|---------------|
-| "Build a login form component" | frontend-developer |
-| "Write tests for the useAuth hook" | test-writer-fixer |
-| "Convert this Figma design to React" | figma-react-converter |
-| "Check this page for accessibility" | accessibility-auditor |
-| "Optimize the bundle size" | performance-benchmarker |
-| "Set up the CI pipeline" | devops-automator |
-| "Design the component API" | backend-architect |
+| "Write a landing page for the spring offer" | copywriter |
+| "Why is our CAC rising?" | marketing-analytics-reporter |
+| "Tear down competitor X's pricing page" | competitive-analyst |
+| "Build the welcome email flow" | lifecycle-email |
+| "Plan next quarter's content" | content-strategist |
+| "Check this post against our brand voice" | brand-compliance-checker |
+| "Coordinate the product launch" | project-shipper |
 
 ## Explicit Selection
 
 To force a specific agent, name it in your request:
 
 ```
-User: "Use the visual-qa-agent to compare these screenshots"
-User: "Have the docusaurus-expert set up the docs site"
+User: "Use the positioning-messaging agent to sharpen this value prop"
+User: "Have the pr-outreach agent draft the press release"
 ```
 
 ## Agent Categories
 
-Agents are grouped into 12 categories: Engineering, Design, Design-to-Code, Testing & QA, Product, Marketing, Project Management, Operations, Documentation, Meta, and Bonus.
+Agents are grouped into 10 categories: Strategy & Research, Content, Channel, Lifecycle & Growth, Analytics & Operations, Creative Direction, Insights & Planning, Operations & Support, Meta, and Bonus.
 
 See `.claude/CUSTOM-AGENTS-GUIDE.md` for the full catalog with descriptions.
