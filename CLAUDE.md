@@ -1,223 +1,105 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
 
 ## Project Overview
 
-This is a **Claude Code-integrated multi-framework app development framework** providing specialized agents, skills, scripts, and design-to-code conversion pipelines. Supports React, Vue 3, Svelte/SvelteKit, and React Native (Expo) output targets.
+This is **Maecenas** — a Claude Code-integrated **marketing framework**: a "marketing brain" providing specialized agents, skills, slash commands, and a gated brief-to-publish-ready campaign pipeline. It is the marketing sibling of Aurelius (React), Nerva (backend), and Flavian (WordPress).
 
 The framework is designed for:
-- Multi-framework app development (React/Next.js/Vite/Remix, Vue 3, SvelteKit, React Native/Expo)
-- Figma-to-code, Canva-to-code, Screenshot/URL-to-code, and Conversation-to-code (generated Figma designs) conversion with Tailwind CSS
-- Comprehensive testing (Vitest, React Testing Library, Playwright, Storybook)
-- Full product lifecycle support (engineering, design, testing, marketing, operations)
+- End-to-end campaign development (brief → strategy → calendar → drafts → editorial QA → approval → report)
+- Brand-governed content production across blog, email, social, paid, PR, video, and landing pages
+- Evidence-based strategy work (market research, personas, competitive teardowns, keyword plans)
+- Honest measurement (analytics reports, attribution truth, budget pacing)
+
+---
+
+## Hard Operating Rules (non-negotiable)
+
+These rules bind every agent, skill, and command in this repository:
+
+1. **Never fabricate.** No invented statistics, studies, quotes, testimonials, reviews, or user counts — anywhere, ever. A gap in the data is reported as a gap.
+2. **Cite everything.** Every factual claim carries a source (linked, dated). Claims that cannot be sourced are reworded as opinion or cut. Fact-check findings of `FABRICATED` block an asset unconditionally.
+3. **The human approval gate is absolute.** Nothing is published, sent, scheduled, or spent externally without explicit human sign-off recorded per asset (`pipeline.config.json → humanApproval`). There is no timeout-approve, no default-approve, and no exception for urgency.
+4. **brand-guidelines.json is binding.** The brand lockfile governs voice, lexicon, claims, and visual identity for all output. Violations block at editorial QA; drafting does not start without a lockfile.
+5. **Flag legal/compliance topics.** Anything touching regulated topics (health, finance, legal, employment, housing), named-competitor comparisons, sweepstakes, testimonials/endorsements, or personal data routes through the legal-compliance-checker **before** the approval gate.
+6. **Honest persuasion only.** No dark patterns, fake scarcity, fake urgency, purchased lists, bought engagement, or astroturfing. Consent governs every send.
 
 ## Project Structure
 
 ```
 project-root/
 ├── .claude/              # Claude Code configuration
-│   ├── agents/           # 56 specialized agents
-│   ├── skills/           # 24 React-specific skills
-│   ├── commands/         # Custom slash commands
-│   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
-│   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
-├── scripts/              # Development automation scripts
-├── packages/             # TypeScript pipeline packages (pnpm workspace)
-│   └── pipeline/         # Design-to-code core: InDesign IDML parser + IR (@aurelius/pipeline)
-├── renderers/            # Pluggable framework renderer manifests (renderer.json + schema)
-├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
+│   ├── agents/           # 42 specialized marketing agents
+│   ├── skills/           # 13 marketing skills
+│   ├── commands/         # Slash commands (/build-campaign, /write-content, …)
+│   ├── hooks/            # 3 hook scripts (configured in settings.json)
+│   └── pipeline.config.json  # Gates, thresholds, asset types, approval scope
+├── scripts/              # Marketing utilities + framework verification
+├── templates/            # Starter artifacts (brand lockfile, brief, calendar, …)
+├── content/              # Produced assets (blog/, email/, social/, press/, …)
+├── brand-guidelines.json # THE brand lockfile (created by /setup-brand)
+├── content-calendar.json # Validated production schedule
 ├── docs/                 # Documentation
-│   ├── figma-to-react/   # Figma conversion pipeline docs
-│   ├── canva-to-react/   # Canva conversion pipeline docs
-│   ├── screenshot-to-app/ # Screenshot/URL conversion pipeline docs
-│   ├── conversation-to-app/ # Conversation pipeline docs (generated Figma designs)
-│   ├── indesign-to-react/ # InDesign IDML conversion pipeline docs
-│   ├── multi-framework/  # Multi-framework output target docs
-│   └── react-development/# React development standards
+│   ├── onboarding/       # Quickstart, architecture, configuration
+│   ├── campaign-pipeline/# The flagship pipeline guide
+│   ├── brand-setup/      # Brand lockfile guide (+ generated brand-voice.md)
+│   └── marketing-standards/ # Voice, claims, SEO, email, social standards
 └── CLAUDE.md             # This file
 ```
 
-## Development Scripts
+## Marketing Scripts
 
 ```bash
-# Lint and format code
-./scripts/lint-and-format.sh
+# Brand-voice enforcement against brand-guidelines.json
+node scripts/brand-voice-lint.js content/ [--json]
+node scripts/brand-voice-lint.js --self-test     # validate the lockfile itself
 
-# Run tests with coverage
-./scripts/run-tests.sh
+# Readability vs per-asset-type targets (pipeline.config.json → readability)
+node scripts/readability-score.js content/ [--check] [--type blog-post] [--json]
 
-# Run mutation tests (Stryker)
-./scripts/run-mutation-tests.sh                    # Run with default threshold
-./scripts/run-mutation-tests.sh --threshold 80     # Override threshold
-./scripts/run-mutation-tests.sh --json             # JSON output
+# On-page SEO checks (title/meta/keyword/headings/links/sources)
+node scripts/seo-check.js content/ [--json]
 
-# TypeScript type checking
-./scripts/check-types.sh
+# Content calendar validation (dates, lead times, dependencies, cadence caps)
+node scripts/validate-content-calendar.js [--file path] [--json]
 
-# Bundle size analysis
-./scripts/check-bundle-size.sh
-
-# Accessibility linting
-./scripts/check-accessibility.sh
-
-# Verify design token usage (no hardcoded values)
-./scripts/verify-tokens.sh
-
-# Verify every component has a test file
-./scripts/verify-test-coverage.sh
-
-# Pixel-level visual diff with sub-pixel, typography, and layout analysis
-node scripts/visual-diff.js <actual.png> <expected.png> [--threshold 0.02] [--json]
-node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir diffs/]
-
-# Initialize a new React project
-./scripts/setup-project.sh my-app --next  # or --vite
-
-# Cross-browser testing (Playwright, ad-hoc capture only)
-./scripts/cross-browser-test.sh chromium http://localhost:3000
-./scripts/cross-browser-test.sh firefox http://localhost:3000
-./scripts/cross-browser-test.sh webkit http://localhost:3000
-
-# Cross-browser baselines: pinned-container capture, provenance-verified compare (RFC 0002)
-./scripts/cross-browser-baseline.sh capture http://localhost:3000 [--local] [--dry-run]
-./scripts/cross-browser-baseline.sh compare http://localhost:3000 [--json] [--blocking]
-./scripts/cross-browser-baseline.sh verify [--json]
-
-# Route large baseline sets through Git LFS (visualBaselines.storage = "lfs")
-./scripts/setup-baseline-lfs.sh [--dry-run] [--force]
-
-# Setup Playwright browsers (one-time)
-./scripts/setup-playwright.sh
-
-# Dark mode visual verification
-./scripts/check-dark-mode.sh http://localhost:3000
-
-# Storybook story + MDX generation (AST-based)
-./scripts/generate-stories.sh                      # Generate stories + MDX for all components
-./scripts/generate-stories.sh --force              # Overwrite existing stories
-./scripts/generate-stories.sh --dry-run            # Report without writing
-./scripts/generate-stories.sh --no-mdx             # Skip MDX documentation
-./scripts/generate-stories.sh --json               # JSON output
-
-# Token drift detection
-./scripts/sync-tokens.sh [--dry-run] [--json]
-
-# Component documentation generation
-./scripts/generate-component-docs.sh
-
-# Dead code detection (unused exports, files, dependencies)
-./scripts/check-dead-code.sh [--json]
-
-# Security audit (dependency vulnerabilities + anti-patterns)
-./scripts/check-security.sh [--json] [--level critical] [--no-fail]
-
-# Generate typed API client from OpenAPI spec
-./scripts/generate-api-client.sh --spec <path-or-url> [--output dir] [--client]
-
-# Responsive screenshots at all breakpoints
-./scripts/check-responsive.sh [url] [output-dir]
-
-# Cross-browser CSS audit
-./scripts/audit-cross-browser-css.sh [--json]
-
-# Capture baseline screenshots for visual regression
-./scripts/capture-baselines.sh [url] [--routes /,/about]
-
-# Run visual regression tests against baselines
-./scripts/regression-test.sh [url] [--update-baselines] [--json]
+# Run every local quality check with a summary
+./scripts/verify-all.sh                # human-readable
+./scripts/verify-all.sh --ci           # JSON output, non-zero exit on failure
 
 # Validate pipeline.config.json against its JSON Schema
-./scripts/validate-pipeline-config.sh                # Validate live config
-./scripts/validate-pipeline-config.sh --json         # Machine-readable output
-node scripts/validate-pipeline-config.js --config <path> --schema <path>
+./scripts/validate-pipeline-config.sh
+node scripts/validate-pipeline-config.js --json
 
-# Export generated components as a publishable design-system workspace
-./scripts/export-design-system.sh [--scope @org] [--output dir] [--framework <react|vue|svelte|react-native>] [--dry-run] [--json]
-
-# Re-import: reconstruct design-tokens.lock.json from an export (inverse of export; round-trip / consumer)
-./scripts/import-design-tokens.sh [--from dir|tokens.json] [--out path|-] [--verify lockfile] [--force] [--json]
-
-# Renderer registry: list / resolve / detect framework renderers (see docs/multi-framework/renderers.md)
-node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
-node scripts/validate-renderer.js --dir <renderer-dir>     # or --all [--renderers-root <dir>]
+# Flag drift between documented agent/skill counts and disk
+./scripts/check-doc-counts.sh [--json]
 
 # Author / validate / install / test custom agents as versioned plugins
 node scripts/create-agent-plugin.js <name> [--description ...] [--model ...] [--tools ...] [--with-hooks]
-node scripts/validate-agent-plugin.js --dir <plugin-dir>   # or --all [--plugins-root <dir>]
+node scripts/validate-agent-plugin.js --dir <plugin-dir>   # or --all
 node scripts/agent-registry.js (list | resolve <name> | install <name> | uninstall <name>)
-node scripts/test-agent-plugin.js --dir <plugin-dir>       # or --all [--plugins-root <dir>]
-
-# Incremental build with caching and profiling
-./scripts/incremental-build.sh [phase|all] [--force] [--parallel]
-
-# Pipeline cache management
-node scripts/pipeline-cache.js status               # Show cache status
-node scripts/pipeline-cache.js check <phase>        # Check cache validity
-node scripts/pipeline-cache.js invalidate <phase>   # Invalidate cache
-
-# Stage profiling and performance analysis
-node scripts/stage-profiler.js report               # Generate performance report
-node scripts/stage-profiler.js analyze              # Analyze slow stages
-node scripts/stage-profiler.js history              # View build history
-
-# Build performance dashboard
-node scripts/metrics-dashboard.js generate          # Generate HTML dashboard
-node scripts/metrics-dashboard.js summary           # Show metrics summary
-node scripts/metrics-dashboard.js trends            # Show performance trends
+node scripts/test-agent-plugin.js --dir <plugin-dir>       # or --all
 ```
 
 ## Development Commands
 
-### Package Management (always use pnpm)
 ```bash
-pnpm install              # Install dependencies
-pnpm add <package>        # Add a dependency
-pnpm add -D <package>     # Add a dev dependency
-pnpm update               # Update dependencies
-```
-
-### Development Server
-```bash
-# Next.js
-pnpm dev                  # Start dev server (port 3000)
-pnpm build                # Production build
-pnpm start                # Start production server
-
-# Vite
-pnpm dev                  # Start dev server (port 5173)
-pnpm build                # Production build
-pnpm preview              # Preview production build
-```
-
-### Testing
-```bash
-pnpm vitest               # Run tests in watch mode
-pnpm vitest run           # Run tests once
-pnpm vitest run --coverage # Run with coverage report
-pnpm storybook            # Start Storybook dev server
-pnpm build-storybook      # Build Storybook static site
-```
-
-### Code Quality
-```bash
-pnpm eslint .             # Run ESLint
-pnpm eslint . --fix       # Auto-fix ESLint issues
-pnpm prettier --check .   # Check formatting
-pnpm prettier --write .   # Fix formatting
-pnpm tsc --noEmit         # Type check without emitting
+pnpm install              # Install dependencies (always use pnpm)
+pnpm test                 # Vitest suite for scripts/
+pnpm verify               # = ./scripts/verify-all.sh
 ```
 
 ---
 
 ## Claude Code Architecture & Configuration
 
-### Installed Plugins (5 Total)
+### Installed Plugins (4 Total)
 
-- **episodic-memory** - Conversation search and memory
-- **commit-commands** - Git workflow automation
-- **superpowers** - Advanced development workflows
-- **ai-taskmaster** - Task management (local)
+- **episodic-memory** — Conversation search and memory
+- **commit-commands** — Git workflow automation
+- **superpowers** — Advanced development workflows
+- **ai-taskmaster** — Task management (local)
 
 **Note:** GitHub integration via `gh` CLI
 
@@ -225,390 +107,230 @@ pnpm tsc --noEmit         # Type check without emitting
 
 ---
 
-### Custom Agents (56 Total)
+### Custom Agents (42 Total)
 
-56 specialized agents covering the full product lifecycle:
+42 specialized agents covering the full marketing lifecycle:
 
 | Category | Count | Key Agents |
 |----------|-------|------------|
-| Engineering | 12 | frontend-developer, backend-architect, rapid-prototyper, test-writer-fixer, error-boundary-architect, migration-specialist, i18n-engineer, animation-optimizer, bundle-analyzer |
-| Design | 5 | ui-designer, ux-researcher, brand-guardian |
-| Design-to-Code | 9 | figma-react-converter, canva-react-converter, astro-converter, asset-cataloger, vue-converter, svelte-converter, react-native-converter, conversation-designer, indesign-to-react |
-| Testing & QA | 7 | visual-qa-agent, accessibility-auditor, api-tester, performance-benchmarker |
-| Product | 3 | sprint-prioritizer, feedback-synthesizer, trend-researcher |
-| Marketing | 7 | content-creator, growth-hacker, app-store-optimizer |
-| Project Management | 3 | studio-producer, project-shipper, experiment-tracker |
-| Operations | 5 | analytics-reporter, infrastructure-maintainer, legal-compliance-checker |
-| Documentation | 1 | docusaurus-expert |
+| Strategy & Research | 5 | brand-strategist, positioning-messaging, market-researcher, competitive-analyst, customer-persona-builder |
+| Content | 7 | content-strategist, copywriter, blog-writer, seo-content-writer, email-marketer, video-script-writer, content-creator |
+| Channel | 9 | social-media-manager, paid-ads-specialist, seo-specialist, pr-outreach, instagram-curator, tiktok-strategist, twitter-engager, reddit-community-builder, app-store-optimizer |
+| Lifecycle & Growth | 4 | growth-marketer, conversion-optimizer, lifecycle-email, retention-specialist |
+| Analytics & Operations | 5 | marketing-analytics-reporter, attribution-analyst, budget-planner, marketing-ops, brand-compliance-checker |
+| Creative Direction | 2 | art-director, campaign-producer |
+| Insights & Planning | 4 | feedback-synthesizer, experiment-tracker, sprint-prioritizer, project-shipper |
+| Operations & Support | 2 | legal-compliance-checker, support-responder |
 | Meta | 2 | agent-expert, command-expert |
 | Bonus | 2 | joker, studio-coach |
 
-Agents are invoked automatically based on task context.
+Agents are invoked automatically based on task context. Every agent that produces external-facing output operates behind the human approval gate.
 
 **Full catalog:** `.claude/CUSTOM-AGENTS-GUIDE.md`
 
 ---
 
-### Skills (24 Total)
+### Skills (13 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
-| figma-to-react-workflow | Figma-to-React pipeline (v3: enforced TDD, pixel-diff, E2E) | "convert Figma", "Figma to React" |
-| figma-intake | Structured interview → build-spec.json (with appType) | Phase 1 of /build-from-figma |
-| design-token-lock | Extract + lock Figma values → lockfile | Phase 2 of /build-from-figma |
-| tdd-from-figma | Write tests FIRST, app-type-aware (Chrome ext, PWA) | Phase 3 of /build-from-figma |
-| e2e-test-generator | Generate Playwright E2E from build-spec (new) | Phase 6 of /build-from-figma |
-| storybook-story-generation | Auto-generate Storybook stories + MDX from components (AST-based, non-blocking) | Phase 4.5 of /build-from-figma, "generate stories" |
-| react-component-development | Component patterns and best practices | "create component", "custom hook" |
-| react-testing-workflows | Vitest, RTL, Playwright, Storybook | "write tests", "test coverage" |
-| react-performance-optimization | Profiling, bundle analysis, Web Vitals | "performance", "bundle size" |
-| react-accessibility | WCAG patterns for React | "accessibility", "a11y", "ARIA" |
-| visual-qa-verification | Automated pixel-diff visual QA (v3: pixelmatch loop) | "verify", "visual QA", "compare to Figma" |
-| canva-intake | Canva design discovery → build-spec.json (with appType) | Phase 1 of /build-from-canva |
-| canva-token-inference | AI-powered token extraction from Canva/screenshot sources | Phase 2 of /build-from-canva and /build-from-screenshot |
-| screenshot-intake | URL/screenshot discovery → build-spec.json (with outputTarget) | "build from screenshot", "clone this site" |
-| conversation-intake | Conversational interview → build-spec.json + design-brief.json (no design file) | Phase C0 of /build-from-conversation |
-| design-brief-to-figma | Generates a real Figma file from design-brief.json via HTML-mockup capture | Phase C1 of /build-from-conversation |
-| state-management | State architecture: Zustand, TanStack Query, URL state | "state management", "zustand", "data fetching" |
-| form-handling | React Hook Form + Zod: typed forms, field arrays, wizards | "form", "validation", "react hook form" |
-| auth-flows | Auth.js, Clerk, Supabase Auth, RBAC, protected routes | "auth", "login", "session", "OAuth" |
-| animation-motion | Framer Motion, CSS transitions, reduced-motion a11y | "animation", "framer motion", "transition" |
-| seo-metadata | Next.js Metadata API, JSON-LD, OG images, sitemaps | "SEO", "metadata", "open graph" |
-| parallel-orchestration | Concurrent phase runner for pipeline parallelization | Invoked by pipeline commands after Phase 3 |
-| export-design-system | Exports components + tokens as a publishable pnpm workspace (Vite lib mode for web, tsc for RN) | Invoked by `/export-design-system` |
+| campaign-brief-intake | Structured interview → campaign-brief.json | Phase 1 of /build-campaign |
+| brand-voice-lock | Extract + lock brand rules → brand-guidelines.json lockfile | Phase 2 of /build-campaign, /setup-brand |
+| content-calendar | Dated, validated production schedule → content-calendar.json | Phase 4, /plan-content-calendar |
+| editorial-qa | Brand voice + readability + fact-check loop (max 5 revisions) | Phase 6, /write-content, "review this content" |
+| parallel-orchestration | Concurrent phase runner with per-asset lanes | Invoked by /build-campaign after the strategy gate |
+| seo-keyword-research | Intent-classified keyword plan → keyword-plan.json | "keyword research", SEO-led campaigns |
+| competitor-teardown | Sourced, dated teardown reports | /competitor-teardown, "analyze competitor" |
+| persona-research | Evidence-labeled personas + verbatim bank | "build personas", missing personas at brief time |
+| email-sequence | Sequence spec + drafts, staged OFF pending approval | /build-email-sequence, "welcome flow" |
+| social-content-batching | One idea → platform-native post batch | "social batch", "repurpose this post" |
+| ad-copy-variants | One-variable test matrices with hypotheses | "ad variants", paid components |
+| analytics-report | Standardized reports; gaps reported, never filled | /analyze-performance, Phase 9 |
+| landing-page-copy | Full-page conversion copy with message match | "landing page", CRO variants |
 
 **Full catalog:** `.claude/skills/README.md`
 
 ---
 
-### Figma-to-React Pipeline
+### The Campaign Pipeline
 
-**Single command:** `/build-from-figma <Figma URL>`
+**Single command:** `/build-campaign <goal or brief path>`
 
-Autonomous 9-phase pipeline that converts a Figma design into a working, tested React app:
+Autonomous 9-phase pipeline that turns a campaign goal into publish-ready, approved assets:
 
 ```
-/build-from-figma https://figma.com/file/abc123
+/build-campaign launch the new analytics feature
 
-  [0] TOKEN SYNC    → sync-tokens.sh → drift check (conditional, if lockfile exists)
-  [1] INTAKE        → figma-intake skill → build-spec.json (with appType)
-  [2] TOKEN LOCK    → design-token-lock skill → design-tokens.lock.json
-  [3] TDD (HARD GATE) → tdd-from-figma skill → failing tests (Red)
-  ─── PARALLEL ORCHESTRATION (phases 4-9, max 3 concurrent) ───
-  [4] BUILD         → figma-to-react-workflow → components pass tests (Green)
-      ├─ [4.5] STORYBOOK   → generate-stories.sh (non-blocking)
-      ├─ [5]   VISUAL DIFF  → pixelmatch loop → max 5 iterations
-      │   └─ [6] E2E TESTS  → e2e-test-generator skill
-      ├─ [5.5] DARK MODE   → check-dark-mode.sh (non-blocking)
-      ├─ [7]   CROSS-BROWSER → cross-browser-baseline.sh compare (non-blocking)
-      ├─ [7.5] REGRESSION  → regression-test.sh (non-blocking)
-      ├─ [8]   QUALITY GATE → [coverage|types|build|tokens|lighthouse] in parallel
-      └─ [8.5] RESPONSIVE  → check-responsive.sh (non-blocking)
-  [9] REPORT        → build-report.md (after quality-gate + e2e complete)
+  [0] BRAND SYNC     → brand-voice-lint drift check (conditional, if lockfile exists)
+  [1] BRIEF INTAKE   → campaign-brief-intake skill → campaign-brief.json
+  [2] BRAND VOICE LOCK (HARD GATE) → brand-guidelines.json — no lockfile, no drafting
+  [3] STRATEGY GATE  (HUMAN) → objective, audience, channels, budget approved
+  ─── PARALLEL ORCHESTRATION (phases 4-9, per-asset lanes, max 3 concurrent) ───
+  [4] CALENDAR       → content-calendar.json (validated)
+  [5] DRAFTS         → channel specialists draft per asset plan
+  [6] EDITORIAL QA   → brand voice + readability + fact-check loop → max 5 revisions
+  [7] CHANNEL CHECKS → seo-check / platform limits (non-blocking)
+  [8] APPROVAL GATE  (HUMAN, NON-NEGOTIABLE) → per-asset sign-off;
+      nothing publishes, sends, schedules, or spends without it
+  [9] REPORT         → campaign-report.md + measurement plan
 ```
 
 **Key artifacts:**
-- `design-tokens.lock.json` — Single source of truth for all design values
-- `build-spec.json` — Machine-readable build plan with appType, outputTarget (`"react" | "vue" | "svelte" | "react-native"`), and E2E flows
-- `pipeline.config.json` — Thresholds, iteration limits, app-type definitions
-- `verify-tokens.sh` — Catches hardcoded values and token drift
-- `verify-test-coverage.sh` — Ensures every component has tests
-- `visual-diff.js` — Pixel-level screenshot comparison with region analysis
-- `.claude/visual-qa/baselines/manifest.json` — Cross-browser baseline provenance (engine, Playwright version, pinned image, sha256, host — RFC 0002)
-- `sync-tokens.sh` — Detects token drift between lockfile and source
-- `check-dark-mode.sh` — Dark mode screenshot capture and visual comparison
-- `generate-stories.sh` — AST-based Storybook story + MDX generation with prop controls, variants, and action args
-- `generate-component-docs.sh` — Generates MDX component documentation
+- `brand-guidelines.json` — Single source of truth for voice, tone, lexicon, claims policy, visual identity
+- `campaign-brief.json` — Machine-readable campaign plan with objective, audience, asset plan, and approvals record
+- `content-calendar.json` — Validated schedule with QA/approval lead times
+- `pipeline.config.json` — Gates, thresholds, asset-type definitions, approval scope
+- `.claude/campaigns/<slug>/` — approval-package.md, editorial-qa-report.md, campaign-report.md
 
 **Features:**
-- **Enforced TDD** — tests must exist before components, hard gate blocks build phase
-- **Pixel-perfect visual diff** — `pixelmatch`-based comparison (not manual), up to 5 iterations
-- **App-type awareness** — Chrome extensions, PWAs, React Native, and web apps get tailored E2E strategies
-- **Chrome extension E2E** — Playwright persistent context with `--load-extension`
-- Design token extraction with lockfile enforcement
-- Cross-browser verification (Firefox, WebKit) — committed per-engine baselines diffed at the 0.03 cross-engine threshold, with pinned-container capture and per-baseline provenance (RFC 0002; backends: commit | ci-artifact | service)
-- Quality gate: 80%+ coverage, TypeScript, Lighthouse audit
-- Resumable: TodoWrite tracks progress across interrupted sessions
-- **Dark mode verification** — automated dark theme screenshot comparison (non-blocking)
-- **Storybook generation** — auto-generated stories with responsive viewports
-- **Token sync** — detects drift between Figma lockfile and source code
-- **Component docs** — auto-generated MDX documentation with props, tokens, and links
-- **Automated hooks** — pre-commit token guard, coverage warnings, dark mode reminders, Lighthouse CI, bundle size guard, mutation testing
-- **Responsive verification** — automated screenshots at 5 breakpoints (320-1920px)
-- **Error monitoring** — Sentry integration configured via pipeline.config.json
-- **Deploy previews** — Vercel auto-deploy with visual QA on PRs
-- **Parallel orchestration** — concurrent phase execution with dependency graph, resource tagging, and configurable concurrency pool
+- **Enforced brand lock** — the lockfile gates drafting the way TDD once gated builds
+- **Bounded editorial QA loop** — mechanical lint + readability + human-standard fact-check, max 5 iterations, then escalation (never silent shipping)
+- **Asset-type awareness** — blog posts, emails, sequences, social batches, ad campaigns, landing pages, press releases, and video scripts each get tailored QA checks and approval scopes
+- **Mandatory human approval** — the analog of the old TDD gate, applied to everything external
+- **Parallel orchestration** — per-asset lanes with a hard barrier at the approval gate
+- **Resumable** — TodoWrite tracks phase progress across interrupted sessions
 
-**Documentation:** `docs/figma-to-react/README.md`
-
----
-
-### Canva-to-React Pipeline
-
-**Single command:** `/build-from-canva <Canva URL>`
-
-Same 12-phase pipeline as Figma with Canva-specific phases 1, 2, and 4:
-
-- **Phase 1:** canva-intake (vision-based discovery via Canva AI Connector MCP)
-- **Phase 2:** canva-token-inference (AI extraction with confidence scoring + user confirmation)
-- **Phase 4:** canva-react-converter agent (builds components from screenshots)
-- **Phases 3, 5-9:** shared (identical to Figma pipeline)
-
-**Documentation:** `docs/canva-to-react/README.md`
-
----
-
-### Screenshot/URL-to-App Pipeline
-
-**Single command:** `/build-from-screenshot <URL or image paths>`
-
-Same 12-phase pipeline as Figma/Canva with screenshot-specific Phase 1:
-
-- **Phase 1:** screenshot-intake (captures URL or reads provided images, vision-based discovery)
-- **Phase 2:** canva-token-inference (shared, accepts screenshot source)
-- **Phase 4:** framework-specific converter agent dispatched by `outputTarget` (vue-converter, svelte-converter, react-native-converter, or figma-react-converter)
-- **Phases 3, 5-9:** shared (identical to Figma/Canva pipeline)
-
-Supports all output targets: React, Vue 3, Svelte/SvelteKit, React Native (Expo).
-
-**Documentation:** `docs/screenshot-to-app/README.md`
-
----
-
-### Conversation-to-App Pipeline
-
-**Single command:** `/build-from-conversation [optional description]`
-
-"Talk to build" — no pre-existing design file required. Two new phases generate a real Figma design from a structured conversation, then hand off to the unchanged `/build-from-figma` pipeline:
-
-- **Phase C0:** conversation-intake (max-7-question interview + conversation-designer agent → `build-spec.json` with `"source": "conversation"` + `design-brief.json`)
-- **Phase C1:** design-brief-to-figma (per-page HTML mockups → new Figma file via `create_new_file` + `generate_figma_design` capture → node IDs mapped into the build spec)
-- **Handoff:** `/build-from-figma <generated URL>` runs phases 0-9 as usual; figma-intake fast-paths on the conversation-sourced build spec (no second interview), and design-token-lock falls back to computed styles (generated files carry no Figma variables)
-
-**Key artifacts:**
-- `design-brief.json` — Style direction, color/typography/layout decisions, and natural-language component descriptions
-- `.claude/design-mockups/*.html` — Per-page mockups captured into Figma (kept for cheap re-capture)
-- `pipeline.config.json` → `conversation` — Interview cap, mockup server, capture polling, review gate, retry policy
-
-**Documentation:** `docs/conversation-to-app/README.md`
-
----
-
-### Multi-Framework Output
-
-The `outputTarget` field in `build-spec.json` controls which framework the pipeline generates code for:
-
-| Target | Value | Converter Agent | Test Library | Template |
-|--------|-------|----------------|-------------|----------|
-| React | `"react"` | figma-react-converter / canva-react-converter | Vitest + RTL | `templates/nextjs/` or `templates/vite/` |
-| Vue 3 | `"vue"` | vue-converter | Vitest + @vue/test-utils | `templates/vue/` |
-| Svelte | `"svelte"` | svelte-converter | Vitest + @testing-library/svelte | `templates/sveltekit/` |
-| React Native | `"react-native"` | react-native-converter | Jest + @testing-library/react-native | `templates/expo/` |
-
-Framework auto-detection: if `outputTarget` is not specified, the pipeline detects the framework from `package.json` dependencies and config files (e.g., `next.config.*`, `svelte.config.*`, `app.json`).
-
-**Documentation:** `docs/multi-framework/README.md`
+**Documentation:** `docs/campaign-pipeline/README.md`
 
 ---
 
 ### MCP Server Integration
 
-- **Figma Desktop MCP** - Local Figma integration (port 3845)
-- **Figma Remote MCP** - Fallback remote access
-- **Playwright MCP** - Cross-browser testing (Chromium, Firefox, WebKit)
-- **Chrome DevTools MCP** - Screenshots, Lighthouse audits, DOM inspection
-- **Canva AI Connector** - Search, export, and interact with Canva designs
-- **Sentry** - Error monitoring (configured via pipeline.config.json, setup by error-boundary-architect agent)
+- **Canva AI Connector** — Creative production: brand templates, asset generation, exports (used by art-director and social batching)
+- Optional connectors (Gmail, Notion, Google Drive, Google Calendar) can support distribution and planning — always behind the approval gate; none are required.
+
+The Figma/Playwright/Chrome-DevTools servers used by the Aurelius ancestor are **not** required by this framework.
 
 ---
 
 ### Parallel Orchestration
 
 Pipeline phases 4-9 run concurrently via the `parallel-orchestration` skill:
-- **Dependency graph** defined in `pipeline.config.json` → `orchestration.phases`
-- **Concurrency pool** with configurable `maxConcurrent` (default: 3)
-- **Resource tagging** prevents write conflicts between phases
-- **Streaming results** report each phase as it completes
-- **Batch summary** with wall time, speedup factor, and execution timeline
+- **Dependency graph** defined in `pipeline.config.json → orchestration.phases`
+- **Per-asset lanes**: each asset flows draft → QA → channel-check independently
+- **Hard barrier** at the approval gate — no lane overtakes it
+- **Resource tagging** prevents write conflicts (calendar and brief writes serialize)
+- **Streaming results** with a batch summary and speedup factor
 - **Fallback** to sequential execution when `orchestration.enabled` is `false`
-
-Quality gate subtasks (coverage, typecheck, build, token-verify, lighthouse) also run in parallel.
 
 ---
 
-### Automated Hooks (8 Total)
+### Automated Hooks (3 Total)
 
 Each hook is a standalone script under `.claude/hooks/`, registered in `.claude/settings.json` as a `PostToolUse` hook on the `Bash` matcher. Hooks receive `$TOOL_INPUT` and `$TOOL_OUTPUT` as positional args, follow a defensive skeleton (`set -u`, `trap 'exit 0' ERR`, always `exit 0`), and are testable in isolation. See [docs/guides/hooks.md](docs/guides/hooks.md) for the full guide.
 
 | Script | Trigger | Action |
 |--------|---------|--------|
-| `post-build-qa.sh` | `pnpm build` succeeds | Reminds to run quality gate (vitest, tsc, verify-tokens) |
-| `pre-commit-token-guard.sh` | `git commit` detected | Runs `verify-tokens.sh`, warns if violations found |
-| `dark-mode-reminder.sh` | `visual-diff.js` passes | Suggests running `check-dark-mode.sh` |
-| `coverage-check.sh` | `vitest` with coverage output | Reminds to check threshold from pipeline config |
-| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit with threshold targets from config |
-| `bundle-size-guard.sh` | `git commit` detected | Warns if build output exceeds maxSizeKb from config |
-| `mutation-test-reminder.sh` | `vitest` all tests pass | Suggests running Stryker for test quality validation |
-| `regression-reminder.sh` | `pnpm build` succeeds | Suggests running `./scripts/regression-test.sh` if baselines exist |
+| `pre-commit-brand-guard.sh` | `git commit` detected | Lints staged content/ files against brand-guidelines.json, warns on violations |
+| `editorial-qa-reminder.sh` | Clean brand-voice-lint run | Reminds that readability + fact-check/SEO complete the QA trio |
+| `approval-gate-guard.sh` | Publish/send/spend-shaped commands | Warns that human approval must be on record before external actions |
 
 ---
 
-## React Development Standards
+## Marketing Standards
 
-### TypeScript
-- Strict mode enabled
-- No `any` types - use proper interfaces and generics
-- Export prop interfaces alongside components
-- Use discriminated unions for complex prop patterns
+### Brand Voice
+- `brand-guidelines.json` is the single source of truth — never hardcode voice decisions that contradict it
+- Banned words are hard blocks; preferred-term mappings are warnings
+- Update the lockfile deliberately (versioned, with rationale) — never silently
 
-### Component Patterns
-- Functional components only (no class components)
-- Custom hooks for reusable logic
-- Composition over inheritance
-- Props interface for every component
-- `children` and `className` passthrough where appropriate
+### Claims & Citations
+- Statistics: linked, dated source or they don't ship
+- Superlatives ("best", "#1", "guaranteed"): substantiation on file or reworded
+- Testimonials: real, permissioned, documented — always
+- Comparative claims: current, accurate, fair; named competitors trigger legal review
 
-### Tailwind CSS
-- Utility-first styling
-- Design tokens via Tailwind config (not hardcoded values)
-- Responsive with mobile-first breakpoints (sm, md, lg, xl, 2xl)
-- Use `cn()` utility for conditional classes (clsx + tailwind-merge)
+### Readability (Flesch Reading Ease targets)
+- Blog ≥ 60 · Email ≥ 65 · Landing pages ≥ 65 · Social ≥ 70 · Ads ≥ 75 · Press ≥ 55
+- Targets live in `pipeline.config.json → readability.targets`; checked by `readability-score.js`
 
-### Testing Strategy
-- **Unit tests** (Vitest): Pure functions, custom hooks, utilities
-- **Component tests** (RTL): User interactions, rendering, accessibility
-- **Visual tests** (Storybook): Component states, responsive variants
-- **E2E tests** (Playwright): Critical user flows, cross-browser
+### SEO
+- One intent, one page; SERP-verified intent before drafting
+- Title ≤ 60 chars, meta ≤ 155, keyword in title + H1, ≥ 2 internal links, ≥ 1 cited source
+- White-hat only — rankings earned by being the best answer
 
-### Accessibility
-- WCAG 2.1 AA minimum
-- Semantic HTML (landmarks, headings hierarchy)
-- ARIA attributes on interactive elements
-- Keyboard navigation support
-- Color contrast 4.5:1 minimum
+### Email Compliance
+- Consent-based sending only; no purchased or scraped lists, ever
+- Every send: working unsubscribe, physical address, accurate sender identity
+- GDPR/CASL contexts route through legal-compliance-checker before the gate
 
-### Code Quality
-- ESLint with React, TypeScript, and jsx-a11y plugins
-- Prettier for formatting
-- 2-space indentation (JS/TS/CSS/JSON)
+### Approvals
+- `publish`, `send`, `spend`, `schedule` all require explicit human approval per asset
+- Spend requests state amount, duration, expected outcome, and kill criteria
+- Approvals and waivers are logged in the campaign's approval package
 
 ---
 
 ### Development Workflow with Claude Code
 
-**1. Feature Development**
+**1. First-time setup**
 ```bash
-# Start feature branch
-git checkout -b feature/hero-component
-
-# Develop with Claude Code
-# - frontend-developer agent for React work
-# - test-writer-fixer agent for tests
-# - ui-designer agent for design decisions
-
-# Commit with structure
-/commit
+/setup-brand              # create brand-guidelines.json — required before drafting
 ```
 
-**2. Code Quality**
-```bash
-./scripts/lint-and-format.sh
-./scripts/check-types.sh
-./scripts/run-tests.sh
-./scripts/check-accessibility.sh
+**2. Run a campaign**
+```
+User: "/build-campaign launch our new reporting feature"
+Claude: [9-phase pipeline: brief → lockfile → strategy gate → calendar →
+         drafts → editorial QA → approval gate → report]
 ```
 
-**3. Figma-to-React Conversion**
+**3. Single assets**
 ```
-User: "Convert this Figma design to React components"
-      [Provide Figma URL]
-
-Claude: [Uses figma-react-converter agent]
-        → Extracts design tokens
-        → Generates Tailwind config + React components
-        → Runs visual QA verification
+User: "/write-content blog-post why attribution models disagree"
+Claude: [mini-brief → blog-writer draft → editorial QA loop → QA evidence + approval note]
 ```
 
 **4. Using Custom Agents**
 ```
-User: "Help me optimize app performance"
-Claude: [Uses performance-benchmarker agent]
-
-User: "Build a hero component"
-Claude: [Uses frontend-developer agent]
-
-User: "Write tests for my auth hook"
-Claude: [Uses test-writer-fixer agent]
+User: "Why did CAC rise last month?"       → marketing-analytics-reporter
+User: "Tear down competitor X"             → competitive-analyst (+ /competitor-teardown)
+User: "Sharpen this value proposition"     → positioning-messaging
+User: "Build the winback flow"             → lifecycle-email (+ /build-email-sequence)
 ```
 
 ---
 
 ### Quick Command Reference
 
-**Design-to-Code Pipelines:**
+**Campaign & Content Pipelines:**
 ```bash
-/build-from-figma <URL>       # Full autonomous Figma pipeline
-/build-from-canva <URL>       # Full autonomous Canva pipeline
-/build-from-screenshot <URL or paths>  # Full autonomous screenshot pipeline
-/build-from-conversation [description] # Conversational pipeline: interview → generated Figma → build
-/export-design-system [flags] # Export components + tokens as publishable pnpm workspace
-aurelius pipeline indesign <input> [--target ...] [--styling ...] [--output ...] # InDesign IDML/PDF → React
+/build-campaign <goal>        # Full autonomous campaign pipeline (flagship)
+/write-content <type> <topic> # Single asset through the QA gates
+/create-blog-article <topic>  # SEO article end to end
+/build-email-sequence <goal>  # Sequence spec + drafts, staged for approval
+/plan-content-calendar [...]  # Standalone calendar planning
+/setup-brand [sources]        # Create the brand lockfile (first run)
+```
+
+**Research & Analysis:**
+```bash
+/competitor-teardown <name>   # Sourced competitive teardown
+/seo-audit [path|url]         # Prioritized SEO findings
+/analyze-performance [data]   # Report from real data (never fabricated)
 ```
 
 **Quality Verification:**
 ```bash
-/verify-all                   # Run every local quality check, human-readable summary
-/ci                           # Same checks, JSON output, non-zero exit on failure
+/verify-all                   # Run every local quality check (--ci for JSON)
 ```
 
 **Git Workflows (via commit-commands):**
 ```bash
 /commit                       # Structured commit
-/commit-push-pr              # Commit + push + PR
+/commit-push-pr               # Commit + push + PR
 /clean_gone                   # Clean merged branches
 ```
 
-**GitHub CLI:**
+**Quality Scripts:**
 ```bash
-gh pr create                  # Create pull request
-gh pr list                    # List pull requests
-gh issue create               # Create issue
-```
-
-**Code Quality:**
-```bash
-./scripts/lint-and-format.sh        # ESLint + Prettier
-./scripts/run-tests.sh              # Vitest + coverage
-./scripts/run-mutation-tests.sh     # Mutation testing (Stryker)
-./scripts/check-types.sh            # TypeScript check
-./scripts/check-bundle-size.sh      # Bundle analysis
-./scripts/check-accessibility.sh    # a11y linting
-./scripts/verify-tokens.sh          # Design token enforcement
-./scripts/sync-tokens.sh              # Token drift detection
-./scripts/check-dark-mode.sh          # Dark mode verification
-./scripts/generate-stories.sh         # Storybook story + MDX generation
-./scripts/generate-component-docs.sh  # Component documentation
-./scripts/check-dead-code.sh            # Dead code detection (knip)
-./scripts/check-security.sh             # Security audit
-./scripts/generate-api-client.sh        # OpenAPI → typed client
-./scripts/check-responsive.sh           # Responsive screenshots
-./scripts/audit-cross-browser-css.sh   # Cross-browser CSS audit
-./scripts/capture-baselines.sh          # Capture regression baselines
-./scripts/regression-test.sh            # Visual regression testing
-./scripts/cross-browser-baseline.sh     # Cross-browser baseline capture/compare (RFC 0002)
-./scripts/setup-baseline-lfs.sh         # Git LFS opt-in for large baseline sets
-./scripts/export-design-system.sh       # Export components + tokens as pnpm workspace
-./scripts/import-design-tokens.sh       # Reconstruct lockfile from an export (round-trip / consumer)
-./scripts/validate-pipeline-config.sh   # Validate pipeline.config.json against schema
-./scripts/check-doc-counts.sh           # Flag drift between documented agent/skill counts and disk
-./scripts/verify-all.sh                 # Run all quality checks with summary
-./scripts/verify-all.sh --ci            # CI mode: JSON output, exit 1 on any failure
-```
-
-**Renderers** (pluggable framework renderers — see `docs/multi-framework/renderers.md`):
-```bash
-node scripts/renderer-registry.js (list | resolve <name> | detect [dir]) [--json]
-node scripts/validate-renderer.js --dir <renderer-dir>   # or --all
+node scripts/brand-voice-lint.js content/     # Brand lockfile enforcement
+node scripts/readability-score.js content/ --check
+node scripts/seo-check.js content/
+node scripts/validate-content-calendar.js
+./scripts/verify-all.sh                       # All checks with summary
+./scripts/check-doc-counts.sh                 # Agent/skill count drift
+./scripts/validate-pipeline-config.sh         # Config vs schema
 ```
 
 **Agent Plugins** (custom agents as versioned plugins — see `docs/guides/agent-plugins.md`):
@@ -619,21 +341,9 @@ node scripts/agent-registry.js (list | resolve <name> | install <name> | uninsta
 node scripts/test-agent-plugin.js --dir <plugin-dir>       # or --all
 ```
 
-**Build Performance & Caching:**
-```bash
-./scripts/incremental-build.sh          # Incremental build with caching
-./scripts/incremental-build.sh --parallel # Parallel execution
-./scripts/incremental-build.sh --force  # Force rebuild (ignore cache)
-node scripts/pipeline-cache.js status   # Cache status
-node scripts/stage-profiler.js report   # Performance report
-node scripts/stage-profiler.js analyze  # Slow stage analysis
-node scripts/metrics-dashboard.js generate # HTML dashboard
-node scripts/metrics-dashboard.js summary  # Quick metrics summary
-```
-
 ---
 
-**Last Updated:** 2026-07-01
-**Architecture:** 56 agents, 24 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 55 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Last Updated:** 2026-07-21
+**Architecture:** 42 agents, 13 skills, 4 plugins + gh CLI, Canva MCP, 20 scripts, 3 hooks
 
-> **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.
+> **Keeping counts in sync:** When adding or removing agents or skills, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

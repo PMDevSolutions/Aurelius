@@ -1,10 +1,10 @@
 # Patreon Supporter Voting Process
 
-This document outlines the roadmap voting process for Patreon supporters of the Aurelius project.
+This document outlines the roadmap voting process for Patreon supporters of the Maecenas project.
 
 ## Overview
 
-Patreon supporters have direct influence over Aurelius development priorities through GitHub Discussions voting. Feature proposals are submitted, discussed, and voted on in the **Roadmap** category.
+Patreon supporters have direct influence over Maecenas development priorities through GitHub Discussions voting. Feature proposals are submitted, discussed, and voted on in the **Roadmap** category.
 
 ## Getting Started
 
@@ -15,13 +15,13 @@ To participate in voting, you need to link your Patreon and GitHub accounts:
 1. Go to your [Patreon settings](https://www.patreon.com/settings/apps)
 2. Connect your GitHub account
 3. Join the [Aurelius Patreon community](https://www.patreon.com/aurelius) (if not already a member)
-4. Visit [Aurelius Discussions](https://github.com/PMDevSolutions/Aurelius/discussions)
+4. Visit [Maecenas Discussions](https://github.com/PMDevSolutions/Marketing/discussions)
 
 ### 2. Access the Roadmap Category
 
 Navigate to the **Roadmap** category in GitHub Discussions to see all active feature proposals.
 
-**Direct link:** [Aurelius Roadmap Discussions](https://github.com/PMDevSolutions/Aurelius/discussions/categories/roadmap)
+**Direct link:** [Maecenas Roadmap Discussions](https://github.com/PMDevSolutions/Marketing/discussions/categories/roadmap)
 
 ## How to Vote
 
@@ -100,7 +100,7 @@ Priority Score = (Supporter Votes × 1) + (Contributor Votes × 2) + (Champion V
 
 1. **Weighted vote count** - Sum of tier-weighted votes
 2. **Technical feasibility** - Effort and complexity assessment
-3. **Project alignment** - Fit with Aurelius vision and architecture
+3. **Project alignment** - Fit with Maecenas vision and architecture
 4. **Community discussion** - Quality of feedback and refinements
 5. **Dependencies** - Required groundwork and prerequisites
 

@@ -1,76 +1,38 @@
-# Developer Onboarding Guide
+# Marketer Onboarding Guide
 
-Welcome to **Aurelius** -- a Claude Code-integrated multi-framework app development framework. Named after the Roman Emperor Marcus Aurelius, this project brings discipline, thoughtful automation, and principled engineering to modern app development.
+Welcome to **Maecenas** — a Claude Code-integrated marketing framework. Named after Gaius Cilnius Maecenas, Augustus's counselor and Rome's first great communications strategist, this project brings discipline, enforceable brand standards, and principled automation to modern marketing work.
 
-This guide will get you productive with the framework quickly, whether you are building a new app from scratch, converting a Figma design into working code, or contributing to the framework itself.
+## Who This Is For
 
----
+- Marketers who want Claude Code to carry real campaign work — strategy, drafting, QA, reporting — without sacrificing brand control or publishing safety
+- Teams that want every asset fact-checked, brand-linted, and human-approved before it goes anywhere
+- Anyone arriving from the sibling frameworks (Aurelius, Nerva, Flavian) — the architecture will feel familiar
 
-## Documentation Map
+## Start Here
 
-| Document | What You Will Learn |
-|----------|-------------------|
-| [Quickstart Guide](quickstart.md) | Clone, install, create your first project, and run your first pipeline in under 10 minutes |
-| [Architecture Overview](architecture.md) | How the 56 agents, 24 skills, 4 pipelines, and 8 hooks fit together |
-| [Pipeline Configuration](pipeline-configuration.md) | Every setting in `pipeline.config.json` explained, with examples |
-| [Troubleshooting FAQ](troubleshooting.md) | Common issues, error messages, and how to resolve them |
-| [Framework Guides](../guides/README.md) | Deep dives into design tokens, visual QA, caching, hooks, error recovery, agent creation, and framework-specific workflows |
+| Step | Document | Time |
+|------|----------|------|
+| 1 | [Quickstart](quickstart.md) — clone to first campaign | ~10 min |
+| 2 | [Architecture](architecture.md) — how the 42 agents, 13 skills, and pipeline connect | ~15 min |
+| 3 | [Pipeline Configuration](pipeline-configuration.md) — every gate and threshold explained | reference |
+| 4 | [Troubleshooting](troubleshooting.md) — common issues and fixes | reference |
 
----
+Then go deeper:
 
-## Who Is This For?
+- **[Campaign Pipeline Guide](../campaign-pipeline/README.md)** — the flagship `/build-campaign` flow, phase by phase
+- **[Brand Setup Guide](../brand-setup/README.md)** — creating and maintaining `brand-guidelines.json`
+- **[Marketing Standards](../marketing-standards/README.md)** — voice, claims, readability, SEO, email, and social rules
 
-- **New contributors** who want to understand the project structure before making changes
-- **App developers** using Aurelius to build production applications from Figma, Canva, or screenshot designs -- or from a plain conversation (`/build-from-conversation`)
-- **Claude Code users** who want to understand how the agents and skills enhance their workflow
-- **Framework maintainers** who need to add new agents, skills, or pipeline phases
+## The Three Ideas That Run Everything
 
----
+1. **The brand lockfile.** `brand-guidelines.json` is the single source of truth for voice, lexicon, claims policy, and visual identity. A linter enforces it mechanically; editorial QA enforces it editorially; drafting refuses to start without it.
+2. **The bounded editorial QA loop.** Every asset passes brand-voice lint + readability scoring + fact-check, iterating at most 5 times before escalating to you. Fabricated claims block unconditionally.
+3. **The human approval gate.** Nothing is published, sent, scheduled, or spent without your explicit sign-off, recorded per asset. The pipeline drafts and stages; you decide.
 
-## Prerequisites
+## First Session Checklist
 
-Before starting, make sure you have:
-
-| Requirement | Version | Check Command |
-|-------------|---------|---------------|
-| Node.js | 18+ | `node --version` |
-| pnpm | 8+ | `pnpm --version` |
-| Git | 2.30+ | `git --version` |
-| Claude Code | Latest | `claude --version` |
-
-Optional (for specific workflows):
-
-| Tool | Required For |
-|------|-------------|
-| Figma Desktop App | Figma MCP integration (local design access) |
-| GitHub CLI (`gh`) | PR creation, issue management |
-| Playwright browsers | Cross-browser testing (`./scripts/setup-playwright.sh`) |
-
----
-
-## Quick Links
-
-- [Main README](../../README.md) -- Project overview
-- [Contributing Guide](../../CONTRIBUTING.md) -- Branch naming, PR process, commit conventions
-- [Agent Catalog](../../.claude/CUSTOM-AGENTS-GUIDE.md) -- All 56 agents with use cases
-- [Skills Catalog](../../.claude/skills/README.md) -- All 24 skills with triggers
-- [Plugin Reference](../../.claude/PLUGINS-REFERENCE.md) -- Installed plugins and commands
-- [Pipeline Config](../../.claude/pipeline.config.json) -- Thresholds and app-type definitions
-- [React Development Standards](../react-development/README.md) -- TypeScript, Tailwind, testing conventions
-- [Figma Pipeline Guide](../figma-to-react/README.md) -- Figma-to-React pipeline deep dive
-- [Canva Pipeline Guide](../canva-to-react/README.md) -- Canva-to-React pipeline deep dive
-- [Screenshot Pipeline Guide](../screenshot-to-app/README.md) -- Screenshot/URL-to-app pipeline
-- [Conversation Pipeline Guide](../conversation-to-app/README.md) -- Conversational app creation via generated Figma designs
-- [Multi-Framework Guide](../multi-framework/README.md) -- Vue, Svelte, React Native output targets
-
----
-
-## How to Read These Docs
-
-**If you are setting up for the first time**, start with the [Quickstart Guide](quickstart.md).
-
-**If you want to understand how things work**, read the [Architecture Overview](architecture.md).
-
-**If you are customizing pipeline behavior**, go to [Pipeline Configuration](pipeline-configuration.md).
-
-**If something is not working**, check the [Troubleshooting FAQ](troubleshooting.md).
+- [ ] `pnpm install`
+- [ ] `/setup-brand` — create the brand lockfile
+- [ ] `./scripts/verify-all.sh` — confirm the framework is healthy
+- [ ] `/build-campaign <a real goal>` — run the pipeline end to end
+- [ ] Read the approval package it produces before approving anything

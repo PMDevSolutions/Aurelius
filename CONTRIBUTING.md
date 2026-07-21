@@ -1,6 +1,6 @@
-# Contributing to Aurelius
+# Contributing to Maecenas
 
-Welcome, and thank you for your interest in contributing to Aurelius. Named after the Roman Emperor Marcus Aurelius — a leader known for discipline, thoughtful decision-making, and principled action — this project strives to bring those same qualities to modern app development. Aurelius is a Claude Code-integrated multi-framework app development framework built and maintained by [Paul Mulligan](https://github.com/PMDevSolutions), and contributions from the community are what make it better.
+Welcome, and thank you for your interest in contributing to Maecenas. Named after Gaius Cilnius Maecenas — Augustus's counselor and patron of Virgil and Horace, Rome's first great communications strategist — this project strives to bring discipline, enforceable standards, and principled automation to modern marketing work. Maecenas is a Claude Code-integrated marketing framework built and maintained by [Paul Mulligan](https://github.com/PMDevSolutions), and contributions from the community are what make it better.
 
 Whether you are fixing a bug, adding a feature, improving documentation, or suggesting an idea, I appreciate your time and effort.
 
@@ -11,8 +11,8 @@ Whether you are fixing a bug, adding a feature, improving documentation, or sugg
 1. **Fork and clone the repository:**
 
    ```bash
-   git clone https://github.com/<your-username>/aurelius.git
-   cd aurelius
+   git clone https://github.com/<your-username>/Marketing.git
+   cd Marketing
    ```
 
 2. **Install pnpm** if you do not already have it. This project uses pnpm exclusively — npm and yarn are not supported.
@@ -22,32 +22,24 @@ Whether you are fixing a bug, adding a feature, improving documentation, or sugg
    corepack prepare pnpm@latest --activate
    ```
 
-3. **Run the setup script** to initialize your local environment:
+3. **Install dependencies:**
 
    ```bash
-   ./scripts/setup-project.sh
+   pnpm install
    ```
 
 ---
 
 ## Development Setup
 
-After cloning, install all dependencies:
+The following checks are used throughout development. Run them before submitting any pull request:
 
-```bash
-pnpm install
-```
-
-The following scripts are used throughout development. Run them before submitting any pull request:
-
-| Script | Purpose |
-|--------|---------|
-| `./scripts/lint-and-format.sh` | Run ESLint and Prettier across the codebase |
-| `./scripts/run-tests.sh` | Run the full Vitest test suite with coverage |
-| `./scripts/check-types.sh` | TypeScript type checking (strict mode) |
-| `./scripts/check-accessibility.sh` | Accessibility linting (WCAG 2.1 AA) |
-| `./scripts/verify-tokens.sh` | Verify design token usage (no hardcoded values) |
-| `./scripts/check-security.sh` | Security audit for dependency vulnerabilities |
+| Command | Purpose |
+|---------|---------|
+| `pnpm test` | Run the Vitest suite for the framework scripts |
+| `./scripts/verify-all.sh` | Run every local quality check with a summary |
+| `./scripts/validate-pipeline-config.sh` | Validate pipeline.config.json against its JSON Schema |
+| `./scripts/check-doc-counts.sh` | Verify documented agent/skill counts match disk |
 
 All checks must pass before a pull request will be reviewed.
 
@@ -59,8 +51,8 @@ Use the following prefixes when creating branches:
 
 | Prefix | Use Case | Example |
 |--------|----------|---------|
-| `feat/` | New features or capabilities | `feat/vue-converter-improvements` |
-| `fix/` | Bug fixes | `fix/token-drift-detection` |
+| `feat/` | New features or capabilities | `feat/webinar-asset-type` |
+| `fix/` | Bug fixes | `fix/calendar-lead-time-check` |
 | `docs/` | Documentation updates | `docs/update-pipeline-guide` |
 | `chore/` | Maintenance, refactoring, tooling | `chore/upgrade-vitest-config` |
 
@@ -77,9 +69,8 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
 3. **Run all checks locally** before pushing:
 
    ```bash
-   ./scripts/lint-and-format.sh
-   ./scripts/run-tests.sh
-   ./scripts/check-types.sh
+   pnpm test
+   ./scripts/verify-all.sh
    ```
 
 4. **Push your branch** and open a pull request against `main`.
@@ -92,10 +83,10 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
 6. **Use conventional commit messages.** Examples:
 
    ```
-   feat: add dark mode support to svelte-converter
-   fix: resolve token sync race condition
+   feat: add webinar asset type to the pipeline
+   fix: resolve calendar cadence-cap false positive
    docs: clarify setup instructions for Windows
-   chore: update Playwright to v1.50
+   chore: update vitest to v4.2
    ```
 
 7. **All CI checks must pass.** Pull requests with failing tests, lint errors, or type errors will not be reviewed until resolved.
@@ -137,9 +128,9 @@ Because the bump is derived from commit history, **conventional commit messages 
 
 ## Claude Code Agents
 
-Aurelius includes 56 specialized Claude Code agents and 24 skills that automate significant portions of the development workflow — from design-to-code conversion to testing, accessibility, and deployment.
+Maecenas includes 42 specialized Claude Code agents and 13 skills that automate significant portions of the marketing workflow — from campaign strategy and drafting to editorial QA, approvals, and reporting.
 
-If you have Claude Code installed, these agents and skills are available to you automatically when working in this repository. They can assist with component development, test writing, visual QA, and much more.
+If you have Claude Code installed, these agents and skills are available to you automatically when working in this repository. They can assist with campaign briefs, content drafting, brand compliance, analytics reports, and much more.
 
 For full documentation on available agents and how to use them:
 
@@ -171,4 +162,4 @@ Unacceptable behavior can be reported to **paul@pmds.info**. I reserve the right
 
 ---
 
-Thank you for contributing to Aurelius. Your work helps make multi-framework development more accessible, reliable, and efficient for everyone. If you have questions, feel free to open a [discussion](https://github.com/PMDevSolutions/Aurelius/discussions).
+Thank you for contributing to Maecenas. Your work helps make principled, brand-safe marketing automation more accessible and reliable for everyone. If you have questions, feel free to open a [discussion](https://github.com/PMDevSolutions/Marketing/discussions).

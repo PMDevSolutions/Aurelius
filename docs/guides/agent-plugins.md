@@ -100,16 +100,16 @@ error (exit 2) so typos can't silently pass.
 
 ```jsonc
 {
-  "name": "react-perf-expert",        // kebab-case ^[a-z][a-z0-9-]*$; matches dir + agent.md name
+  "name": "webinar-producer",          // kebab-case ^[a-z][a-z0-9-]*$; matches dir + agent.md name
   "version": "1.2.0",                  // semver
   "description": "...",                // required
   "author": "...",                     // optional
   "license": "MIT",                    // optional
   "agent": "agent.md",                 // path to the prompt file (default "agent.md")
   "dependencies": {
-    "agents": { "asset-cataloger": "^1.0.0" },   // name -> semver range; resolved + version-checked
-    "skills": ["react-testing-workflows"],         // existence-checked under .claude/skills/
-    "tools":  ["scripts/visual-diff.js"]           // existence-checked, repo-relative
+    "agents": { "video-script-writer": "^1.0.0" }, // name -> semver range; resolved + version-checked
+    "skills": ["editorial-qa"],                    // existence-checked under .claude/skills/
+    "tools":  ["scripts/readability-score.js"]     // existence-checked, repo-relative
   },
   "hooks": {                            // all optional; paths relative to the plugin dir
     "preInstall":   "hooks/check-deps.sh",

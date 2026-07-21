@@ -1,6 +1,6 @@
 # Hook System
 
-Hooks are shell scripts that run automatically after Claude Code tool-use events. They provide automated reminders, guards, and quality checks without requiring manual intervention. Each hook lives in its own file under `.claude/hooks/` and is wired into `.claude/settings.json`.
+Hooks are shell scripts that run automatically after Claude Code tool-use events. They provide automated reminders and guards without requiring manual intervention. Each hook lives in its own file under `.claude/hooks/` and is wired into `.claude/settings.json`.
 
 ## How Hooks Fire
 
@@ -8,7 +8,7 @@ The `PostToolUse` event fires every time the Bash tool completes inside Claude C
 
 | Argument | Contents |
 |----------|----------|
-| `$1` (`TOOL_INPUT`) | The command that was run, e.g. `pnpm build` or `git commit -m "feat: add hero"` |
+| `$1` (`TOOL_INPUT`) | The command that was run, e.g. `git commit -m "content: add launch post"` |
 | `$2` (`TOOL_OUTPUT`) | The stdout/stderr returned by that command |
 
 Each hook pattern-matches these inputs to decide whether to print a reminder. Output on stdout is shown to the user; no output means the hook stayed silent.
@@ -42,189 +42,90 @@ Hooks live in `hooks.PostToolUse[].hooks[]` in `.claude/settings.json`:
 | `command` | Invokes the hook script, passing the two tool variables as positional args |
 | `description` | Shown to users in Claude Code; describe what the hook does in plain English |
 
-Old inline shell snippets (`bash -c '...'`) are no longer used. Every hook is a file under `.claude/hooks/` so it can be edited, reviewed, and tested in isolation.
+Every hook is a file under `.claude/hooks/` so it can be edited, reviewed, and tested in isolation.
 
 ## Execution Order
 
-Hooks run **sequentially** in the order they appear in the `hooks` array. The first entry runs first, the second runs second, and so on. The current order is:
+Hooks run **sequentially** in the order they appear in the `hooks` array. The current order is:
 
-1. `post-build-qa.sh`
-2. `pre-commit-token-guard.sh`
-3. `dark-mode-reminder.sh`
-4. `coverage-check.sh`
-5. `lighthouse-ci.sh`
-6. `bundle-size-guard.sh`
-7. `mutation-test-reminder.sh`
-8. `regression-reminder.sh`
+1. `pre-commit-brand-guard.sh`
+2. `editorial-qa-reminder.sh`
+3. `approval-gate-guard.sh`
 
-Each hook is independent — one hook's output does not influence the next. Reordering the array changes only the visual order of reminders in the terminal.
-
-Hooks must complete quickly (target: under 2 seconds each). They run after every matching Bash tool use, so a slow hook becomes a tax on the whole session.
+Each hook is independent — one hook's output does not influence the next. Hooks must complete quickly (target: under 2 seconds each); they run after every matching Bash tool use.
 
 ## Built-In Hooks
 
 | Hook script | Triggers when | Action |
 |-------------|---------------|--------|
-| `post-build-qa.sh` | `pnpm build` succeeds (`built in` in output) | Reminds to run quality gate (vitest, tsc, verify-tokens) |
-| `pre-commit-token-guard.sh` | `git commit` detected in input | Runs `verify-tokens.sh`, surfaces violations |
-| `dark-mode-reminder.sh` | `visual-diff.js` + `PASS` in output | Suggests `check-dark-mode.sh` |
-| `coverage-check.sh` | `vitest` + `Coverage` in output | Reminds to verify against `tdd.coverageThreshold` |
-| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit using thresholds from config |
-| `bundle-size-guard.sh` | `git commit` and a build dir exists | Warns if build dir exceeds `bundleSize.maxSizeKb` |
-| `mutation-test-reminder.sh` | `vitest` + passing-tests line | Suggests Stryker when `mutationTesting.reminder` is `true` |
-| `regression-reminder.sh` | `pnpm build` succeeds | Suggests regression test if baselines exist |
+| `pre-commit-brand-guard.sh` | `git commit` in input, lockfile + staged content/ files present | Runs `brand-voice-lint.js` on staged Markdown, prints violations as a warning |
+| `editorial-qa-reminder.sh` | `brand-voice-lint.js` in input + a clean (`✓ … clean`) output | Reminds that readability and fact-check/SEO complete the editorial QA trio |
+| `approval-gate-guard.sh` | Publish/send/spend-shaped commands (platform APIs, `--publish`/`--send`/`--schedule` flags) | Warns that human approval must be on record before any external action |
 
-Most hooks match on **both** `$TOOL_INPUT` (what command ran) and `$TOOL_OUTPUT` (what it returned) to keep false triggers down.
+All three are **informational** — they always exit 0 and never block. The hard stops live in the pipeline gates (editorial QA blockers, the human approval gate) and the husky pre-commit, not in PostToolUse hooks.
 
-## Hook Script Anatomy
+## The Defensive Skeleton
 
-Every hook follows the same skeleton:
+Every hook follows the same defensive pattern so a hook bug can never break a session:
 
 ```bash
 #!/usr/bin/env bash
-# my-hook.sh — short description of what this hook does
-#
-# Args:
-#   $1  TOOL_INPUT
-#   $2  TOOL_OUTPUT
-#
-# Exit: always 0.
+# <name>.sh — one-line purpose.
+# Args: $1 = TOOL_INPUT, $2 = TOOL_OUTPUT
+set -u                 # undefined vars are bugs…
+trap 'exit 0' ERR      # …but any error still exits 0 (hooks never break the session)
 
-set -u
 TOOL_INPUT="${1:-}"
-TOOL_OUTPUT="${2:-}"
-trap 'exit 0' ERR
 
-# Decide whether to fire.
-if echo "$TOOL_INPUT" | grep -q "<trigger>"; then
-  echo "[my-hook] reminder text"
-fi
+case "$TOOL_INPUT" in
+  *"the trigger pattern"*) ;;   # match → continue
+  *) exit 0 ;;                  # no match → silent success
+esac
 
-exit 0
+# Guard preconditions (files, commands) with graceful exits:
+[ -f "some-required-file" ] || exit 0
+
+echo "The reminder text."
+exit 0                 # ALWAYS exit 0
 ```
 
-The defensive bits matter:
-
-| Pattern | Why |
-|---------|-----|
-| `set -u` | Catches typos / unset variables early, preventing silent skips |
-| `${1:-}` defaults | Tolerates being called with no args (e.g. from a test) |
-| `trap 'exit 0' ERR` | Any unexpected runtime error exits silently rather than crashing |
-| Final `exit 0` | Hooks are informational and must never block the workflow |
-| `[hook-name]` prefix | Makes it easy to identify which hook produced a message in the terminal |
-
-Reading thresholds from `pipeline.config.json` follows the same defensive pattern: try Node, fall back to a hard-coded default if `node` is unavailable or the field is missing.
-
-```bash
-THRESHOLD=80
-if [ -f .claude/pipeline.config.json ] && command -v node >/dev/null 2>&1; then
-  PARSED="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.tdd?.coverageThreshold ?? 80);' 2>/dev/null)" || PARSED=""
-  [ -n "$PARSED" ] && THRESHOLD="$PARSED"
-fi
-```
+Rules:
+- **Always exit 0** — even on internal errors (`trap 'exit 0' ERR`)
+- **Silent by default** — print only when the trigger genuinely matches
+- **Fast** — pattern-match first, do work only after the match
+- **Self-contained** — no sourcing project libs; a hook must run from any cwd state
+- **Portable** — bash 3.2-compatible (macOS default): no `${var,,}`, no `mapfile`
 
 ## Creating a Custom Hook
 
-### 1. Write the script
+1. Write the script at `.claude/hooks/<name>.sh` following the skeleton
+2. Register it in `.claude/settings.json` with a clear `description`
+3. Add its firing/silent cases to `scripts/__tests__/hooks.test.js`:
 
-Create `.claude/hooks/my-hook.sh`. Use the skeleton above and `chmod +x` it:
+```js
+it("fires on <the trigger>", () => {
+  const out = runHook("<name>.sh", "<matching input>", "<matching output>");
+  expect(out).toContain("<expected text>");
+});
+
+it("stays silent otherwise", () => {
+  expect(runHook("<name>.sh", "ls -la", "")).toBe("");
+});
+```
+
+4. Run `pnpm test` — the contract suite also asserts every hook exits 0 on junk and empty input
+
+## Testing Hooks in Isolation
 
 ```bash
-chmod +x .claude/hooks/my-hook.sh
+bash .claude/hooks/approval-gate-guard.sh \
+  "curl -X POST https://api.mailchimp.com/3.0/campaigns/x/actions/send" ""
+# → prints the approval-gate reminder, exits 0
+
+bash .claude/hooks/approval-gate-guard.sh "ls -la" ""
+# → prints nothing, exits 0
 ```
 
-### 2. Register it in settings.json
+## Design Philosophy
 
-Append a new entry to `hooks.PostToolUse[0].hooks`:
-
-```json
-{
-  "type": "command",
-  "command": "bash .claude/hooks/my-hook.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-  "description": "What the hook does (shown to users)"
-}
-```
-
-### 3. Test in isolation
-
-Hooks accept tool input and output as plain args, so you can run them directly:
-
-```bash
-# Trigger case
-bash .claude/hooks/my-hook.sh "pnpm test" "Tests  42 passed"
-# → expected: prints reminder, exit 0
-
-# No-trigger case
-bash .claude/hooks/my-hook.sh "ls" "file.txt"
-# → expected: prints nothing, exit 0
-
-# Robustness
-bash .claude/hooks/my-hook.sh
-# → expected: prints nothing, exit 0 (no crash on missing args)
-```
-
-For automated coverage, add a vitest spec under `scripts/__tests__/hooks.test.js`. The existing file is a good template — it spins up a temp project, invokes each hook with controlled inputs, and asserts on stdout + exit code.
-
-### Example — changelog reminder after git tag
-
-`.claude/hooks/changelog-reminder.sh`:
-
-```bash
-#!/usr/bin/env bash
-set -u
-TOOL_INPUT="${1:-}"
-trap 'exit 0' ERR
-
-if echo "$TOOL_INPUT" | grep -q "git tag"; then
-  echo "[changelog-reminder] New tag created. Update CHANGELOG.md if you haven't."
-fi
-exit 0
-```
-
-`.claude/settings.json` addition:
-
-```json
-{
-  "type": "command",
-  "command": "bash .claude/hooks/changelog-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-  "description": "Remind to update changelog after creating git tags"
-}
-```
-
-## Best Practices
-
-- **Keep hooks fast** — under 2 seconds each. They run on every matching Bash tool use.
-- **Always `exit 0`** — hooks are informational, never blocking. A non-zero exit may interrupt Claude Code's flow.
-- **Match on both input and output** when possible — single-side matching causes false triggers.
-- **Prefix output with `[hook-name]`** — makes terminal messages skimmable.
-- **Read thresholds from config** — never hard-code. Fall back to a default if the config or `node` is unavailable.
-- **Use `set -u` and `trap 'exit 0' ERR`** — catches typos and absorbs unexpected errors.
-- **Tolerate missing tooling** — guard each external command with `command -v` and `[ -f ... ]` checks.
-
-## Troubleshooting
-
-**Hook not firing**
-Test the trigger pattern manually:
-```bash
-echo "pnpm build --production" | grep -q "pnpm build" && echo "match"
-```
-If the script is the issue, run it directly with sample inputs (`bash .claude/hooks/foo.sh "..." "..."`).
-
-**Hook firing too often**
-Tighten the pattern — match on both input and output instead of one:
-```bash
-# Too broad — fires on any vitest run
-if echo "$TOOL_INPUT" | grep -q "vitest"; then ...
-
-# Better — only fires when coverage output is present
-if echo "$TOOL_INPUT" | grep -q "vitest" && echo "$TOOL_OUTPUT" | grep -q "Coverage"; then ...
-```
-
-**Hook blocking workflow**
-Confirm the script ends with `exit 0` and uses `trap 'exit 0' ERR`. Avoid `set -e` — it makes the hook exit non-zero on any failed command.
-
-**Hook output not visible**
-The hook must echo to stdout, not stderr. Run the script directly in a terminal to confirm it produces output. Also double-check the settings.json command quoting — escaped quotes around `$TOOL_INPUT` are required so the shell expands the variable but treats it as one argument.
-
-**Hook script not executable**
-Run `chmod +x .claude/hooks/<name>.sh`. The `bash <path>` invocation in settings.json also works without the executable bit, but committing the bit avoids confusion when running the script directly.
+Hooks are the framework's ambient conscience, not its enforcement arm. They make the right next step easy to remember (run the QA trio, record the approval) while the pipeline's gates make the wrong step hard to take. Keep hooks few, fast, and quiet — a hook that fires too often trains people to ignore all of them.

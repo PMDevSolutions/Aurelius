@@ -2,7 +2,7 @@
 
 Agents are specialized Markdown files with YAML frontmatter that live in `.claude/agents/`. Each agent defines a persona, a set of allowed tools, and detailed instructions that shape how Claude Code behaves when the agent is selected. Claude Code reads the `description` field to decide which agent best matches a given task, then loads that agent's instructions as the system prompt for the session.
 
-This framework ships with 56 agents covering engineering, design, testing, marketing, and operations. You can add your own by following the conventions below.
+This framework ships with 42 agents covering strategy, content, channels, lifecycle growth, analytics, creative direction, and operations. You can add your own by following the conventions below.
 
 ## File Location
 
@@ -41,13 +41,13 @@ Write descriptions that start with "Use this agent when..." and list specific tr
 
 **Good description:**
 
-> Use this agent when building user interfaces, implementing React/Vue components, handling state management, or optimizing frontend performance. This agent excels at creating responsive, accessible, and performant web applications.
+> Use this agent when planning marketing budgets, allocating spend across channels, tracking pacing against plan, or analyzing marketing efficiency. This agent excels at turning limited budgets into deliberate, measurable channel-mix decisions.
 
 **Bad description:**
 
-> A helpful coding agent.
+> A helpful marketing agent.
 
-The good description names specific activities (building UIs, implementing components, handling state, optimizing performance) so Claude Code can match it against user requests. The bad description is too generic to ever win selection over a more specific agent.
+The good description names specific activities (planning budgets, allocating spend, tracking pacing, analyzing efficiency) so Claude Code can match it against user requests. The bad description is too generic to ever win selection over a more specific agent.
 
 ### The `tools` Field
 
@@ -102,9 +102,9 @@ A comma-separated list of tools the agent is allowed to use. Only declare tools 
 
 MCP tools follow the pattern `mcp__<server>__<action>`. Examples:
 
-- `mcp__figma__get_design_context` -- read a Figma design
-- `mcp__playwright__browser_navigate` -- navigate a browser
-- `mcp__chrome-devtools__take_screenshot` -- capture a screenshot
+- `mcp__canva__generate-design` -- generate a Canva design
+- `mcp__canva__export-design` -- export creative assets
+- `mcp__canva__search-brand-templates` -- find brand templates
 
 Only include MCP tools if the agent's workflow requires them.
 
@@ -125,7 +125,7 @@ Prefer `sonnet` unless the task genuinely requires deeper reasoning. Using `opus
 The `permissionMode` field controls whether the agent asks for confirmation before performing actions.
 
 - **Omitted (default):** The agent follows normal permission rules and prompts the user before destructive operations.
-- **`bypassPermissions`:** The agent runs without confirmation prompts. Use this only for autonomous pipeline agents that execute without human oversight (e.g., the `figma-react-converter` agent inside the build pipeline).
+- **`bypassPermissions`:** The agent runs without confirmation prompts. Use this only for internal-artifact work inside the pipeline (drafting, QA, reporting). Never grant it to anything that could publish, send, or spend — those actions belong behind the human approval gate.
 
 Use `bypassPermissions` sparingly. Most agents should operate under normal permission rules.
 
