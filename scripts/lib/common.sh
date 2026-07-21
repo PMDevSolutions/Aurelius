@@ -111,10 +111,13 @@ common_track_tmpfile() {
 
 # --- Cross-platform timestamp --------------------------------------------
 
-# Milliseconds since epoch. GNU date supports %N; macOS does not.
+# Milliseconds since epoch. GNU date supports %N; BSD/macOS date prints the
+# literal "3N" instead of erroring, so validate the output is all digits.
 common_now_ms() {
-  if date +%s%3N >/dev/null 2>&1; then
-    date +%s%3N
+  local out
+  out="$(date +%s%3N 2>/dev/null)"
+  if [[ "$out" =~ ^[0-9]+$ ]]; then
+    echo "$out"
   elif have_cmd python3; then
     python3 -c 'import time; print(int(time.time()*1000))'
   else
@@ -137,40 +140,6 @@ common_csv_contains() {
   return 1
 }
 
-# --- Baseline discovery ---------------------------------------------------
-
-# common_find_baselines <baseline-dir> <csv-browsers>
-# Print baseline PNGs (sorted) under only the given browser subdirectories.
-# The baselines root is shared between regressionTesting (chromium) and
-# visualBaselines (cross-browser, RFC 0002), so each consumer walks only its
-# own engines instead of the whole tree.
-common_find_baselines() {
-  local dir="$1"
-  local csv="$2"
-  local parts part
-  [[ -z "$csv" ]] && return 0
-  IFS=',' read -ra parts <<< "$csv"
-  {
-    for part in "${parts[@]}"; do
-      part="$(echo "$part" | tr -d ' ')"
-      if [[ -n "$part" && -d "$dir/$part" ]]; then
-        find "$dir/$part" -name "*.png" -type f
-      fi
-    done
-  } | sort
-}
-
-# --- Build artifact detection --------------------------------------------
-
-# Returns 0 if any of dist/.next/build/out exists in the cwd.
-common_build_artifact_exists() {
-  local d
-  for d in dist .next build out; do
-    [[ -d "$d" ]] && return 0
-  done
-  return 1
-}
-
 # Returns 0 if at least one agent plugin (a dir with plugin.json) exists under
 # .claude/agent-plugins/ in the cwd.
 common_agent_plugins_exist() {
@@ -181,30 +150,3 @@ common_agent_plugins_exist() {
   return 1
 }
 
-# --- pipeline.config.json access -----------------------------------------
-#
-# Thin wrapper around scripts/lib/pipeline-config.js so shell scripts no longer
-# need inline `node -e` blobs.
-#
-# common_config_get <dotted.path> [default]
-#
-# Examples:
-#   ENABLED=$(common_config_get 'security.enabled' true)
-#   LEVEL=$(common_config_get 'security.auditLevel' moderate)
-
-common_config_get() {
-  local key="$1"
-  local default="${2-}"
-  local lib_dir
-  lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  local helper="$lib_dir/pipeline-config.js"
-  if [[ ! -f "$helper" ]]; then
-    echo "$default"
-    return 0
-  fi
-  if ! have_cmd node; then
-    echo "$default"
-    return 0
-  fi
-  node "$helper" get "$key" "$default" 2>/dev/null || echo "$default"
-}

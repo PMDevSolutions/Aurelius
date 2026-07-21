@@ -1,7 +1,7 @@
 {
-  "name": "aurelius",
-  "version": "1.1.0",
-  "description": "Claude Code-integrated React app development framework with specialized agents, skills, and Figma-to-React pipeline",
+  "name": "maecenas",
+  "version": "2.0.0",
+  "description": "Claude Code-integrated marketing framework with specialized agents, skills, and a brief-to-publish-ready campaign pipeline",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,19 +11,20 @@
     "release:patch": "commit-and-tag-version --release-as patch",
     "release:dry": "commit-and-tag-version --dry-run",
     "release:first": "commit-and-tag-version --first-release",
-    "new-app": "node scripts/create-app.js",
+    "test": "vitest run scripts/__tests__",
+    "verify": "bash scripts/verify-all.sh",
     "prepare": "husky"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PMDevSolutions/Aurelius.git"
+    "url": "https://github.com/PMDevSolutions/Marketing.git"
   },
   "keywords": [
     "claude-code",
-    "react",
-    "figma",
-    "chrome-extension",
-    "template"
+    "marketing",
+    "campaign-pipeline",
+    "brand-voice",
+    "content"
   ],
   "author": "PAMulligan",
   "license": "MIT",
@@ -31,19 +32,13 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
-    "@stryker-mutator/core": "^9.6.1",
-    "@stryker-mutator/typescript-checker": "^9.6.1",
-    "@stryker-mutator/vitest-runner": "^9.6.1",
     "ajv": "^8.20.0",
     "commit-and-tag-version": "^12.7.1",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
-    "pixelmatch": "^7.1.0",
-    "pngjs": "^7.0.0",
     "prettier": "^3.8.1",
     "semver": "^7.8.1",
-    "ts-morph": "^28.0.0",
     "vite": "^8.0.16",
     "vitest": "^4.1.2"
   },

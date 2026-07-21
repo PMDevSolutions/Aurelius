@@ -1,0 +1,67 @@
+{
+  "version": "1.0.0",
+  "source": "interview",
+  "createdAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "campaign": {
+    "name": "<Campaign Name>",
+    "slug": "<yyyy-qN-slug>",
+    "type": "launch",
+    "description": "<One-paragraph summary>"
+  },
+  "objective": {
+    "primary": "<What this campaign achieves>",
+    "kpi": { "metric": "<metric>", "target": 0, "baseline": 0, "deadline": "YYYY-MM-DD" },
+    "secondary": []
+  },
+  "audience": {
+    "personas": ["<persona-slug>"],
+    "segments": [],
+    "exclusions": []
+  },
+  "positioning": {
+    "singleMindedMessage": "<The one thing every asset must communicate>",
+    "valueProps": [],
+    "proofPoints": [
+      { "claim": "<claim>", "source": "<source, dated>" }
+    ]
+  },
+  "channels": [
+    { "channel": "blog", "assetType": "blog-post", "count": 1, "ownerAgent": "blog-writer" }
+  ],
+  "budget": {
+    "currency": "EUR",
+    "paidMedia": null,
+    "production": null,
+    "approvalRequired": true
+  },
+  "timeline": {
+    "cycleStart": "YYYY-MM-DD",
+    "launchDate": "YYYY-MM-DD",
+    "cycleWeeks": 6
+  },
+  "assetPlan": [
+    {
+      "id": "blog-01",
+      "assetType": "blog-post",
+      "title": "<Working title>",
+      "channel": "blog",
+      "ownerAgent": "blog-writer",
+      "briefNotes": "<Angle, keyword, CTA>",
+      "dueWeek": 4,
+      "status": "planned"
+    }
+  ],
+  "measurement": {
+    "utmCampaign": "<yyyy-qN-slug>",
+    "trackingOwner": "attribution-analyst",
+    "reportSchedule": "launch +7d, +30d"
+  },
+  "compliance": {
+    "regulatedTopics": [],
+    "legalReviewRequired": false
+  },
+  "approvals": {
+    "strategyGate": { "required": true, "approver": "user", "approvedAt": null },
+    "publishGate": { "required": true, "perAsset": true }
+  }
+}

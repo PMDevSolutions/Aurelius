@@ -1,6 +1,6 @@
-# Pre-commit hook: run token verification if app source exists
-if [ -f "scripts/verify-tokens.sh" ] && [ -d "app/src" ]; then
-  bash scripts/verify-tokens.sh
+# Pre-commit hook: lint content against the brand lockfile if one exists
+if [ -f "scripts/brand-voice-lint.js" ] && [ -f "brand-guidelines.json" ] && [ -d "content" ]; then
+  node scripts/brand-voice-lint.js content/
 fi
 
 # Pre-commit hook: flag drift between documented agent/skill counts and disk

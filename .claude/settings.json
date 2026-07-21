@@ -6,43 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-build-qa.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run quality gate after successful builds during the pipeline"
+            "command": "bash .claude/hooks/pre-commit-brand-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
+            "description": "Lint staged content against brand-guidelines.json before git commits"
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-commit-token-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Check for token violations before git commits"
+            "command": "bash .claude/hooks/editorial-qa-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
+            "description": "After a clean brand-voice lint, remind about the remaining editorial QA gates"
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/dark-mode-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run dark mode verification after visual diff passes"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/coverage-check.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to check coverage threshold after test runs with coverage"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/lighthouse-ci.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Suggest Lighthouse audit after successful builds with threshold targets"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/bundle-size-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Warn if bundle size exceeds configured limit before commits"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/mutation-test-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Suggest mutation testing after all tests pass"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/regression-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run visual regression tests after successful builds"
+            "command": "bash .claude/hooks/approval-gate-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
+            "description": "Warn when a command looks like an external publish/send/spend without a recorded approval"
           }
         ]
       }

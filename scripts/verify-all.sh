@@ -14,8 +14,8 @@
 #   ./scripts/verify-all.sh --list            # Print check names and exit
 #
 # Check names:
-#   lint-and-format, types, tests, accessibility, tokens, dead-code, security,
-#   bundle-size, agent-plugins
+#   brand-voice, readability, seo, calendar, pipeline-config, doc-counts,
+#   agent-plugins
 #
 # Exit codes:
 #   0 — every check passed (or was skipped intentionally)
@@ -57,19 +57,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Each check: name | script path | extra args (space-separated)
-# `bundle-size` is conditional — it runs only when a build artifact exists.
-# `agent-plugins` is conditional — it runs only when .claude/agent-plugins/ has plugins.
+# Conditional checks skip gracefully when their subject is absent:
+#   `brand-voice`             — needs brand-guidelines.json (run /setup-brand)
+#   `readability` / `seo`     — need a content/ directory
+#   `calendar`                — needs content-calendar.json
+#   `agent-plugins`           — needs plugins under .claude/agent-plugins/
 ALL_CHECKS=(
-  "lint-and-format|./scripts/lint-and-format.sh|--check"
-  "types|./scripts/check-types.sh|"
-  "tests|./scripts/run-tests.sh|"
-  "accessibility|./scripts/check-accessibility.sh|"
-  "tokens|./scripts/verify-tokens.sh|"
-  "dead-code|./scripts/check-dead-code.sh|"
-  "security|./scripts/check-security.sh|"
-  "bundle-size|./scripts/check-bundle-size.sh|"
+  "brand-voice|./scripts/brand-voice-lint.js|content/"
+  "readability|./scripts/readability-score.js|content/ --check"
+  "seo|./scripts/seo-check.js|content/"
+  "calendar|./scripts/validate-content-calendar.js|"
+  "pipeline-config|./scripts/validate-pipeline-config.js|"
+  "doc-counts|./scripts/check-doc-counts.sh|"
   "agent-plugins|./scripts/verify-agent-plugins.sh|"
-  "renderers|./scripts/verify-renderers.sh|"
 )
 
 if [[ "$LIST_ONLY" == "true" ]]; then
@@ -118,13 +118,33 @@ run_check() {
     return 0
   fi
 
-  if [[ "$name" == "bundle-size" ]] && ! common_build_artifact_exists; then
+  if [[ "$name" == "brand-voice" ]] && [[ ! -f "brand-guidelines.json" ]]; then
     RESULTS_NAME+=("$name")
     RESULTS_STATUS+=("skip")
     RESULTS_EXIT+=("0")
     RESULTS_MS+=("0")
-    RESULTS_REASON+=("no build artifact (dist/.next/build/out)")
-    emit_progress "▸ $name … skipped (no build artifact)"
+    RESULTS_REASON+=("no brand-guidelines.json (run /setup-brand)")
+    emit_progress "▸ $name … skipped (no brand-guidelines.json)"
+    return 0
+  fi
+
+  if { [[ "$name" == "readability" ]] || [[ "$name" == "seo" ]]; } && [[ ! -d "content" ]]; then
+    RESULTS_NAME+=("$name")
+    RESULTS_STATUS+=("skip")
+    RESULTS_EXIT+=("0")
+    RESULTS_MS+=("0")
+    RESULTS_REASON+=("no content/ directory")
+    emit_progress "▸ $name … skipped (no content/)"
+    return 0
+  fi
+
+  if [[ "$name" == "calendar" ]] && [[ ! -f "content-calendar.json" ]]; then
+    RESULTS_NAME+=("$name")
+    RESULTS_STATUS+=("skip")
+    RESULTS_EXIT+=("0")
+    RESULTS_MS+=("0")
+    RESULTS_REASON+=("no content-calendar.json")
+    emit_progress "▸ $name … skipped (no calendar)"
     return 0
   fi
 
@@ -152,10 +172,12 @@ run_check() {
   local start
   start="$(common_now_ms)"
   local exit_code=0
+  local runner="bash"
+  [[ "$script" == *.js ]] && runner="node"
   if [[ -n "$args" ]]; then
-    bash "$script" $args >/dev/null 2>&1 || exit_code=$?
+    "$runner" "$script" $args >/dev/null 2>&1 || exit_code=$?
   else
-    bash "$script" >/dev/null 2>&1 || exit_code=$?
+    "$runner" "$script" >/dev/null 2>&1 || exit_code=$?
   fi
   local end
   end="$(common_now_ms)"

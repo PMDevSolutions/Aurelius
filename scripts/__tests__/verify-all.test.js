@@ -2,7 +2,9 @@ import { describe, it, expect, afterAll } from "vitest";
 import { execFileSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, chmodSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..");
@@ -11,245 +13,121 @@ const SCRIPT = join(repoRoot, "scripts", "verify-all.sh");
 /**
  * Tests for scripts/verify-all.sh
  *
- * Strategy: build a temp project that contains stub scripts at the paths the
- * orchestrator expects, then invoke verify-all.sh from that project root.
- * Each stub exits with a known code so we can assert the orchestrator threads
- * everything through correctly without depending on the real (slow) checks.
+ * Strategy: build a temp project containing stub check scripts at the paths
+ * the orchestrator expects, plus the marker files that make conditional checks
+ * run (brand-guidelines.json, content/, content-calendar.json). Each stub
+ * exits with a known code so we can assert the orchestrator threads results
+ * through without depending on the real (slower) checks.
  */
 
-let counter = 0;
-
-const ALL_CHECKS = [
-  ["lint-and-format", "lint-and-format.sh"],
-  ["types", "check-types.sh"],
-  ["tests", "run-tests.sh"],
-  ["accessibility", "check-accessibility.sh"],
-  ["tokens", "verify-tokens.sh"],
-  ["dead-code", "check-dead-code.sh"],
-  ["security", "check-security.sh"],
-  ["bundle-size", "check-bundle-size.sh"],
-  ["agent-plugins", "verify-agent-plugins.sh"],
-  ["renderers", "verify-renderers.sh"],
+const CHECKS = [
+  ["brand-voice", "brand-voice-lint.js", "js"],
+  ["readability", "readability-score.js", "js"],
+  ["seo", "seo-check.js", "js"],
+  ["calendar", "validate-content-calendar.js", "js"],
+  ["pipeline-config", "validate-pipeline-config.js", "js"],
+  ["doc-counts", "check-doc-counts.sh", "sh"],
+  ["agent-plugins", "verify-agent-plugins.sh", "sh"],
 ];
 
-function tmpProject({ failing = [], hasBuild = false } = {}) {
-  counter++;
-  const dir = join(__dirname, "fixtures", `verify-all-${counter}-${Date.now()}`);
+const cleanups = [];
+afterAll(() => {
+  for (const dir of cleanups) rmSync(dir, { recursive: true, force: true });
+});
+
+/** Build a temp project with stub scripts. exitCodes: {checkName: code}. */
+function makeProject(exitCodes = {}) {
+  const dir = mkdtempSync(join(tmpdir(), "verify-all-"));
+  cleanups.push(dir);
   mkdirSync(join(dir, "scripts"), { recursive: true });
+  mkdirSync(join(dir, "content"), { recursive: true });
+  writeFileSync(join(dir, "brand-guidelines.json"), "{}\n");
+  writeFileSync(join(dir, "content-calendar.json"), "{}\n");
+  // agent-plugins marker so the check runs instead of skipping:
+  mkdirSync(join(dir, ".claude", "agent-plugins", "demo"), { recursive: true });
+  writeFileSync(join(dir, ".claude", "agent-plugins", "demo", "plugin.json"), "{}\n");
 
-  for (const [name, file] of ALL_CHECKS) {
-    const exit = failing.includes(name) ? 1 : 0;
-    const path = join(dir, "scripts", file);
-    writeFileSync(path, `#!/usr/bin/env bash\necho "$0 ran"\nexit ${exit}\n`);
-    chmodSync(path, 0o755);
+  for (const [name, file, kind] of CHECKS) {
+    const code = exitCodes[name] ?? 0;
+    if (kind === "js") {
+      writeFileSync(join(dir, "scripts", file), `process.exit(${code});\n`);
+    } else {
+      writeFileSync(join(dir, "scripts", file), `#!/usr/bin/env bash\nexit ${code}\n`);
+    }
   }
-
-  if (hasBuild) {
-    mkdirSync(join(dir, "dist"), { recursive: true });
-    writeFileSync(join(dir, "dist", "index.js"), "x");
-  }
-
   return dir;
 }
 
 function run(cwd, args = []) {
   try {
-    const stdout = execFileSync("bash", [SCRIPT, ...args], {
-      encoding: "utf-8",
-      timeout: 30000,
-      cwd,
-    });
-    return { stdout, exitCode: 0 };
+    const stdout = execFileSync("bash", [SCRIPT, ...args], { cwd, encoding: "utf8" });
+    return { code: 0, stdout };
   } catch (err) {
-    return {
-      stdout: err.stdout?.toString() ?? "",
-      stderr: err.stderr?.toString() ?? "",
-      exitCode: err.status,
-    };
+    return { code: err.status, stdout: err.stdout?.toString() ?? "" };
   }
 }
 
-afterAll(() => {
-  const fixtures = join(__dirname, "fixtures");
-  if (existsSync(fixtures)) {
-    try {
-      for (const e of readdirSync(fixtures)) {
-        if (e.startsWith("verify-all-")) {
-          rmSync(join(fixtures, e), { recursive: true, force: true });
-        }
-      }
-    } catch {
-      // best-effort cleanup
-    }
-  }
-});
-
-describe("--list", () => {
-  it("prints all check names and exits 0", () => {
-    const r = run(tmpProject(), ["--list"]);
-    expect(r.exitCode).toBe(0);
-    for (const [name] of ALL_CHECKS) {
-      expect(r.stdout).toContain(name);
-    }
-  });
-});
-
-describe("all checks pass", () => {
-  it("exits 0 and reports each check in human mode", () => {
-    const r = run(tmpProject({ hasBuild: true }));
-    expect(r.exitCode).toBe(0);
-    expect(r.stdout).toMatch(/All checks passed/);
-    for (const [name] of ALL_CHECKS) {
-      expect(r.stdout).toContain(name);
-    }
+describe("verify-all.sh", () => {
+  it("--list prints the check registry", () => {
+    const { code, stdout } = run(repoRoot, ["--list"]);
+    expect(code).toBe(0);
+    for (const [name] of CHECKS) expect(stdout).toContain(name);
   });
 
-  it("exits 0 in --ci JSON mode with ok=true", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--ci"]);
-    expect(r.exitCode).toBe(0);
-    const json = JSON.parse(r.stdout);
-    expect(json.ok).toBe(true);
-    expect(json.summary.fail).toBe(0);
-    expect(json.summary.total).toBe(10);
-    expect(json.checks).toHaveLength(10);
-    for (const check of json.checks) {
-      expect(["pass", "skip"]).toContain(check.status);
-    }
-  });
-});
-
-describe("failing checks", () => {
-  it("exits 1 when any check fails", () => {
-    const r = run(tmpProject({ failing: ["types"], hasBuild: true }));
-    expect(r.exitCode).toBe(1);
-    expect(r.stdout).toContain("Some checks failed");
-    expect(r.stdout).toContain("check-types.sh");
+  it("passes when every check passes", () => {
+    const dir = makeProject();
+    const { code, stdout } = run(dir);
+    expect(code).toBe(0);
+    expect(stdout).toContain("All checks passed");
+    expect(stdout).toMatch(/Totals: 7 passed, 0 failed, 0 skipped/);
   });
 
-  it("--ci returns ok=false and lists each failure", () => {
-    const r = run(tmpProject({ failing: ["lint-and-format", "tests"], hasBuild: true }), ["--ci"]);
-    expect(r.exitCode).toBe(1);
-    const json = JSON.parse(r.stdout);
-    expect(json.ok).toBe(false);
-    expect(json.summary.fail).toBe(2);
-    const failedNames = json.checks
-      .filter((c) => c.status === "fail")
-      .map((c) => c.name)
-      .sort();
-    expect(failedNames).toEqual(["lint-and-format", "tests"]);
+  it("fails with exit 1 when any check fails and names the reproduce command", () => {
+    const dir = makeProject({ seo: 1 });
+    const { code, stdout } = run(dir);
+    expect(code).toBe(1);
+    expect(stdout).toContain("Some checks failed");
+    expect(stdout).toContain("./scripts/seo-check.js");
   });
-});
 
-describe("--skip and --include", () => {
-  it("--skip marks excluded checks as skip with the filter reason", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--ci", "--skip", "tests,security"]);
-    const json = JSON.parse(r.stdout);
-    const skipped = json.checks.filter((c) => c.status === "skip").map((c) => c.name);
-    expect(skipped).toEqual(expect.arrayContaining(["tests", "security"]));
-    const tests = json.checks.find((c) => c.name === "tests");
-    expect(tests.reason).toContain("filtered");
+  it("skips conditional checks when their subjects are absent", () => {
+    const dir = makeProject();
+    rmSync(join(dir, "brand-guidelines.json"));
+    rmSync(join(dir, "content-calendar.json"));
+    const { code, stdout } = run(dir);
+    expect(code).toBe(0);
+    expect(stdout).toContain("no brand-guidelines.json");
+    expect(stdout).toContain("no content-calendar.json");
+  });
+
+  it("--skip excludes a named check", () => {
+    const dir = makeProject({ "doc-counts": 1 });
+    const { code, stdout } = run(dir, ["--skip", "doc-counts"]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("filtered by --skip/--include");
   });
 
   it("--include runs only the named checks", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--ci", "--include", "tokens,types"]);
-    const json = JSON.parse(r.stdout);
-    const passed = json.checks.filter((c) => c.status === "pass").map((c) => c.name);
-    expect(passed.sort()).toEqual(["tokens", "types"]);
-    // The other eight should all be skipped.
-    expect(json.summary.pass).toBe(2);
-    expect(json.summary.skip).toBe(8);
+    const dir = makeProject({ seo: 1 });
+    const { code } = run(dir, ["--include", "brand-voice,readability"]);
+    expect(code).toBe(0);
   });
 
-  it("failure inside --include still triggers exit 1", () => {
-    const r = run(tmpProject({ failing: ["tokens"], hasBuild: true }), [
-      "--ci",
-      "--include",
-      "tokens",
-    ]);
-    expect(r.exitCode).toBe(1);
-    const json = JSON.parse(r.stdout);
-    expect(json.ok).toBe(false);
-  });
-});
-
-describe("bundle-size conditional", () => {
-  it("skips bundle-size when no build artifact exists", () => {
-    const r = run(tmpProject({ hasBuild: false }), ["--ci"]);
-    const json = JSON.parse(r.stdout);
-    const bundle = json.checks.find((c) => c.name === "bundle-size");
-    expect(bundle.status).toBe("skip");
-    expect(bundle.reason).toContain("no build artifact");
+  it("--json emits parseable machine output", () => {
+    const dir = makeProject({ calendar: 1 });
+    const { code, stdout } = run(dir, ["--json"]);
+    expect(code).toBe(1);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.summary.fail).toBe(1);
+    const cal = parsed.checks.find((c) => c.name === "calendar");
+    expect(cal.status).toBe("fail");
   });
 
-  it("runs bundle-size when a build artifact exists", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--ci"]);
-    const json = JSON.parse(r.stdout);
-    const bundle = json.checks.find((c) => c.name === "bundle-size");
-    expect(bundle.status).toBe("pass");
-  });
-});
-
-describe("agent-plugins conditional", () => {
-  it("skips agent-plugins when no plugins exist", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--ci"]);
-    const json = JSON.parse(r.stdout);
-    const ap = json.checks.find((c) => c.name === "agent-plugins");
-    expect(ap.status).toBe("skip");
-    expect(ap.reason).toContain("no plugins");
-  });
-
-  it("runs agent-plugins when a plugin exists", () => {
-    const dir = tmpProject({ hasBuild: true });
-    mkdirSync(join(dir, ".claude", "agent-plugins", "p"), { recursive: true });
-    writeFileSync(join(dir, ".claude", "agent-plugins", "p", "plugin.json"), "{}");
-    const wrapper = join(dir, "scripts", "verify-agent-plugins.sh");
-    writeFileSync(wrapper, "#!/usr/bin/env bash\necho ran\nexit 0\n");
-    chmodSync(wrapper, 0o755);
-    const r = run(dir, ["--ci"]);
-    const json = JSON.parse(r.stdout);
-    const ap = json.checks.find((c) => c.name === "agent-plugins");
-    expect(ap.status).toBe("pass");
-  });
-});
-
-describe("missing check script", () => {
-  it("marks the check as skip with a 'script not found' reason", () => {
-    const dir = tmpProject({ hasBuild: true });
-    rmSync(join(dir, "scripts", "check-types.sh"), { force: true });
-    const r = run(dir, ["--ci"]);
-    const json = JSON.parse(r.stdout);
-    const types = json.checks.find((c) => c.name === "types");
-    expect(types.status).toBe("skip");
-    expect(types.reason).toContain("script not found");
-    // Skips alone should not flip ok to false.
-    expect(json.ok).toBe(true);
-  });
-});
-
-describe("unknown flag", () => {
-  it("exits 2 with a helpful error", () => {
-    const r = run(tmpProject(), ["--nope"]);
-    expect(r.exitCode).toBe(2);
-    expect(r.stderr ?? "").toContain("Unknown argument");
-  });
-});
-
-describe("JSON schema", () => {
-  it("emits valid JSON with the expected shape", () => {
-    const r = run(tmpProject({ hasBuild: true }), ["--json"]);
-    const json = JSON.parse(r.stdout);
-    expect(json).toHaveProperty("ok");
-    expect(json).toHaveProperty("summary.pass");
-    expect(json).toHaveProperty("summary.fail");
-    expect(json).toHaveProperty("summary.skip");
-    expect(json).toHaveProperty("summary.total");
-    expect(Array.isArray(json.checks)).toBe(true);
-    for (const check of json.checks) {
-      expect(check).toHaveProperty("name");
-      expect(check).toHaveProperty("status");
-      expect(check).toHaveProperty("exitCode");
-      expect(check).toHaveProperty("durationMs");
-      expect(check).toHaveProperty("reason");
-    }
+  it("--ci implies JSON output", () => {
+    const dir = makeProject();
+    const { code, stdout } = run(dir, ["--ci"]);
+    expect(code).toBe(0);
+    expect(JSON.parse(stdout).ok).toBe(true);
   });
 });

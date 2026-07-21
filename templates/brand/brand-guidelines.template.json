@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "sources": ["<where these rules came from — docs, corpus, interview>"],
+
+  "brand": {
+    "name": "<Brand>",
+    "tagline": "<Tagline>",
+    "boilerplate": "<Approved ~50-word company description used in releases and bios>"
+  },
+
+  "voice": {
+    "personality": ["<trait-1>", "<trait-2>", "<trait-3>"],
+    "neverBe": ["<anti-trait-1>", "<anti-trait-2>"],
+    "attributes": [
+      {
+        "trait": "<trait-1>",
+        "do": "<A sentence showing the trait done right>",
+        "dont": "<A sentence showing how it goes wrong>"
+      }
+    ],
+    "pointOfView": "first-person plural (we) to customer (you)",
+    "examplePhrases": ["<On-voice phrase 1>", "<On-voice phrase 2>"]
+  },
+
+  "tone": {
+    "contexts": {
+      "launch": "<How the voice modulates for launches>",
+      "support": "<...for support moments>",
+      "crisis": "Honest, human, no defensiveness, no humor",
+      "legal": "Precise and unembellished"
+    }
+  },
+
+  "lexicon": {
+    "preferred": [
+      { "use": "customers", "insteadOf": ["users", "end-users"] }
+    ],
+    "banned": ["synergy", "world-class", "revolutionary", "game-changing", "best-in-class"],
+    "productNames": [
+      { "correct": "<Product Name>", "incorrect": ["<productname>", "<Product-Name>"] }
+    ],
+    "capitalization": ["Sentence case for headlines", "No ALL CAPS except legal"]
+  },
+
+  "claims": {
+    "requireSourceForStatistics": true,
+    "superlativesRequireSubstantiation": true,
+    "testimonialPolicy": "real, permissioned, unedited in substance; permission documented",
+    "prohibited": ["guarantee", "#1", "the only", "risk-free"],
+    "comparativeClaims": "must be current, accurate, and substantiated; legal review for named competitors"
+  },
+
+  "visual": {
+    "colors": {
+      "primary": { "hex": "#000000", "name": "<Name>" },
+      "secondary": { "hex": "#000000", "name": "<Name>" },
+      "accent": { "hex": "#000000", "name": "<Name>" }
+    },
+    "typography": {
+      "heading": { "family": "<Family>", "weights": [600, 700] },
+      "body": { "family": "<Family>", "weights": [400, 500] }
+    },
+    "logo": {
+      "clearSpace": "1x logo height on all sides",
+      "minSizePx": 24,
+      "donts": ["stretch", "recolor", "place on busy imagery"]
+    },
+    "imagery": {
+      "style": "<Photography/illustration direction>",
+      "avoid": ["<cliché-1>", "<cliché-2>"]
+    }
+  },
+
+  "compliance": {
+    "disclaimers": [
+      { "assetType": "email", "text": "Unsubscribe link + physical address", "required": true }
+    ],
+    "regulatedTopics": [],
+    "disclosureRules": ["Sponsored and affiliate content labeled per FTC guidance"]
+  }
+}

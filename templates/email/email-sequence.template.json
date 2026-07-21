@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "sequence": "<sequence-slug>",
+  "job": "<The ONE outcome this sequence causes>",
+  "goalMetric": "<How success is measured>",
+  "entry": { "trigger": "event:<event_name>", "delay": "immediate" },
+  "exits": ["event:<goal_event>", "unsubscribe"],
+  "suppressions": ["<who never enters>"],
+  "frequencyGuard": "<interaction with other flows/broadcasts>",
+  "steps": [
+    {
+      "id": "e1",
+      "timing": "immediate",
+      "job": "<Deliver promised value + set expectations>",
+      "subject": "<Subject ≤45 chars>",
+      "preview": "<Preview text — the payoff, not 'view in browser'>",
+      "cta": { "label": "<Verb + payoff>", "url": "<url>", "utm": "<utm_content>" },
+      "branch": null
+    },
+    {
+      "id": "e2",
+      "timing": "+2 days if !<goal_event>",
+      "job": "<Remove the most common blocker>",
+      "subject": "<Subject>",
+      "preview": "<Preview>",
+      "cta": { "label": "<CTA>", "url": "<url>", "utm": "<utm_content>" },
+      "branch": { "if": "opened:e1 == false", "then": "resend-variant-subject" }
+    }
+  ],
+  "compliance": ["unsubscribe", "physical-address", "sender-identity"],
+  "approval": { "required": true, "approvedAt": null, "approver": null }
+}

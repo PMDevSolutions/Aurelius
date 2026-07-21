@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "range": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" },
+  "cadence": {
+    "blog": { "perWeek": 2, "maxPerDay": 1 },
+    "email": { "perWeek": 1, "maxPerDay": 1 },
+    "social": { "perWeek": 5, "maxPerDay": 2 }
+  },
+  "entries": [
+    {
+      "id": "blog-01",
+      "title": "<Working title>",
+      "assetType": "blog-post",
+      "channel": "blog",
+      "campaign": "<campaign-slug or 'evergreen'>",
+      "pillar": "<content-pillar>",
+      "ownerAgent": "blog-writer",
+      "status": "planned",
+      "dates": {
+        "draftDue": "YYYY-MM-DD",
+        "qaDue": "YYYY-MM-DD",
+        "approvalDue": "YYYY-MM-DD",
+        "publish": "YYYY-MM-DD"
+      },
+      "dependencies": [],
+      "briefRef": ".claude/plans/campaign-brief.json#assetPlan.blog-01"
+    }
+  ]
+}

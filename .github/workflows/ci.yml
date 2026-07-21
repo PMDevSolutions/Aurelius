@@ -22,23 +22,19 @@ jobs:
       - name: Check shell script syntax
         run: |
           errors=0
-          for f in scripts/*.sh; do
+          for f in scripts/*.sh scripts/lib/*.sh .claude/hooks/*.sh; do
             if [ -f "$f" ]; then
               bash -n "$f" || { echo "FAIL: $f"; errors=$((errors + 1)); }
             fi
           done
-          echo "Checked $(ls scripts/*.sh 2>/dev/null | wc -l) scripts, $errors failed"
+          echo "Shell syntax check complete, $errors failed"
           exit $errors
 
       - name: Validate JSON configs
         run: |
           errors=0
-          for f in .claude/pipeline.config.json package.json; do
-            if [ -f "$f" ]; then
-              python3 -m json.tool "$f" > /dev/null || { echo "FAIL: $f"; errors=$((errors + 1)); }
-            fi
-          done
-          for f in templates/**/*.json; do
+          for f in .claude/pipeline.config.json .claude/pipeline.config.schema.json \
+                   .claude/settings.json package.json templates/*/*.json; do
             if [ -f "$f" ]; then
               python3 -m json.tool "$f" > /dev/null || { echo "FAIL: $f"; errors=$((errors + 1)); }
             fi
@@ -46,387 +42,51 @@ jobs:
           echo "$errors JSON validation failures"
           exit $errors
 
-      - name: Validate pipeline.config.json structure
+      - name: Validate pipeline.config.json required sections
         run: |
-          # Verify required top-level keys exist
-          required_keys='["visualDiff","iterationLoop","tdd","e2e","qualityGate","appTypes","orchestration","caching"]'
           python3 -c "
           import json, sys
           with open('.claude/pipeline.config.json') as f:
               config = json.load(f)
-          required = json.loads('$required_keys')
+          required = ['brandVoice', 'editorialLoop', 'factCheck', 'humanApproval',
+                      'assetTypes', 'orchestration']
           missing = [k for k in required if k not in config]
           if missing:
               print(f'Missing required keys: {missing}')
               sys.exit(1)
-          print(f'All {len(required)} required keys present')
+          approval = config['humanApproval']
+          if not (approval.get('required') and approval.get('blocking')):
+              print('humanApproval must be required and blocking — the gate is non-negotiable')
+              sys.exit(1)
+          print('pipeline.config.json structure OK')
           "
 
-      - name: Check required files exist
-        run: |
-          exit_code=0
-          required_files=(
-            "CLAUDE.md"
-            "package.json"
-            ".claude/pipeline.config.json"
-            "scripts/lint-and-format.sh"
-            "scripts/run-tests.sh"
-            "scripts/check-types.sh"
-            "scripts/visual-diff.js"
-            "scripts/verify-tokens.sh"
-            "scripts/check-security.sh"
-          )
-          for f in "${required_files[@]}"; do
-            if [ -f "$f" ]; then
-              echo "  $f: OK"
-            else
-              echo "  $f: MISSING"
-              exit_code=1
-            fi
-          done
-          exit $exit_code
-
-      - name: Validate agent frontmatter
-        run: |
-          errors=0
-          count=0
-          for f in .claude/agents/*.md; do
-            [ -f "$f" ] || continue
-            count=$((count + 1))
-
-            # Extract YAML frontmatter between --- delimiters
-            frontmatter=$(sed -n '/^---$/,/^---$/p' "$f" | sed '1d;$d')
-
-            if [ -z "$frontmatter" ]; then
-              echo "FAIL: $f — no YAML frontmatter found"
-              errors=$((errors + 1))
-              continue
-            fi
-
-            # Check required fields (tools is optional — omitted means "all tools")
-            for field in name description; do
-              if ! echo "$frontmatter" | grep -qE "^${field}:"; then
-                echo "FAIL: $f — missing required field: $field"
-                errors=$((errors + 1))
-              fi
-            done
-          done
-          echo "Checked $count agents, $errors failures"
-          exit $errors
-
-      - name: Validate skill structure
-        run: |
-          errors=0
-          count=0
-          for f in .claude/skills/*.md; do
-            [ -f "$f" ] || continue
-            [ "$(basename "$f")" = "README.md" ] && continue
-            count=$((count + 1))
-
-            frontmatter=$(sed -n '/^---$/,/^---$/p' "$f" | sed '1d;$d')
-
-            if [ -z "$frontmatter" ]; then
-              echo "FAIL: $f — no frontmatter found"
-              errors=$((errors + 1))
-              continue
-            fi
-
-            for field in name description; do
-              if ! echo "$frontmatter" | grep -qE "^${field}:"; then
-                echo "FAIL: $f — missing required field: $field"
-                errors=$((errors + 1))
-              fi
-            done
-          done
-          echo "Checked $count skills, $errors failures"
-          [ $count -eq 0 ] && echo "Note: no skill .md files found in .claude/skills/"
-          exit $errors
-
-      - name: Check doc counts match agents/skills on disk
+      - name: Check doc counts
         run: bash scripts/check-doc-counts.sh
 
-      - name: Validate templates
-        run: |
-          errors=0
-
-          # Check template JSON files parse correctly
-          for f in templates/**/*.json; do
-            if [ -f "$f" ]; then
-              python3 -m json.tool "$f" > /dev/null 2>&1 || {
-                echo "FAIL: $f — invalid JSON"
-                errors=$((errors + 1))
-              }
-            fi
-          done
-
-          # Check key template directories exist
-          for dir in templates/shared templates/nextjs templates/vite; do
-            if [ -d "$dir" ]; then
-              echo "  $dir: OK"
-            else
-              echo "  $dir: MISSING"
-              errors=$((errors + 1))
-            fi
-          done
-
-          # Check shared configs exist
-          for f in templates/shared/eslint.config.js templates/shared/prettier.config.js templates/shared/tsconfig.json templates/shared/tailwind.config.ts; do
-            if [ -f "$f" ]; then
-              echo "  $f: OK"
-            else
-              echo "  $f: MISSING"
-              errors=$((errors + 1))
-            fi
-          done
-
-          echo "$errors template validation failures"
-          exit $errors
-
-  # ── Script test suite (needs Node + dependencies) ─────────────────────
-  script-tests:
-    name: Script Tests
+  # ── Node checks: schema validation, unit tests, quality suite ──────────
+  test:
+    name: Tests & Quality Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+      - uses: pnpm/action-setup@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          version: 9
+          node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate pipeline.config.json against schema
+      - name: Validate pipeline config against schema
         run: node scripts/validate-pipeline-config.js
 
       - name: Run script tests
-        run: pnpm vitest run --config scripts/__tests__/vitest.config.js scripts/__tests__/ --reporter=verbose
+        run: pnpm test
 
-  # ── Pipeline package (TypeScript: InDesign IDML parser + IR) ───────────
-  pipeline-tests:
-    name: Pipeline Package
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Type-check
-        run: pnpm --filter @aurelius/pipeline typecheck
-
-      - name: Run pipeline tests
-        run: pnpm --filter @aurelius/pipeline test
-
-      - name: Build (tsc emit + declarations)
-        run: pnpm --filter @aurelius/pipeline build
-
-  # ── Lint & format check (needs Node + project with eslint/prettier) ───
-  lint:
-    name: Lint & Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run lint and format check
-        run: bash scripts/lint-and-format.sh --check
-
-  # ── Token verification ────────────────────────────────────────────────
-  token-verification:
-    name: Verify Design Tokens
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run token verification
-        run: |
-          if [ -f "scripts/verify-tokens.sh" ] && [ -d "app/src" ]; then
-            cd app && bash ../scripts/verify-tokens.sh
-          else
-            echo "No app source found — skipping token check"
-          fi
-
-  # ── Security scanning ─────────────────────────────────────────────────
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run pnpm audit
-        run: pnpm audit --audit-level moderate
-        continue-on-error: true
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-      - name: Run security anti-pattern check
-        run: |
-          if [ -f "scripts/check-security.sh" ]; then
-            bash scripts/check-security.sh --no-fail
-          fi
-
-      - name: Upload Snyk report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: snyk-report
-          path: snyk-report.json
-          if-no-files-found: ignore
-          retention-days: 30
-
-  # ── Visual regression (PR only) ───────────────────────────────────────
-  visual-regression:
-    name: Visual Regression
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
-
-      - name: Check for baselines
-        id: baselines
-        run: |
-          BASELINE_COUNT=$(find .claude/visual-qa/baselines -name "*.png" 2>/dev/null | wc -l)
-          echo "count=$BASELINE_COUNT" >> "$GITHUB_OUTPUT"
-          if [ "$BASELINE_COUNT" -eq 0 ]; then
-            echo "No baselines found — skipping regression test"
-          else
-            echo "Found $BASELINE_COUNT baseline screenshots"
-          fi
-
-      - name: Install app dependencies
-        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
-        working-directory: app
-        run: pnpm install --frozen-lockfile
-
-      - name: Build app
-        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
-        working-directory: app
-        run: pnpm build
-
-      - name: Start app server
-        if: steps.baselines.outputs.count != '0' && hashFiles('app/package.json') != ''
-        working-directory: app
-        run: |
-          pnpm start &
-          sleep 5
-
-      - name: Run visual regression tests
-        if: steps.baselines.outputs.count != '0'
-        run: bash scripts/regression-test.sh http://localhost:3000 --json
-        continue-on-error: true
-        id: regression
-
-      - name: Upload diff artifacts
-        if: steps.baselines.outputs.count != '0' && always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-regression-diffs
-          path: |
-            .claude/visual-qa/diffs/regression/
-            .claude/visual-qa/regression-report.md
-          retention-days: 14
-          if-no-files-found: ignore
-
-      - name: Comment PR with regression results
-        if: steps.baselines.outputs.count != '0' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const reportPath = '.claude/visual-qa/regression-report.md';
-            let body = '## Visual Regression Results\n\nNo report generated.';
-            if (fs.existsSync(reportPath)) {
-              body = fs.readFileSync(reportPath, 'utf-8');
-            }
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes('Visual Regression Results')
-            );
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
+      - name: Run quality suite
+        run: bash scripts/verify-all.sh --ci
