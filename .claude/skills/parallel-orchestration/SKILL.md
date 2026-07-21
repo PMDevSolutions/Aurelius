@@ -1,258 +1,133 @@
 ---
 name: parallel-orchestration
-description: Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting dependency graphs and resource constraints
+description: Concurrent phase runner that dispatches independent campaign pipeline phases and per-asset lanes in parallel, respecting dependency graphs and resource constraints. Keywords: parallel orchestration, concurrent phases, dependency graph, asset lanes, pipeline speedup
 globs:
   - ".claude/pipeline.config.json"
-  - ".claude/commands/build-from-*.md"
+  - ".claude/commands/build-campaign.md"
 ---
 
-# Parallel Orchestration
+# Parallel Orchestration — Concurrent Phase Runner
 
 ## Overview
 
-A concurrent phase scheduler that dispatches independent pipeline phases in parallel using background agents. It reads the phase dependency graph and resource constraints from `pipeline.config.json`, determines which phases can safely run concurrently, and schedules them up to the configured `maxConcurrent` limit. Phases with unmet dependencies or conflicting exclusive resources are held until their prerequisites complete and resources free up.
+A concurrent phase scheduler that dispatches independent campaign pipeline phases in parallel using background agents. It reads the phase dependency graph and resource constraints from `pipeline.config.json`, determines which phases can safely run concurrently, and schedules them up to the configured `maxConcurrent` limit. The unit of parallelism is the **asset lane**: each asset flows draft → editorial QA → channel checks independently, with a hard barrier at the human approval gate.
 
 The scheduler produces real-time streaming output as phases start and finish, and a final batch summary with wall-clock timing, estimated sequential time, and speedup factor.
 
 ## When to Use
 
-- **Pipeline invocation:** Called by `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` after the sequential phases (0-3: token-sync, intake, token-lock, tdd-scaffold) complete. Phases 4+ are handed to this skill for parallel dispatch.
-- **Standalone:** Invoke directly for ad-hoc parallel work by providing a list of independent tasks.
+- **Pipeline invocation:** Called by `/build-campaign` after the sequential phases (0-3: brand-sync, brief-intake, brand-voice-lock, strategy-gate) complete. Phases 4+ are handed to this skill for parallel dispatch.
+- **Standalone:** Any multi-asset production batch where assets are independent (e.g., calendar fills plus multiple `/write-content` runs).
 
 ## Input
 
-1. **Phase IDs** -- ordered list of phase IDs to execute (e.g., `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`).
-2. **Prior context** -- artifacts from earlier sequential phases:
-   - `build-spec.json` (component list, appType, `renderer`, E2E flows)
-   - `design-tokens.lock.json` (locked token values)
-   - Test files from tdd-scaffold phase
-3. **Pipeline config** -- `.claude/pipeline.config.json`, specifically the `orchestration` section.
-4. **Renderer manifest** -- the resolved manifest for the build-spec's `renderer`, used to drop excluded phases and select the converter (see Step 0 and Step 5).
+1. **Phase IDs** — ordered list of phase IDs to execute (e.g., `["calendar", "drafts", "editorial-qa", "channel-checks", "approval-gate", "report"]`)
+2. **Prior context** — artifacts from earlier sequential phases:
+   - `campaign-brief.json` (objective, asset plan, approvals)
+   - `brand-guidelines.json` (locked brand rules)
+   - Strategy-gate approval record
+3. **Pipeline config** — `.claude/pipeline.config.json`, specifically the `orchestration` section
+4. **Asset plan** — `campaign-brief.json → assetPlan` (defines the lanes)
 
-## Algorithm
+## Scheduling Model
 
-### Step 0: Resolve Renderer and Exclude Phases
-
-Before scheduling, read `renderer` from `build-spec.json` and resolve its manifest:
-
-```bash
-node scripts/renderer-registry.js resolve <renderer> --json
-```
-
-Read `manifest.phases.exclude` (an array, absent/empty for most renderers) and **drop every listed phase from the requested phase set before building the dependency graph.** Excluded phases never enter the scheduler — they are not dispatched, not tracked, and not awaited.
-
-Example: the `expo` renderer excludes `visual-diff`, `cross-browser`, `responsive`, and `dark-mode` (no browser rendering), so those phases are removed up front and only `component-build`, `storybook`, `e2e-tests`, `quality-gate`, and `report` schedule. When a dependent phase's dependency was excluded, treat that dependency as pre-satisfied (same as a phase completed externally).
-
-This replaces any per-framework phase-skipping logic — the manifest is the single source of truth for which phases a renderer supports.
-
-### Step 1: Load Configuration
-
-Read `.claude/pipeline.config.json` and extract the `orchestration` section:
-
-- `maxConcurrent` -- maximum number of phases running at once (default: 3)
-- `phases` -- dependency graph, resource declarations, blocking flags
-- `qualityGateSubtasks` -- sub-tasks for the quality-gate phase
-- `reporting` -- output preferences (streaming, summary, timeline)
-
-Validate that every requested phase ID exists in `phases`. Abort with an error if any phase is unknown.
-
-### Step 2: Build Execution State
-
-Initialize a state tracker for all requested phases:
+### Phase-Level Graph
 
 ```
-state = {
-  [phaseId]: {
-    status: "pending",    // pending | running | completed | failed | skipped
-    startTime: null,
-    endTime: null,
-    duration: null,
-    result: null,         // output or error message
-    agentId: null,        // background agent identifier
-    blocking: <from config>,
-    depends: <from config>,
-    resources: <from config>
-  }
-}
+calendar         depends: [strategy-gate]   blocking: true
+drafts           depends: [calendar]        blocking: true   (fans out per asset)
+editorial-qa     depends: [drafts]*         blocking: true   (per-asset bounded loop)
+channel-checks   depends: [drafts]*         blocking: false
+approval-gate    depends: [editorial-qa, channel-checks]  blocking: true  (HUMAN)
+report           depends: [approval-gate]   blocking: true
+
+* per-asset: an asset enters editorial-qa as soon as ITS draft completes —
+  no barrier waiting for all drafts (pipeline, not lockstep)
 ```
 
-Mark any phase whose dependencies include a phase NOT in the requested set as having those dependencies pre-satisfied (assumed completed externally, e.g., phases 0-3).
-
-### Step 3: Scheduling Loop
+### Asset Lanes
 
 ```
-WHILE any phase has status "pending" or "running":
-  ready = phases WHERE status == "pending"
-                  AND all deps have status "completed"
-                  AND no resource conflict with currently "running" phases
-
-  available_slots = maxConcurrent - count(status == "running")
-  to_dispatch = ready[0..available_slots]
-
-  FOR EACH phase IN to_dispatch:
-    dispatch phase as background agent (see Phase Dispatch Table)
-    set status = "running"
-    record startTime and agentId
-    REPORT "[START] {phase} dispatched"
-
-  Wait for next completion notification
-
-  On completion of phase P:
-    record endTime, compute duration
-    If success:
-      set status = "completed"
-      REPORT "[PASS] {phase} ({duration}s)"
-    If failed AND phase.blocking == true:
-      set status = "failed"
-      mark all transitive dependents as "skipped"
-      REPORT "[FAIL] {phase} -- blocking, skipping dependents: {list}"
-    If failed AND phase.blocking == false:
-      set status = "failed"
-      REPORT "[WARN] {phase} failed -- non-blocking, continuing"
+Asset blog-01:  draft ──► editorial-qa (loop ≤5) ──► channel-checks ─┐
+Asset email-01: draft ──► editorial-qa (loop ≤5) ──► channel-checks ─┼─► APPROVAL ─► report
+Asset social-01:      draft ──► editorial-qa ──► channel-checks ─────┘     GATE
 ```
 
-### Step 4: Resource Conflict Check
+Lanes run concurrently up to `maxConcurrent`. The approval gate is the one true barrier: it waits for every lane, then presents the complete package to the human. Nothing overtakes the gate.
 
-Two phases conflict if they share any **exclusive** resource. The conflict rules:
+### Resource Tags
 
-- **String resource** (e.g., `"filesystem:src"`): exclusive by default. Two running phases with the same string resource conflict.
-- **Object resource** with `"mode": "shared"` (e.g., `{ "name": "port:dev-server", "mode": "shared" }`): never conflicts with any other phase holding the same resource.
-- **Empty resources** `[]`: no conflicts with anything.
+Phases declare resources to prevent write conflicts:
 
-Implementation:
+- `filesystem:calendar` — content-calendar.json writes (exclusive; calendar updates serialize)
+- `filesystem:content` — asset files (per-asset paths, so lanes don't conflict)
+- `filesystem:brief` — campaign-brief.json status updates (exclusive)
+- `agent:<name>` — an owning agent drafting two assets works them sequentially within its lane capacity
 
-```
-function hasResourceConflict(candidatePhase, runningPhases):
-  candidateExclusive = candidatePhase.resources
-    .filter(r => typeof r === "string")  // strings are exclusive
+Exclusive resources serialize; shared resources fan out. Two lanes writing different asset files proceed in parallel; two updates to the calendar queue.
 
-  FOR EACH running IN runningPhases:
-    runningExclusive = running.resources
-      .filter(r => typeof r === "string")
+### Dispatch Table
 
-    IF intersection(candidateExclusive, runningExclusive) is non-empty:
-      RETURN true
+| Phase | Dispatch |
+|-------|----------|
+| `calendar` | content-calendar skill → `validate-content-calendar.js` |
+| `drafts` | Per asset: the `ownerAgent` from the asset plan via its drafting skill (blog-writer, email-sequence, social-content-batching, ad-copy-variants, landing-page-copy) |
+| `editorial-qa` | editorial-qa skill per asset — bounded loop (max from `editorialLoop.maxRevisions`) |
+| `channel-checks` | `seo-check.js` / platform-limit checks per assetType (non-blocking WARNs) |
+| `approval-gate` | STOP. Assemble the package (assets + QA reports + spend plan) and present to the human. Nothing proceeds until explicit approval per asset. |
+| `report` | analytics-report skill → campaign-report.md (measurement plan + wrap) |
 
-  RETURN false
-```
+## Execution Rules
 
-### Step 5: Phase Dispatch Table
+1. **Start order:** any phase whose `depends` are all complete (or pre-satisfied by the sequential block) starts immediately, up to `maxConcurrent`
+2. **Per-asset progression:** within `drafts` → `editorial-qa` → `channel-checks`, assets advance independently the moment their previous stage completes
+3. **Blocking phases** that fail stop their dependents; **non-blocking** phases report WARN and let dependents proceed
+4. **The revision loop** counts per asset; an asset exhausting its loop escalates (per editorial-qa) without stalling other lanes
+5. **The approval gate never auto-passes** — no timeout, no default-approve, no partial skip. Un-approved assets are withheld; approved ones proceed
+6. **Failure isolation:** one asset's failure never cancels sibling lanes; the report lists per-lane outcomes
 
-| Phase | Dispatch Method |
-|-------|----------------|
-| `component-build` | **Agent:** dispatch the converter named by the resolved renderer manifest. For React renderers the calling command supplies the source-appropriate converter (figma/screenshot → figma-react-converter via the figma-to-react-workflow skill, canva → canva-react-converter); otherwise dispatch `manifest.converter` (e.g. react-native-converter for expo, future vue-converter / svelte-converter) |
-| `storybook` | **Bash:** `./scripts/generate-stories.sh` |
-| `visual-diff` | **Agent:** invoke visual-qa-verification skill with pixel-diff loop (max iterations from `iterationLoop.maxVisualIterations`) |
-| `dark-mode` | **Bash:** `./scripts/check-dark-mode.sh http://localhost:3000` |
-| `e2e-tests` | **Agent:** invoke e2e-test-generator skill with flows from build-spec.json |
-| `cross-browser` | **Bash:** `./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json` (diffs firefox/webkit against committed baselines with provenance checks — RFC 0002; skips with a capture hint when no baselines exist) |
-| `quality-gate` | **Parallel sub-dispatch:** run all `qualityGateSubtasks` concurrently (see below) |
-| `responsive` | **Bash:** `./scripts/check-responsive.sh http://localhost:3000` |
-| `report` | **Agent:** generate `build-report.md` in `.claude/visual-qa/` from all collected phase results, timings, and diff images |
+## Streaming Progress Format
 
-### Step 6: Quality Gate Sub-Parallelization
-
-When `quality-gate` is dispatched, it internally runs its subtasks using the same scheduling algorithm with independent concurrency tracking:
-
-| Subtask | Command |
-|---------|---------|
-| `coverage` | `pnpm vitest run --coverage` -- check 80% threshold |
-| `typecheck` | `pnpm tsc --noEmit` |
-| `build` | `pnpm build` |
-| `token-verify` | `./scripts/verify-tokens.sh` |
-| `lighthouse` | Lighthouse audit via Chrome DevTools MCP or CLI, check thresholds from `qualityGate.lighthouseThresholds` |
-
-All subtasks run in parallel (respecting their resource declarations). The quality-gate phase passes only if **all** subtasks pass. If any subtask fails, quality-gate fails.
-
-Report each subtask result inline:
+Report each completion as it happens, then the batch summary:
 
 ```
-[QUALITY-GATE] coverage: PASS (87%)
-[QUALITY-GATE] typecheck: PASS (0 errors)
-[QUALITY-GATE] build: PASS (3.2s)
-[QUALITY-GATE] token-verify: PASS (no drift)
-[QUALITY-GATE] lighthouse: PASS (perf:92 a11y:98 bp:95 seo:100)
+ 0s   [############] calendar             8s  PASS (12 entries validated)
+ 8s   [########]     draft:blog-01       41s  PASS
+ 8s   [######]       draft:email-01      29s  PASS
+37s   [####]         qa:email-01         18s  PASS (iteration 2/5)
+49s   [######]       qa:blog-01          22s  REVISE→PASS (iteration 3/5)
+71s   [--]           channel:blog-01      4s  WARN (meta description long)
+      ────────────────────────────────────────
+      APPROVAL GATE: 4 assets ready — awaiting human review
+      package: .claude/campaigns/<slug>/approval-package.md
+
+Batch: 6 phases, 4 lanes · wall 75s vs 168s sequential (2.2× speedup)
 ```
-
-## Batch Summary
-
-After all phases resolve, output a summary:
-
-```
-=== PARALLEL ORCHESTRATION SUMMARY ===
-
-Phases:  9 total | 7 passed | 1 failed | 1 skipped
-Wall time:       47s
-Sequential est:  138s
-Speedup:         2.9x
-
-Timeline:
- 0s   [################] component-build      32s  PASS
- 32s  [#####]            storybook             8s  PASS
- 32s  [###########]      visual-diff          22s  PASS
- 32s  [###]              dark-mode             5s  WARN (non-blocking)
- 32s  [########]         quality-gate         16s  PASS
- 32s  [######]           cross-browser        12s  PASS
- 32s  [####]             responsive            7s  PASS
- 54s  [#######]          e2e-tests            14s  FAIL
- --   [-------]          report                --  SKIPPED (dep: e2e-tests)
-
-Failures:
-  e2e-tests: 2/5 flows failed (popup-interact, content-script-inject)
-```
-
-Include:
-- **Total / passed / failed / skipped** counts
-- **Wall time** (actual elapsed from first dispatch to last completion)
-- **Sequential estimate** (sum of all phase durations)
-- **Speedup factor** (sequential / wall)
-- **ASCII timeline** showing each phase's start offset, duration bar, and result
-- **Failures section** with details for any failed phase
-
-## Standalone Usage
-
-The skill can be invoked directly for ad-hoc parallel work outside the pipeline context. Provide a list of independent tasks as phase descriptors:
-
-```
-Run these tasks in parallel using parallel-orchestration:
-1. Run lint: pnpm eslint .
-2. Run type check: pnpm tsc --noEmit
-3. Run tests: pnpm vitest run
-4. Check bundle size: ./scripts/check-bundle-size.sh
-```
-
-The scheduler treats each task as a phase with no dependencies and no resource conflicts, dispatching up to `maxConcurrent` at a time and producing the same batch summary on completion.
 
 ## Error Handling
 
-- **Agent crash or unexpected failure:** Mark the phase as `failed`. If the phase is `blocking`, mark all transitive dependents as `skipped` and report the root cause. If non-blocking, log a warning and continue.
-- **Timeout:** Log a warning after 5 minutes of a phase running, but do not auto-kill. The phase may be legitimately long-running (e.g., visual-diff iteration loop). Warn again at 10 minutes.
-- **Resource deadlock:** Impossible by design. The dependency graph is a DAG (acyclic), and resources are held only during phase execution. A phase releases all resources upon completion, so no circular wait can occur.
-- **All phases skipped:** If every requested phase ends up skipped (due to a blocking failure cascade), report the root-cause phase prominently at the top of the summary.
-- **Config validation failure:** If `pipeline.config.json` is missing or the `orchestration` section is absent, abort with a clear error message listing what is expected.
+- **Circular dependency in config:** Abort with the cycle path; fix pipeline.config.json
+- **Phase with unknown dispatch target:** Skip with ERROR in summary; never guess a dispatcher
+- **Lane hung >5 minutes:** Warn, keep others flowing; warn again at 10 minutes (QA loops can be legitimately long)
+- **Approval gate reached with zero passing assets:** Report the full failure set — the human decides next steps; the pipeline never fabricates a passing state
+- **maxConcurrent misconfigured (<1):** Fall back to sequential execution and say so
 
-## Integration with Pipeline Commands
-
-Pipeline commands (`/build-from-figma`, `/build-from-canva`, `/build-from-screenshot`) invoke this skill after completing the sequential phases 0-3. The handoff looks like:
+## Handoff Example
 
 ```
-# Phases 0-3 run sequentially (mandatory ordering)
-Phase 0: token-sync        -> completed
-Phase 1: intake             -> completed (build-spec.json written)
-Phase 2: token-lock         -> completed (design-tokens.lock.json written)
-Phase 3: tdd-scaffold       -> completed (failing tests written)
+Phase 0: brand-sync        -> completed (no drift)
+Phase 1: brief-intake      -> completed (campaign-brief.json written)
+Phase 2: brand-voice-lock  -> completed (brand-guidelines.json v1.2)
+Phase 3: strategy-gate     -> APPROVED by user 2026-07-22
 
-# Hand off to parallel-orchestration for phases 4+
-Invoke parallel-orchestration with phases:
-  ["component-build", "storybook", "visual-diff", "dark-mode",
-   "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]
-
-Context provided:
-  - build-spec.json (appType, renderer, component list, E2E flows)
-  - design-tokens.lock.json
-  - Test files from phase 3
-  - Pipeline config
-  - Resolved renderer manifest (drives phase exclusion + converter selection)
+Handing off to parallel-orchestration:
+  ["calendar", "drafts", "editorial-qa", "channel-checks",
+   "approval-gate", "report"]
+Asset lanes: blog-01, blog-02, email-01, social-01, ads-01
 ```
 
-Before scheduling, the scheduler resolves the renderer manifest and drops any phase in `manifest.phases.exclude` (Step 0). The parallel scheduler then respects the dependency graph within the remaining handed-off phases. For example, `component-build` has no unmet deps (its dep `tdd-scaffold` was completed in the sequential block), so it starts immediately. Phases like `visual-diff`, `storybook`, `dark-mode`, `quality-gate`, `cross-browser`, and `responsive` all depend on `component-build`, so they fan out once it completes. Finally, `report` waits for `quality-gate` and `e2e-tests` before running.
+## Integration
+
+- **Consumed by:** `/build-campaign` (Phases 4-9)
+- **Uses:** `pipeline.config.json → orchestration`, campaign-brief.json assetPlan, all drafting skills, editorial-qa
+- **Fallback:** `orchestration.enabled: false` → run the same phases sequentially in dependency order

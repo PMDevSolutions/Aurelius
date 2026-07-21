@@ -1,7 +1,7 @@
 # Skills Catalog
 
-**Last Updated:** 2026-07-01
-**Total Skills:** 24
+**Last Updated:** 2026-07-21
+**Total Skills:** 13
 **Location:** `.claude/skills/`
 
 Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
@@ -10,205 +10,120 @@ Skills are documentation-based workflows that trigger automatically when relevan
 
 ## Skills Index
 
-### Figma-to-React Pipeline Skills
+### Campaign Pipeline Skills
 
-These skills power the `/build-from-figma` and `/build-from-canva` autonomous pipelines. They run in sequence (Phase 1 through Phase 6) but can also be invoked independently.
+These skills power the `/build-campaign` autonomous pipeline. They run in sequence (Phase 1 through Phase 9) but can also be invoked independently.
 
-#### 1. figma-intake (Phase 1)
-- **Purpose:** Structured interview that auto-discovers Figma file structure, scans the local project, asks 3-5 targeted questions, and produces a `build-spec.json`
-- **Triggers:** Phase 1 of `/build-from-figma`, or any Figma URL conversation
-- **Output:** `.claude/plans/build-spec.json`
+#### 1. campaign-brief-intake (Phase 1)
+- **Purpose:** Structured interview that auto-discovers brand context, past performance, and existing assets, asks 3-5 targeted questions, and produces a `campaign-brief.json`
+- **Triggers:** Phase 1 of `/build-campaign`, or any campaign-goal conversation
+- **Output:** `.claude/plans/campaign-brief.json`
 
-#### 2. design-token-lock (Phase 2)
-- **Purpose:** Extracts all design values from Figma and writes a lockfile that becomes the single source of truth for colors, typography, spacing, and text content
-- **Triggers:** Phase 2 of `/build-from-figma`, "extract tokens", "design tokens"
-- **Output:** `src/styles/design-tokens.lock.json`, `tailwind.config.ts`, `src/styles/tokens.css`
+#### 2. brand-voice-lock (Phase 2)
+- **Purpose:** Extracts voice, tone, lexicon, claims policy, and visual identity into the versioned `brand-guidelines.json` lockfile — the single source of truth every asset is checked against
+- **Triggers:** Phase 2 of `/build-campaign`, `/setup-brand`, "brand guidelines", "tone of voice"
+- **Output:** `brand-guidelines.json`, `docs/brand-setup/brand-voice.md`
 
-#### 3. tdd-from-figma (Phase 3)
-- **Purpose:** Writes failing tests for every component BEFORE implementation. App-type-aware: generates Chrome extension tests (popup, service worker, Chrome API mocks), PWA tests (manifest, offline), or standard web app tests.
-- **Triggers:** Phase 3 of `/build-from-figma`, "write tests first", "TDD"
-- **Output:** `src/components/**/*.test.tsx` (RED phase -- all tests fail)
+#### 3. content-calendar (Phase 4)
+- **Purpose:** Generates and maintains `content-calendar.json` — dated, channel-mapped, status-tracked slots with QA/approval lead times built in, validated by `validate-content-calendar.js`
+- **Triggers:** Phase 4 of `/build-campaign`, `/plan-content-calendar`, "content calendar"
+- **Output:** `content-calendar.json`
 
-#### 4. figma-to-react-workflow (Phase 4)
-- **Purpose:** Orchestrates the full Figma-to-React conversion pipeline. Generates React components that pass the tests from Phase 3. Includes pixel-diff visual QA loop and quality gate.
-- **Triggers:** "convert Figma", "Figma to React", "design to code"
-- **Works with:** figma-react-converter agent, asset-cataloger agent
+#### 4. editorial-qa (Phase 6)
+- **Purpose:** Bounded revision loop (max 5 iterations) running brand-voice lint, readability scoring, and fact-check verification on every asset before the approval gate. The analog of the old pixel-diff loop.
+- **Triggers:** Phase 6 of `/build-campaign`, `/write-content`, "review this content", "fact check"
+- **Output:** Per-asset findings reports, `editorial-qa-report.md`, PASS/REVISE/ESCALATED verdicts
 
-#### 5. e2e-test-generator (Phase 6)
-- **Purpose:** Generates Playwright E2E tests from `build-spec.json`. App-type-aware: web apps get page navigation/form/responsive tests, Chrome extensions get load/popup/storage/content-script tests, PWAs get install/offline tests.
-- **Triggers:** Phase 6 of `/build-from-figma`, "generate E2E tests", "Playwright tests"
-- **Output:** `e2e/` directory with Playwright config and test files
+#### 5. parallel-orchestration (Phases 4-9)
+- **Purpose:** Concurrent phase runner dispatching independent phases and per-asset lanes in parallel, respecting the dependency graph and resource constraints in `pipeline.config.json`. Hard barrier at the approval gate.
+- **Triggers:** Invoked by `/build-campaign` after Phase 3 (strategy gate)
+- **Works with:** all drafting and QA phases; falls back to sequential when disabled
 
-#### 6. visual-qa-verification (Phase 5)
-- **Purpose:** Automated pixel-diff visual QA using `scripts/visual-diff.js`. Captures Figma screenshots, renders the app, compares with pixelmatch, and iterates fixes up to 5 times. Includes cross-browser verification.
-- **Triggers:** "visual QA", "compare to Figma", "screenshot diff", "verify app"
-- **Works with:** visual-qa-agent, Chrome DevTools MCP, Figma MCP
+### Research Skills
 
-#### 7. parallel-orchestration (Phases 4-9)
-- **Purpose:** Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting the dependency graph and resource constraints defined in `pipeline.config.json`.
-- **Triggers:** Invoked by pipeline commands after Phase 3 (TDD gate)
-- **Works with:** all build/QA phases; falls back to sequential execution when disabled
+#### 6. seo-keyword-research
+- **Purpose:** Seed expansion, live-SERP intent classification, honest prioritization, and cluster mapping into a `keyword-plan.json`. Never fabricates search volumes.
+- **Triggers:** "keyword research", "what should we rank for", Weeks 1-2 of SEO-led campaigns, `/seo-audit`
+- **Output:** `.claude/plans/keyword-plan.json`
 
-### Canva & Screenshot Pipeline Skills
+#### 7. competitor-teardown
+- **Purpose:** Systematic teardown — positioning, pricing, funnel, content/SEO footprint, ads, review mining — into a sourced, dated report with exploitable gaps
+- **Triggers:** `/competitor-teardown`, "analyze competitor", "battlecard"
+- **Output:** `.claude/research/competitors/<name>-teardown-<date>.md`
 
-These skills power the `/build-from-canva` and `/build-from-screenshot` autonomous pipelines. They handle source-specific phases (1, 2) before converging with the shared pipeline (phases 3-9).
+#### 8. persona-research
+- **Purpose:** Evidence-based personas with every attribute labeled validated or assumed, plus the verbatim language bank that feeds copy
+- **Triggers:** "build personas", "audience research", missing personas at brief time
+- **Output:** `.claude/research/personas/<slug>.md`
 
-#### 8. canva-intake (Phase 1 -- Canva)
-- **Purpose:** Structured discovery for Canva designs. Exports screenshots via Canva AI Connector MCP, uses Claude vision to analyze page structure and components, asks 3-5 targeted questions, and produces a `build-spec.json` with `source: "canva"`.
-- **Triggers:** Phase 1 of `/build-from-canva`, or any Canva design URL conversation
-- **Output:** `.claude/plans/build-spec.json`
+### Production Skills
 
-#### 9. canva-token-inference (Phase 2 -- Canva/Screenshot)
-- **Purpose:** AI-powered token extraction from Canva or screenshot sources with confidence scoring. Uses Claude vision to infer colors, typography, spacing, and effects. Presents tokens with confidence levels for user confirmation before locking.
-- **Triggers:** Phase 2 of `/build-from-canva` and `/build-from-screenshot`, "extract Canva tokens", "Canva design tokens"
-- **Output:** `src/styles/design-tokens.lock.json`, `tailwind.config.ts`, `src/styles/tokens.css`
+#### 9. email-sequence
+- **Purpose:** Multi-step email sequences (welcome, nurture, launch, abandonment, winback) as a structured spec plus per-email drafts; staged OFF pending approval
+- **Triggers:** `/build-email-sequence`, "drip campaign", "welcome flow"
+- **Output:** `.claude/plans/email-sequences/<slug>.json` + drafts
 
-#### 10. screenshot-intake (Phase 1 -- Screenshot)
-- **Purpose:** Structured discovery from a URL or provided screenshot files. Captures pages via Chrome DevTools or Playwright MCP, analyzes structure with Claude vision, and produces a `build-spec.json` with `outputTarget`.
-- **Triggers:** Phase 1 of `/build-from-screenshot`, "build from screenshot", "clone this site"
-- **Output:** `.claude/plans/build-spec.json`
+#### 10. social-content-batching
+- **Purpose:** One idea → a coordinated batch of platform-native posts with per-platform adaptation, scheduling map, and set-level QA
+- **Triggers:** Social components of `/build-campaign`, "social batch", "repurpose this post"
+- **Output:** `.claude/plans/social-batches/<slug>.json`
 
-### Conversation Pipeline Skills
+#### 11. ad-copy-variants
+- **Purpose:** Designed test matrices — one variable per test, tracking-ready naming, hypothesis per variant, per-platform limits
+- **Triggers:** Paid components of `/build-campaign`, "ad variants", "creative test"
+- **Output:** `.claude/plans/ad-variants/<slug>.json`
 
-These skills power the `/build-from-conversation` autonomous pipeline. They run *before* the shared pipeline: Phase C0 produces the build spec and design brief from an interview, Phase C1 generates a real Figma file from the brief, and the standard `/build-from-figma` pipeline takes over from there (its `figma-intake` skill fast-paths on conversation-sourced build specs).
+#### 12. landing-page-copy
+- **Purpose:** Full-page conversion copy — hero to final CTA — with message match, objection handling, and proof placement; implementation-ready copy document
+- **Triggers:** "landing page", "page copy", conversion-optimizer test variants
+- **Output:** `content/landing-pages/<slug>.md`
 
-#### 11. conversation-intake (Phase C0 -- Conversation)
-- **Purpose:** Structured interview (max 7 questions) that turns a natural-language app description into a `build-spec.json` with `source: "conversation"` plus a `design-brief.json`. Dispatches the conversation-designer agent to make concrete design decisions. No design file required.
-- **Triggers:** Phase C0 of `/build-from-conversation`, "describe an app", "talk to build"
-- **Output:** `.claude/plans/build-spec.json`, `.claude/plans/design-brief.json`
+### Reporting Skills
 
-#### 12. design-brief-to-figma (Phase C1 -- Conversation)
-- **Purpose:** Generates a real Figma file from the design brief: renders per-page HTML mockups (conversation-designer agent), serves them locally, creates a new Figma file, and captures each mockup into it via the Figma MCP `generate_figma_design` tool. Maps the generated node IDs back into the build spec.
-- **Triggers:** Phase C1 of `/build-from-conversation`, "generate a Figma design from a description"
-- **Output:** Figma file URL + updated `.claude/plans/build-spec.json`
-
-### React Development Skills
-
-These skills provide patterns and best practices. They trigger on relevant keywords during any React development work.
-
-#### 13. react-component-development
-- **Purpose:** Component patterns, TypeScript conventions, custom hooks, composition, and Tailwind CSS best practices
-- **Triggers:** "create component", "component pattern", "custom hook", "React best practices"
-- **Works with:** frontend-developer agent, ui-designer agent
-
-#### 14. react-testing-workflows
-- **Purpose:** Testing strategy with Vitest, React Testing Library, Playwright, and Storybook
-- **Triggers:** "write tests", "test coverage", "Vitest", "Playwright", "Storybook"
-- **Works with:** test-writer-fixer agent, test-results-analyzer agent
-
-#### 15. react-performance-optimization
-- **Purpose:** Performance profiling, bundle analysis, code splitting, and Web Vitals
-- **Triggers:** "performance", "bundle size", "Web Vitals", "lazy loading", "profiling"
-- **Works with:** performance-benchmarker agent, analytics-reporter agent
-
-#### 16. react-accessibility
-- **Purpose:** WCAG 2.1 AA patterns for React, ARIA usage, keyboard navigation, focus management
-- **Triggers:** "accessibility", "WCAG", "ARIA", "a11y", "keyboard navigation"
-- **Works with:** accessibility-auditor agent, ux-researcher agent
-
-#### 17. state-management
-- **Purpose:** State architecture decisions — Zustand for global UI state, TanStack Query for server state, URL state patterns, and anti-patterns to avoid
-- **Triggers:** "state management", "zustand", "tanstack query", "react query", "global state", "data fetching", "caching"
-- **Works with:** frontend-developer agent
-
-#### 18. form-handling
-- **Purpose:** Form patterns with React Hook Form + Zod — typed forms, reusable field components, dynamic field arrays, multi-step wizards, server actions, and accessible error handling
-- **Triggers:** "form", "form handling", "react hook form", "zod", "validation", "multi-step form", "wizard"
-- **Works with:** frontend-developer agent, accessibility-auditor agent
-
-#### 19. auth-flows
-- **Purpose:** Authentication patterns — Auth.js v5 (NextAuth), Clerk, Supabase Auth. Covers session management, protected routes, OAuth, and role-based access control (RBAC)
-- **Triggers:** "auth", "authentication", "login", "sign in", "session", "protected route", "OAuth", "clerk", "supabase auth"
-- **Works with:** backend-architect agent, frontend-developer agent
-
-#### 20. animation-motion
-- **Purpose:** Animation patterns — Framer Motion (motion/react), CSS transitions, page transitions, scroll-driven animations, staggered lists, and reduced-motion accessibility
-- **Triggers:** "animation", "framer motion", "transition", "micro-interaction", "page transition", "scroll animation", "motion"
-- **Works with:** frontend-developer agent, whimsy-injector agent
-
-#### 21. seo-metadata
-- **Purpose:** SEO patterns — Next.js Metadata API, Open Graph tags, dynamic OG images, structured data (JSON-LD), sitemaps, robots.txt, and Vite SPA SEO with react-helmet-async
-- **Triggers:** "SEO", "metadata", "open graph", "og image", "sitemap", "structured data", "json-ld", "meta tags"
-- **Works with:** frontend-developer agent, content-creator agent
-
-### Export Skills
-
-#### 22. export-design-system
-- **Purpose:** Exports generated components + `design-tokens.lock.json` as a publishable pnpm workspace. Generates a framework-agnostic tokens package and a framework-specific component library (React/Vue/Svelte via Vite library mode, React Native via tsc), with Tailwind preset, ThemeProvider, and Changesets versioning.
-- **Triggers:** `/export-design-system`, "export design system", "publishable component library"
-- **Output:** `packages/` pnpm workspace (tokens + component library)
-
-### InDesign Skills
-
-#### 23. indesign-conversion
-
-- **Purpose:** Converts an exported InDesign IDML package or PDF into typed React components, design tokens (Tailwind preset + `tokens.css`/`tokens.ts` + Style Dictionary JSON), and Storybook stories via the `@aurelius/pipeline` InDesign pipeline; reads the generation report to propose follow-ups.
-- **Triggers:** "InDesign to React", "IDML", "PDF to React", "indesign pipeline", "brochure to React", "aurelius pipeline indesign"
-- **Output:** A React project (`components`, `stories`, `index.ts`, `tokens/`, extracted assets, plus Markdown + JSON reports)
-
-### Storybook Skills
-
-#### 24. storybook-story-generation (Phase 4.5)
-
-- **Purpose:** Auto-generates Storybook 8 (CSF3) `.stories.tsx` and `.mdx` docs from built React components using a `ts-morph` AST. Emits prop-aware `argTypes`/controls, a `Default` story seeded with destructured defaults, one variant story per string-literal-union value, `True`/`False` stories for booleans, and action args for `on*` callbacks. Wraps `scripts/generate-stories.sh`. Non-blocking.
-- **Triggers:** Phase 4.5 of `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` (after component build), "generate Storybook stories", "auto-generate stories", "add MDX docs"
-- **Output:** `src/components/**/*.stories.tsx` and `src/components/**/*.mdx`
+#### 13. analytics-report
+- **Purpose:** Standardized performance reports from provided data — scorecard, funnel, channels, recommendations with owners. Missing data is a reported gap, never a filled-in guess.
+- **Triggers:** `/analyze-performance`, Phase 9 of `/build-campaign`, "performance report"
+- **Output:** `.claude/campaigns/<slug>/report-<date>.md` (or `.claude/reports/`)
 
 ---
 
 ## Pipeline Flow
 
 ```
-Conversation ("describe your app")
+Campaign goal ("launch the new feature")
     |
     v
-[Phase C0] conversation-intake → build-spec.json + design-brief.json
+[Phase 0] brand sync — drift check vs brand-guidelines.json (if it exists)
     |
     v
-[Phase C1] design-brief-to-figma → generated Figma file
+[Phase 1] campaign-brief-intake → campaign-brief.json
     |
-    v  (figma-intake fast-paths conversation-sourced specs)
-Figma Design                    Canva Design
-    |                               |
-    v                               v
-[Phase 1] figma-intake      [Phase 1] canva-intake
-    |                               |
-    v                               v
-[Phase 2] design-token-lock  [Phase 2] canva-token-inference
-    |                               |
-    +---------- build-spec.json ----+
-                    |
-                    v
-    [Phase 3] tdd-from-figma → failing tests (RED)
-                    |
-        +-- react-component-development (component patterns)
-        +-- react-accessibility (WCAG compliance)
-                    |
-                    v
-    [Phase 4] figma-to-react-workflow (Figma)
-              OR canva-react-converter (Canva)
-              → components pass tests (GREEN)
-                    |
-        +-- [Phase 4.5] storybook-story-generation → stories + MDX (non-blocking)
-                    |
-                    v
-    [Phase 5] visual-qa-verification → pixel-diff loop (max 5 iterations)
-                    |
-                    v
-    [Phase 6] e2e-test-generator → Playwright E2E tests
-                    |
-        +-- react-testing-workflows (test strategy)
-        +-- react-performance-optimization (bundle/runtime)
-                    |
-                    v
-    Production-Ready Application
+    v
+[Phase 2] brand-voice-lock → brand-guidelines.json   (HARD GATE: no lockfile, no drafting)
+    |
+    v
+[Phase 3] STRATEGY GATE — human approves objective, audience, channels, budget
+    |
+    v  (parallel-orchestration takes over — per-asset lanes)
+[Phase 4] content-calendar → content-calendar.json
+    |
+[Phase 5] drafts — blog-writer / email-sequence / social-content-batching /
+    |              ad-copy-variants / landing-page-copy per asset plan
+    v
+[Phase 6] editorial-qa → brand voice + readability + fact-check loop (max 5)
+    |
+[Phase 7] channel checks — seo-check, platform limits (non-blocking)
+    |
+    v
+[Phase 8] HUMAN APPROVAL GATE — per-asset sign-off; nothing publishes,
+    |      sends, or spends without it. No timeout, no default-approve.
+    v
+[Phase 9] analytics-report → campaign-report.md + measurement plan
 
 Supporting skills (used throughout):
-  - state-management (Zustand, TanStack Query decisions)
-  - form-handling (React Hook Form + Zod patterns)
-  - auth-flows (Auth.js, Clerk, Supabase patterns)
-  - animation-motion (Framer Motion, CSS transitions)
-  - seo-metadata (Next.js Metadata API, JSON-LD)
+  - seo-keyword-research (Weeks 1-2, SEO-led campaigns)
+  - competitor-teardown (Weeks 1-2, competitive context)
+  - persona-research (Weeks 1-2, when personas are missing or stale)
 ```
 
 ## Skills vs Agents vs Plugins
@@ -228,9 +143,11 @@ description: Use when [triggers]. Keywords: term1, term2
 ---
 
 # Skill Name
-## Overview
+## Purpose
 ## When to Use
-## Quick Reference
-## Implementation
-## Common Mistakes
+## Inputs
+## Process
+## Output
+## Error Handling
+## Integration
 ```
