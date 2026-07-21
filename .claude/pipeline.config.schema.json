@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/PMDevSolutions/Aurelius/blob/main/.claude/pipeline.config.schema.json",
-  "title": "Aurelius Pipeline Configuration",
-  "description": "Schema for .claude/pipeline.config.json — controls thresholds, iteration limits, app-type definitions, and orchestration for the autonomous build pipeline.",
+  "$id": "https://github.com/PMDevSolutions/Marketing/blob/main/.claude/pipeline.config.schema.json",
+  "title": "Maecenas Pipeline Configuration",
+  "description": "Schema for .claude/pipeline.config.json — controls brand-voice enforcement, editorial QA thresholds, the human approval gate, asset-type definitions, and orchestration for the autonomous campaign pipeline.",
   "type": "object",
   "required": ["version"],
   "additionalProperties": false,
@@ -18,550 +18,186 @@
       "description": "Semantic version of the config schema in use."
     },
 
-    "visualDiff": {
+    "brandVoice": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Pixel-diff thresholds and analysis options for the visual QA loop.",
+      "description": "Brand lockfile enforcement — the marketing analog of design-token verification.",
       "properties": {
-        "threshold": { "$ref": "#/$defs/percentageRatio", "description": "Max acceptable mismatch ratio (0-1). 0.02 = 2%." },
-        "antialiasing": { "type": "boolean", "description": "Ignore antialiasing differences when comparing." },
-        "diffColorRgb": {
-          "type": "array",
-          "items": { "type": "integer", "minimum": 0, "maximum": 255 },
-          "minItems": 3,
-          "maxItems": 3,
-          "description": "RGB color used to highlight differences in the diff image."
-        },
-        "alphaBlending": { "type": "number", "minimum": 0, "maximum": 1, "description": "Opacity of the diff overlay (0-1)." },
-        "breakpoints": { "$ref": "#/$defs/breakpointMap" },
-        "requiredBreakpoints": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Subset of breakpoint names that must pass for a build to be considered successful."
-        },
-        "outputDir": { "type": "string", "description": "Where diff images are written." },
-        "subPixelClassification": { "type": "boolean", "description": "Enable sub-pixel cluster analysis to distinguish rendering noise from real diffs." },
-        "subPixelMaxClusterSize": { "type": "integer", "minimum": 1, "description": "Max cluster size (px) to be considered sub-pixel noise rather than a real difference." },
-        "typographyAnalysis": { "type": "boolean", "description": "Detect font-weight and font-fallback differences." },
-        "fontWeightThreshold": { "type": "number", "minimum": 0, "description": "Sensitivity for font-weight mismatch detection (higher = more permissive)." },
-        "fontFallbackDensityThreshold": { "type": "number", "minimum": 0, "maximum": 1, "description": "Density of pixel differences that signal a font fallback (0-1)." },
-        "layoutDriftAnalysis": { "type": "boolean", "description": "Detect horizontal/vertical layout shifts vs pixel-level color differences." },
-        "layoutShiftThresholdPx": { "type": "number", "minimum": 0, "description": "Px shift above which a region is flagged as a layout drift." }
-      }
-    },
-
-    "iterationLoop": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Controls the auto-fix loop that runs after each visual diff failure.",
-      "properties": {
-        "maxVisualIterations": { "type": "integer", "minimum": 1, "description": "Max times the build/diff/fix loop runs before giving up." },
-        "maxFixAttemptsPerCheck": { "type": "integer", "minimum": 1, "description": "Max fix attempts the agent makes per iteration before re-running the diff." },
-        "diffPassThreshold": { "$ref": "#/$defs/percentageRatio" },
-        "diffWarnThreshold": { "$ref": "#/$defs/percentageRatio" },
-        "regionAnalysis": { "type": "boolean", "description": "Split each diff into a grid of regions to localize fixes." },
-        "regionGridSize": { "type": "integer", "minimum": 1, "description": "Grid dimension (e.g. 4 = 4x4 = 16 regions) for region-based diff analysis." },
-        "stopOnFirstPassingIteration": { "type": "boolean", "description": "Exit the loop as soon as one iteration passes the threshold." }
-      }
-    },
-
-    "tdd": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Test-driven development enforcement for the build pipeline.",
-      "properties": {
-        "enforced": { "type": "boolean", "description": "Hard gate Phase 4 (build) on Phase 3 (tests) completion." },
-        "redPhaseRequired": { "type": "boolean" },
-        "greenPhaseRequired": { "type": "boolean" },
-        "refactorPhaseOptional": { "type": "boolean" },
-        "testExistenceGate": { "type": "boolean", "description": "Block the build until every component has a corresponding test file." },
-        "coverageThreshold": { "$ref": "#/$defs/percentageInt" },
-        "componentTestRequired": { "type": "boolean" },
-        "lockfileAssertionsRequired": { "type": "boolean", "description": "Require tests to assert against design-tokens.lock.json values." }
-      }
-    },
-
-    "e2e": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "End-to-end Playwright test configuration.",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "conditionalOnAppType": { "type": "boolean", "description": "Skip E2E for app types whose appTypes.<type>.devServer is false (e.g. react-native)." },
-        "browsers": { "$ref": "#/$defs/browserList" },
-        "crossBrowserBrowsers": { "$ref": "#/$defs/browserList" },
-        "crossBrowserRequired": { "type": "boolean" },
-        "timeoutMs": { "type": "integer", "minimum": 0 },
-        "retries": { "type": "integer", "minimum": 0 },
-        "mobileBrowsers": {
-          "type": "array",
-          "items": { "type": "string", "enum": ["mobile-chrome", "mobile-safari"] }
-        },
-        "crossBrowserDiffThreshold": { "$ref": "#/$defs/percentageRatio" }
-      }
-    },
-
-    "qualityGate": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Gate criteria that must pass before Phase 9 (report) runs.",
-      "properties": {
-        "testsRequired": { "type": "boolean" },
-        "typescriptRequired": { "type": "boolean" },
-        "buildRequired": { "type": "boolean" },
-        "tokenVerificationRequired": { "type": "boolean" },
-        "lighthouseRequired": { "type": "boolean" },
-        "lighthouseThresholds": {
-          "type": "object",
-          "additionalProperties": false,
-          "description": "Minimum Lighthouse category scores (0-100).",
-          "properties": {
-            "performance": { "$ref": "#/$defs/percentageInt" },
-            "accessibility": { "$ref": "#/$defs/percentageInt" },
-            "bestPractices": { "$ref": "#/$defs/percentageInt" },
-            "seo": { "$ref": "#/$defs/percentageInt" }
-          }
-        },
-        "e2eRequired": { "type": "boolean" },
-        "crossBrowserScreenshotsRequired": { "type": "boolean" },
-        "testCoverageEnforced": { "type": "boolean" },
-        "mutationScore": {
+        "enforced": { "type": "boolean", "description": "Master switch for brand-voice enforcement in editorial QA." },
+        "lockfile": { "type": "string", "description": "Path to brand-guidelines.json, the single source of truth." },
+        "requireLockfileBeforeDrafting": { "type": "boolean", "description": "Hard gate: drafting phases refuse to start without a lockfile." },
+        "lintBlocking": { "type": "boolean", "description": "brand-voice-lint.js findings block (true) or warn (false)." },
+        "bannedWordsPolicy": { "enum": ["block", "warn"], "description": "Treatment of lexicon.banned hits." },
+        "driftCheck": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean" },
-            "threshold": { "$ref": "#/$defs/percentageInt" },
-            "tool": { "type": "string", "enum": ["stryker"] },
-            "blocking": { "type": "boolean", "description": "If false, mutation score is reported but does not fail the gate." }
+            "autoCheck": { "type": "boolean", "description": "Run the Phase 0 drift check when a lockfile exists." },
+            "warnOnDrift": { "type": "boolean", "description": "Surface drift between lockfile and recent assets." }
           }
         }
       }
     },
 
-    "appTypes": {
-      "type": "object",
-      "description": "Definitions for supported app types. Keys are referenced by build-spec.json.appType.",
-      "additionalProperties": false,
-      "properties": {
-        "web-app": { "$ref": "#/$defs/appType" },
-        "chrome-extension": { "$ref": "#/$defs/appType" },
-        "pwa": { "$ref": "#/$defs/appType" },
-        "react-native": { "$ref": "#/$defs/appType" }
-      }
-    },
-
-    "screenshotCapture": {
+    "readability": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Default screenshot capture settings used by visual-diff and intake phases.",
+      "description": "Per-asset-type readability targets checked by readability-score.js.",
       "properties": {
-        "fullPage": { "type": "boolean" },
-        "format": { "type": "string", "enum": ["png", "jpeg", "webp"] },
-        "quality": { "type": "integer", "minimum": 1, "maximum": 100 },
-        "waitForNetworkIdle": { "type": "boolean" },
-        "waitAfterLoadMs": { "type": "integer", "minimum": 0 },
-        "outputDir": { "type": "string" }
-      }
-    },
-
-    "darkMode": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "diffThreshold": { "$ref": "#/$defs/percentageRatio" },
-        "emulateMediaFeature": { "type": "string", "description": "Chrome DevTools / Playwright media-feature emulation string, e.g. 'prefers-color-scheme: dark'." },
-        "compareAgainst": { "type": "string", "enum": ["light", "design"], "description": "Whether to diff dark mode against the light-mode capture or against a separate design reference." },
-        "screenshotDir": { "type": "string" }
-      }
-    },
-
-    "storybook": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "autoGenerate": { "type": "boolean" },
-        "includeResponsiveViewports": { "type": "boolean" },
-        "viewports": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Names of breakpoints (from visualDiff.breakpoints) to include as Storybook viewports."
-        },
-        "skipPatterns": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Glob patterns to exclude from story generation."
-        },
-        "generateMdx": { "type": "boolean" },
-        "maxVariantsPerProp": { "type": "integer", "minimum": 1, "description": "Cap on the number of variants generated per discriminated prop to keep stories navigable." }
-      }
-    },
-
-    "tokenSync": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "autoCheck": { "type": "boolean" },
-        "warnOnDrift": { "type": "boolean" },
-        "autoUpdate": { "type": "boolean", "description": "When true, sync-tokens.sh rewrites the lockfile in place when drift is detected." }
-      }
-    },
-
-    "reporting": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "outputDir": { "type": "string" },
-        "buildReportFile": { "type": "string" },
-        "diffReportFile": { "type": "string" },
-        "e2eReportFile": { "type": "string" },
-        "accessibilityReportFile": { "type": "string" },
-        "includeScreenshots": { "type": "boolean" },
-        "includeDiffImages": { "type": "boolean" }
-      }
-    },
-
-    "security": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "auditLevel": { "type": "string", "enum": ["low", "moderate", "high", "critical"] },
-        "failOnVulnerability": { "type": "boolean" },
-        "checkLockfile": { "type": "boolean" },
-        "snyk": {
+        "blocking": { "type": "boolean", "description": "Below-target readability blocks (true) or warns (false)." },
+        "targets": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "severityThreshold": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
-            "failOnIssues": { "type": "boolean" }
-          }
-        },
-        "csp": {
-          "type": "object",
-          "additionalProperties": false,
-          "description": "Content Security Policy options applied to deploy previews.",
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "reportOnly": { "type": "boolean" },
-            "reportUri": { "type": "string" }
-          }
-        },
-        "inputSanitization": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "blockPrivateUrls": { "type": "boolean", "description": "Reject URLs in private IP ranges to prevent SSRF in URL-capture mode." },
-            "allowLocalhostInDev": { "type": "boolean" }
-          }
-        },
-        "headers": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "hsts": { "type": "boolean" },
-            "noSniff": { "type": "boolean" },
-            "frameOptions": { "type": "string", "enum": ["DENY", "SAMEORIGIN"] },
-            "xssProtection": { "type": "boolean" },
-            "referrerPolicy": {
-              "type": "string",
-              "enum": [
-                "no-referrer",
-                "no-referrer-when-downgrade",
-                "origin",
-                "origin-when-cross-origin",
-                "same-origin",
-                "strict-origin",
-                "strict-origin-when-cross-origin",
-                "unsafe-url"
-              ]
-            }
-          }
+          "additionalProperties": { "$ref": "#/$defs/readabilityTarget" },
+          "description": "Map of assetType → readability target. Keys should match /assetTypes."
         }
       }
     },
 
-    "bundleSize": {
+    "editorialLoop": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Bounded revision loop — the analog of the old visual-diff iteration loop.",
       "properties": {
-        "enabled": { "type": "boolean" },
-        "maxSizeKb": { "type": "integer", "minimum": 1 },
-        "warnSizeKb": { "type": "integer", "minimum": 1 }
+        "maxRevisions": { "type": "integer", "minimum": 1, "description": "Max QA→revise iterations per asset before escalation." },
+        "maxFixAttemptsPerFinding": { "type": "integer", "minimum": 1, "description": "Max fix attempts per finding within one iteration." },
+        "stopOnFirstPass": { "type": "boolean", "description": "End the loop the first time all checks pass." },
+        "escalateOnExhaustion": { "type": "boolean", "description": "Escalate to the user (never silently ship) when the loop is exhausted." }
       }
     },
 
-    "mutationTesting": {
+    "factCheck": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Stryker mutation testing reminder/runner config (also see qualityGate.mutationScore for gate behavior).",
+      "description": "Claim verification policy. Fabrication is never waivable below the approval gate.",
       "properties": {
-        "enabled": { "type": "boolean" },
-        "tool": { "type": "string", "enum": ["stryker"] },
-        "scoreThreshold": { "$ref": "#/$defs/percentageInt" },
-        "reminder": { "type": "boolean" }
+        "required": { "type": "boolean" },
+        "blocking": { "type": "boolean" },
+        "citationRequiredForStatistics": { "type": "boolean", "description": "Every statistic carries a dated, linked source." },
+        "superlativesRequireSubstantiation": { "type": "boolean" },
+        "testimonialPolicy": { "type": "string", "description": "e.g. real-permissioned-documented." },
+        "fabricationPolicy": { "const": "block", "description": "Fabricated claims always block. Not configurable to anything weaker." },
+        "unverifiableClaimPolicy": { "enum": ["reword-or-cut", "block"], "description": "Treatment of claims that cannot be verified." }
       }
     },
 
-    "errorMonitoring": {
+    "seoChecklist": {
       "type": "object",
       "additionalProperties": false,
+      "description": "On-page checks applied to web-bound assets by seo-check.js.",
       "properties": {
-        "provider": { "type": "string", "enum": ["sentry"] },
-        "dsn": { "type": "string" },
-        "environment": { "type": "string" },
-        "sampleRate": { "type": "number", "minimum": 0, "maximum": 1 },
-        "tracesSampleRate": { "type": "number", "minimum": 0, "maximum": 1 },
-        "enableInDev": { "type": "boolean" },
-        "sourceMapUpload": { "type": "boolean" }
+        "blocking": { "type": "boolean" },
+        "titleMaxChars": { "type": "integer", "minimum": 1 },
+        "metaDescriptionMaxChars": { "type": "integer", "minimum": 1 },
+        "requireKeywordInTitle": { "type": "boolean" },
+        "requireKeywordInH1": { "type": "boolean" },
+        "minInternalLinks": { "type": "integer", "minimum": 0 },
+        "minCitedSources": { "type": "integer", "minimum": 0 },
+        "enforceHeadingHierarchy": { "type": "boolean" }
       }
     },
 
-    "deployPreview": {
+    "humanApproval": {
       "type": "object",
       "additionalProperties": false,
+      "description": "The hard gate before anything external. The analog of tdd.enforced — non-negotiable.",
       "properties": {
-        "enabled": { "type": "boolean" },
-        "provider": { "type": "string", "enum": ["vercel", "netlify", "cloudflare"] },
-        "autoDeployOnPR": { "type": "boolean" },
-        "runVisualQAOnPreview": { "type": "boolean" },
-        "runLighthouseOnPreview": { "type": "boolean" }
-      }
-    },
-
-    "responsiveVerification": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "breakpoints": { "$ref": "#/$defs/breakpointMap" },
-        "diffThreshold": { "$ref": "#/$defs/percentageRatio" },
-        "blocking": { "type": "boolean" }
-      }
-    },
-
-    "regressionTesting": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "baselineDir": { "type": "string" },
-        "screenshotDir": { "type": "string" },
-        "diffDir": { "type": "string" },
-        "threshold": { "$ref": "#/$defs/percentageRatio" },
-        "failOnMissingBaseline": { "type": "boolean" },
-        "updateBaselinesOnPass": { "type": "boolean" },
-        "breakpoints": { "$ref": "#/$defs/breakpointMap" },
-        "waitAfterLoadMs": { "type": "integer", "minimum": 0 },
-        "fullPage": { "type": "boolean" },
-        "routes": { "type": "array", "items": { "type": "string" } },
-        "browsers": { "$ref": "#/$defs/browserList" },
-        "reportFile": { "type": "string" }
-      }
-    },
-
-    "visualBaselines": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Cross-browser (firefox/webkit) screenshot baseline storage per RFC 0002: pluggable backend, deterministic containerized capture, and per-baseline provenance. Same-browser chromium regression stays in regressionTesting.",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "backend": {
-          "type": "string",
-          "enum": ["commit", "ci-artifact", "service"],
-          "description": "Where baselines live: committed to the repo (default), fetched from the last-green-main CI artifact, or delegated to a SaaS provider."
+        "required": { "const": true, "description": "Always true. The gate cannot be disabled." },
+        "blocking": { "const": true, "description": "Always true. Un-approved assets are withheld." },
+        "nonNegotiable": { "const": true },
+        "perAsset": { "type": "boolean", "description": "Approval granted per asset (true) or per package (false)." },
+        "scope": {
+          "type": "array",
+          "items": { "enum": ["publish", "send", "spend", "schedule"] },
+          "minItems": 1,
+          "description": "Actions that require explicit human approval."
         },
-        "storage": {
-          "type": "string",
-          "enum": ["git", "lfs"],
-          "description": "commit backend only: plain git-tracked PNGs, or Git LFS for large baseline sets (see scripts/setup-baseline-lfs.sh)."
-        },
-        "baselineDir": { "type": "string", "description": "Baseline root, shared with regressionTesting; per-engine subdirectories." },
-        "screenshotDir": { "type": "string", "description": "Transient current-capture directory (gitignored)." },
-        "diffDir": { "type": "string", "description": "Transient diff-image directory (gitignored)." },
-        "browsers": { "$ref": "#/$defs/browserList" },
-        "routes": { "type": "array", "items": { "type": "string" } },
-        "breakpoints": { "$ref": "#/$defs/breakpointMap" },
-        "threshold": { "$ref": "#/$defs/percentageRatio", "description": "Cross-engine mismatch tolerance. Must equal e2e.crossBrowserDiffThreshold (structural check)." },
-        "blocking": { "type": "boolean", "description": "When true, compare failures exit non-zero (Phase B teeth). Keep false until determinism is proven." },
-        "reportFile": { "type": "string" },
-        "capture": {
+        "autoApprove": { "const": false, "description": "Always false. No timeout- or default-approval exists." },
+        "waiverLogging": { "type": "boolean", "description": "WARN-level waivers granted at the gate are logged." },
+        "packageFile": { "type": "string", "description": "Filename of the assembled approval package." }
+      }
+    },
+
+    "assetTypes": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/assetType" },
+      "description": "Asset-type definitions — the analog of the old appTypes. Keys are assetType slugs."
+    },
+
+    "calendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Scheduling rules enforced by validate-content-calendar.js.",
+      "properties": {
+        "file": { "type": "string" },
+        "leadTimes": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": {
-              "type": "string",
-              "enum": ["container", "local"],
-              "description": "container (required for trustworthy firefox/webkit baselines) runs capture in the pinned Playwright image; local captures are recorded with host=local and flagged by provenance."
-            },
-            "image": { "type": "string", "description": "Pinned Playwright container image (authoritative; scripts warn on drift vs the resolved @playwright/test version)." },
-            "waitAfterLoadMs": { "type": "integer", "minimum": 0 },
-            "fullPage": { "type": "boolean" }
+            "draftToQaDays": { "type": "integer", "minimum": 0 },
+            "qaToApprovalDays": { "type": "integer", "minimum": 0 },
+            "approvalToPublishDays": { "type": "integer", "minimum": 1, "description": "Approvals are not compressible below one business day." }
           }
         },
-        "provenance": {
+        "cadenceDefaults": {
           "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "manifest": { "type": "string", "description": "Committed provenance manifest path (engine, Playwright version, image, sha256, gitSha, host per baseline)." },
-            "policy": {
-              "type": "string",
-              "enum": ["warn", "enforce"],
-              "description": "warn: provenance mismatches are reported but baselines are still diffed. enforce: flagged baselines are excluded from diffing and counted as failures."
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "perWeek": { "type": "integer", "minimum": 0 },
+              "maxPerDay": { "type": "integer", "minimum": 1 }
             }
           }
         },
-        "ciArtifact": {
+        "staleStatusDays": { "type": "integer", "minimum": 1, "description": "Days an entry may sit in one status before the validator flags it." }
+      }
+    },
+
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "utmRequired": { "type": "boolean" },
+        "utmCampaignPattern": { "type": "string" },
+        "utmContentPattern": { "type": "string" },
+        "baselineRequired": { "type": "boolean", "description": "No campaign launches without recorded baselines." },
+        "reportSchedule": { "type": "array", "items": { "type": "string" } },
+        "doubleCountingAudit": { "type": "string", "description": "Cadence of the platform-claims vs actuals reconciliation." }
+      }
+    },
+
+    "compliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "regulatedTopics": { "type": "array", "items": { "type": "string" } },
+        "legalReviewTriggers": { "type": "array", "items": { "type": "string" } },
+        "disclosureRules": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "campaignCadence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cycleWeeks": { "type": "integer", "minimum": 1 },
+        "structure": {
           "type": "object",
-          "additionalProperties": false,
-          "description": "backend=ci-artifact only.",
-          "properties": {
-            "compareAgainst": { "type": "string", "enum": ["last-green-main"] },
-            "retentionDays": { "type": "integer", "minimum": 1 }
-          }
-        },
-        "service": {
-          "type": "object",
-          "additionalProperties": false,
-          "description": "backend=service only. The provider owns capture, diffing, and review; opt-in, requires a token in CI secrets.",
-          "properties": {
-            "provider": { "type": "string", "enum": ["chromatic", "percy"] },
-            "projectTokenEnv": { "type": "string", "description": "Name of the environment variable holding the provider project token." }
-          }
+          "additionalProperties": { "type": "string" }
         }
-      }
-    },
-
-    "deadCode": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "tool": { "type": "string", "enum": ["knip", "ts-prune"] },
-        "ignorePatterns": { "type": "array", "items": { "type": "string" } },
-        "reportUnusedExports": { "type": "boolean" },
-        "reportUnusedDependencies": { "type": "boolean" },
-        "reportUnusedFiles": { "type": "boolean" }
-      }
-    },
-
-    "canva": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "tokenInference": { "$ref": "#/$defs/tokenInferenceOptions" },
-        "export": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "format": { "type": "string", "enum": ["png", "jpeg", "webp"] },
-            "scale": { "type": "number", "minimum": 1, "description": "PNG export scale factor (1 = 1x, 2 = 2x retina, 3 = 3x)." },
-            "quality": { "type": "integer", "minimum": 1, "maximum": 100 }
-          }
-        },
-        "mcpServer": { "type": "string" },
-        "restApiFallback": { "type": "boolean" },
-        "retry": { "$ref": "#/$defs/retryOptions" }
-      }
-    },
-
-    "screenshot": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "tokenInference": { "$ref": "#/$defs/tokenInferenceOptions" },
-        "capture": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "format": { "type": "string", "enum": ["png", "jpeg", "webp"] },
-            "scale": { "type": "number", "minimum": 1 },
-            "quality": { "type": "integer", "minimum": 1, "maximum": 100 },
-            "fullPage": { "type": "boolean" },
-            "waitForNetworkIdle": { "type": "boolean" },
-            "waitAfterLoadMs": { "type": "integer", "minimum": 0 }
-          }
-        },
-        "urlCapture": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "viewports": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["name", "width", "height"],
-                "properties": {
-                  "name": { "type": "string" },
-                  "width": { "type": "integer", "minimum": 1 },
-                  "height": { "type": "integer", "minimum": 1 }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-
-    "conversation": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Conversation pipeline configuration: structured-interview limits and Figma design generation from the design brief.",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "interview": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "maxQuestions": { "type": "integer", "minimum": 1, "maximum": 10, "description": "Upper bound on interview questions asked during conversation-intake." },
-            "confirmBriefWithUser": { "type": "boolean", "description": "Block before design generation until the user confirms the design brief and build plan." }
-          }
-        },
-        "designGeneration": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "mockupDir": { "type": "string", "description": "Directory where per-page HTML mockups are written before Figma capture." },
-            "mockupServerPort": { "type": "integer", "minimum": 1, "maximum": 65535, "description": "Local port for the static server that hosts mockups during generate_figma_design capture." },
-            "reviewBeforeHandoff": { "type": "boolean", "description": "Show the generated Figma file to the user for approval before invoking /build-from-figma." },
-            "maxRegenerationAttempts": { "type": "integer", "minimum": 0, "description": "Max brief-revision/regeneration loops when the user rejects the generated design." },
-            "capturePollIntervalMs": { "type": "integer", "minimum": 0, "description": "Delay between generate_figma_design capture status polls." },
-            "capturePollMaxAttempts": { "type": "integer", "minimum": 1, "description": "Max capture status polls per page before the capture is considered failed." }
-          }
-        },
-        "retry": { "$ref": "#/$defs/retryOptions" }
       }
     },
 
     "orchestration": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Parallel phase execution graph. Phase keys are arbitrary; depends[] entries must reference other keys in the same map.",
+      "description": "Parallel phase execution — dependency graph consumed by the parallel-orchestration skill.",
       "properties": {
         "enabled": { "type": "boolean" },
-        "maxConcurrent": { "type": "integer", "minimum": 1, "description": "Max phases that may run simultaneously across the orchestration graph." },
+        "maxConcurrent": { "type": "integer", "minimum": 1 },
         "phases": {
           "type": "object",
-          "minProperties": 1,
-          "additionalProperties": { "$ref": "#/$defs/orchestrationPhase" }
-        },
-        "qualityGateSubtasks": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "resources": { "$ref": "#/$defs/resourceList" },
-              "description": { "type": "string" }
-            }
-          }
+          "additionalProperties": { "$ref": "#/$defs/phase" }
         },
         "reporting": {
           "type": "object",
@@ -576,222 +212,88 @@
       }
     },
 
-    "caching": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Content-hash caching of phase outputs to skip unchanged work on rebuild.",
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "strategy": { "type": "string", "enum": ["content-hash", "mtime"] },
-        "directory": { "type": "string" },
-        "maxAgeDays": { "type": "integer", "minimum": 1, "description": "Cache entries older than this many days are evicted by the cleanup pass." },
-        "inputCategories": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "description": "Named glob groups (e.g. 'source', 'styles') referenced by phaseInputs."
-        },
-        "phaseInputs": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "description": "Map phase name → list of inputCategories keys whose changes invalidate that phase."
-        },
-        "invalidateOnConfigChange": { "type": "boolean" }
-      }
-    },
-
-    "profiling": {
+    "reporting": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean" },
-        "metricsDirectory": { "type": "string" },
-        "historyLimit": { "type": "integer", "minimum": 1, "description": "Number of build runs to retain in profiling history." },
-        "slowStageThresholdMs": { "type": "integer", "minimum": 0 },
-        "alerts": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "slowStageWarning": { "type": "boolean" },
-            "memoryThresholdMb": { "type": "integer", "minimum": 1 },
-            "trendDegradationPercent": { "type": "number", "minimum": 0, "description": "Percent slowdown vs. historical median that triggers a degradation alert." }
-          }
-        },
-        "reporting": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "generateOnComplete": { "type": "boolean" },
-            "formats": {
-              "type": "array",
-              "items": { "type": "string", "enum": ["md", "json", "html"] }
-            },
-            "includeMemoryMetrics": { "type": "boolean" },
-            "includeTimeline": { "type": "boolean" }
-          }
-        }
-      }
-    },
-
-    "incrementalBuild": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "parallelPhases": { "type": "boolean" },
-        "skipCachedPhases": { "type": "boolean" },
-        "forceRebuildOn": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Files whose modification forces a full rebuild regardless of cache state."
-        },
-        "maxParallelPhases": { "type": "integer", "minimum": 1 }
-      }
-    },
-
-    "dashboard": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "outputDirectory": { "type": "string" },
-        "formats": {
-          "type": "array",
-          "items": { "type": "string", "enum": ["html", "md"] }
-        },
-        "autoGenerateAfterBuild": { "type": "boolean" },
-        "includeCharts": { "type": "boolean" },
-        "retentionDays": { "type": "integer", "minimum": 1 }
+        "outputDir": { "type": "string" },
+        "campaignReportFile": { "type": "string" },
+        "qaReportFile": { "type": "string" },
+        "approvalPackageFile": { "type": "string" },
+        "includeQaEvidence": { "type": "boolean" }
       }
     }
   },
 
   "$defs": {
-    "percentageRatio": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1,
-      "description": "Ratio between 0 and 1 (e.g. 0.02 = 2%)."
-    },
-    "percentageInt": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 100,
-      "description": "Whole-number percentage between 0 and 100."
-    },
-    "breakpointMap": {
-      "type": "object",
-      "additionalProperties": { "type": "integer", "minimum": 1 },
-      "description": "Map of viewport-name → pixel width."
-    },
-    "browserList": {
-      "type": "array",
-      "items": { "type": "string", "enum": ["chromium", "firefox", "webkit"] }
-    },
-    "appType": {
+    "readabilityTarget": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["description", "e2eStrategy", "defaultE2eFlows", "testHarness"],
+      "properties": {
+        "fleschMin": { "type": "number", "minimum": 0, "maximum": 100, "description": "Minimum Flesch Reading Ease score." },
+        "maxAvgSentenceWords": { "type": "number", "minimum": 1 },
+        "maxPassiveVoicePct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "assetType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "ownerAgent", "qaChecks", "approvalScope"],
       "properties": {
         "description": { "type": "string" },
-        "e2eStrategy": { "type": "string", "description": "Identifier consumed by e2e-test-generator to choose a test template." },
-        "defaultE2eFlows": {
+        "ownerAgent": { "type": "string", "description": "Agent name from .claude/agents/ that owns drafting." },
+        "draftSkill": { "type": ["string", "null"], "description": "Skill from .claude/skills/ used for drafting, if any." },
+        "qaChecks": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Named flows to generate by default for this app type."
+          "minItems": 1,
+          "description": "Checks the editorial-qa skill runs for this asset type."
         },
-        "testHarness": {
-          "type": "string",
-          "enum": ["playwright", "playwright-chromium-persistent", "maestro"],
-          "description": "Which test runner the converter agent should target for this app type."
-        },
-        "devServer": { "type": "boolean", "description": "Whether the pipeline starts pnpm dev before screenshots/E2E for this app type." },
-        "browsers": { "$ref": "#/$defs/browserList" },
-        "firefoxWebExtSupport": { "type": "boolean" },
-        "mobileBrowsers": {
+        "approvalScope": {
           "type": "array",
-          "items": { "type": "string", "enum": ["mobile-chrome", "mobile-safari"] }
+          "items": { "enum": ["publish", "send", "spend", "schedule"] },
+          "minItems": 1,
+          "description": "Which gated actions this asset type performs when it goes live."
         },
-        "browserContextOptions": {
+        "complianceElements": { "type": "array", "items": { "type": "string" } },
+        "embargoIntegrity": { "type": "boolean" },
+        "spendGovernance": {
           "type": "object",
-          "description": "Pass-through options forwarded to Playwright's browserContext. May contain string-interpolated tokens like ${extensionPath}.",
-          "additionalProperties": true
-        },
-        "buildCommand": { "type": "string" },
-        "extensionPathDefault": { "type": "string" },
-        "platforms": {
-          "type": "array",
-          "items": { "type": "string", "enum": ["ios", "android"] }
-        }
-      }
-    },
-    "tokenInferenceOptions": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "confirmWithUser": { "type": "boolean", "description": "Block before writing the lockfile until the user confirms or corrects inferred tokens." },
-        "confidenceThreshold": {
-          "type": "string",
-          "enum": ["low", "medium", "high"],
-          "description": "Min confidence level below which a token must be confirmed by the user even if confirmWithUser is false."
-        },
-        "maxInferenceRetries": { "type": "integer", "minimum": 0 }
-      }
-    },
-    "retryOptions": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Exponential-backoff retry config for external API calls.",
-      "properties": {
-        "maxAttempts": { "type": "integer", "minimum": 1 },
-        "initialDelayMs": { "type": "integer", "minimum": 0 },
-        "backoffMultiplier": { "type": "number", "minimum": 1 },
-        "maxDelayMs": { "type": "integer", "minimum": 0 },
-        "retryableErrors": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Error codes/keywords that trigger a retry. Other errors fail immediately."
-        }
-      }
-    },
-    "resourceList": {
-      "type": "array",
-      "items": {
-        "oneOf": [
-          {
-            "type": "string",
-            "description": "Resource identifier in 'category:name' form (e.g. 'filesystem:tokens', 'port:dev-server'). Two phases declaring the same exclusive resource cannot run concurrently."
-          },
-          {
-            "type": "object",
-            "required": ["name"],
-            "additionalProperties": false,
-            "properties": {
-              "name": { "type": "string" },
-              "mode": { "type": "string", "enum": ["exclusive", "shared"], "description": "Shared = multiple phases may hold this resource simultaneously (e.g. read-only dev server)." }
-            }
+          "additionalProperties": false,
+          "properties": {
+            "killCriteriaRequired": { "type": "boolean" },
+            "pacingCheck": { "type": "string" },
+            "scaleUpRequiresApproval": { "type": "boolean" }
           }
-        ]
+        }
       }
     },
-    "orchestrationPhase": {
+    "phase": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["depends", "description"],
+      "required": ["depends", "blocking", "description"],
       "properties": {
-        "depends": {
+        "depends": { "type": "array", "items": { "type": "string" } },
+        "resources": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "Phase keys that must complete before this phase starts."
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "mode"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "mode": { "enum": ["exclusive", "shared"] }
+                }
+              }
+            ]
+          }
         },
-        "resources": { "$ref": "#/$defs/resourceList" },
-        "blocking": { "type": "boolean", "description": "When true, failure of this phase fails the whole pipeline. When false, failure is reported but the pipeline continues." },
+        "blocking": { "type": "boolean" },
+        "humanGate": { "type": "boolean", "description": "Phase requires explicit human action; the scheduler never auto-passes it." },
+        "perAsset": { "type": "boolean", "description": "Phase fans out into per-asset lanes." },
         "description": { "type": "string" }
       }
     }

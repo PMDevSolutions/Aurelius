@@ -7,8 +7,9 @@
 #
 # Then scans the live Markdown docs for any "N agents" / "N skills" claim and
 # fails if a claim disagrees with the on-disk count. Historical and generated
-# records (CHANGELOG.md, RELEASE_NOTES.md, docs/plans/) are intentionally
-# excluded — they describe a past release and must not be rewritten.
+# records (CHANGELOG.md, RELEASE_NOTES.md, docs/plans/, docs/rfcs/) are
+# intentionally excluded — they describe a past decision and must not be
+# rewritten.
 #
 # Usage:
 #   ./scripts/check-doc-counts.sh           # human-readable report, exit 1 on drift
@@ -77,6 +78,7 @@ DOC_COUNT=$(find . -type f -name '*.md' \
   -not -path './.git/*' \
   -not -path '*/node_modules/*' \
   -not -path './docs/plans/*' \
+  -not -path './docs/rfcs/*' \
   -not -name 'CHANGELOG.md' \
   -not -name 'RELEASE_NOTES.md' \
   | wc -l | tr -d ' ')
@@ -94,16 +96,14 @@ while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   file="${match%%:*}"; rest="${match#*:}"
   lineno="${rest%%:*}"; text="${rest#*:}"
-  lc="${text,,}"
   num="${text//[!0-9]/}"
   [[ -z "$num" ]] && continue
-  if [[ "$lc" == *agent* ]]; then
-    noun="agents"; expected="$agent_count"
-  elif [[ "$lc" == *skill* ]]; then
-    noun="skills"; expected="$skill_count"
-  else
-    continue
-  fi
+  # Case-insensitive noun match without ${var,,} — macOS ships bash 3.2.
+  case "$text" in
+    *[aA][gG][eE][nN][tT]*) noun="agents"; expected="$agent_count" ;;
+    *[sS][kK][iI][lL][lL]*) noun="skills"; expected="$skill_count" ;;
+    *) continue ;;
+  esac
   if [[ "$num" != "$expected" ]]; then
     squished="${text//$'\t'/ }"
     while [[ "$squished" == *"  "* ]]; do squished="${squished//  / }"; done
@@ -116,11 +116,17 @@ done < <(grep -riInoE "$COMBINED" \
   --exclude-dir='.git' \
   --exclude-dir='node_modules' \
   --exclude-dir='plans' \
+  --exclude-dir='rfcs' \
   . 2>/dev/null || true)
 
 # A single claim can match more than one form; de-duplicate before counting.
+# (while-read instead of mapfile — macOS ships bash 3.2.)
 if ((${#DRIFT_LINES[@]})); then
-  mapfile -t DRIFT_LINES < <(printf '%s\n' "${DRIFT_LINES[@]}" | sort -u)
+  DEDUPED=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && DEDUPED+=("$line")
+  done < <(printf '%s\n' "${DRIFT_LINES[@]}" | sort -u)
+  DRIFT_LINES=("${DEDUPED[@]}")
 fi
 DRIFT=${#DRIFT_LINES[@]}
 

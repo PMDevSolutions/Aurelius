@@ -1,559 +1,242 @@
 {
   "$schema": "./pipeline.config.schema.json",
-  "description": "Configuration for the Figma-to-React autonomous build pipeline",
-  "version": "1.0.0",
-  "visualDiff": {
-    "threshold": 0.02,
-    "antialiasing": true,
-    "diffColorRgb": [
-      255,
-      0,
-      255
-    ],
-    "alphaBlending": 0.3,
-    "breakpoints": {
-      "mobile": 375,
-      "tablet": 768,
-      "desktop": 1440,
-      "wide": 1920
-    },
-    "requiredBreakpoints": [
-      "mobile",
-      "tablet",
-      "desktop"
-    ],
-    "outputDir": ".claude/visual-qa/diffs",
-    "subPixelClassification": true,
-    "subPixelMaxClusterSize": 2,
-    "typographyAnalysis": true,
-    "fontWeightThreshold": 15,
-    "fontFallbackDensityThreshold": 0.05,
-    "layoutDriftAnalysis": true,
-    "layoutShiftThresholdPx": 2
-  },
-  "iterationLoop": {
-    "maxVisualIterations": 5,
-    "maxFixAttemptsPerCheck": 2,
-    "diffPassThreshold": 0.02,
-    "diffWarnThreshold": 0.05,
-    "regionAnalysis": true,
-    "regionGridSize": 4,
-    "stopOnFirstPassingIteration": true
-  },
-  "tdd": {
+  "description": "Configuration for the brief-to-publish-ready autonomous campaign pipeline",
+  "version": "2.0.0",
+  "brandVoice": {
     "enforced": true,
-    "redPhaseRequired": true,
-    "greenPhaseRequired": true,
-    "refactorPhaseOptional": true,
-    "testExistenceGate": true,
-    "coverageThreshold": 80,
-    "componentTestRequired": true,
-    "lockfileAssertionsRequired": true
-  },
-  "e2e": {
-    "enabled": true,
-    "conditionalOnAppType": true,
-    "browsers": [
-      "chromium",
-      "firefox",
-      "webkit"
-    ],
-    "crossBrowserBrowsers": [
-      "chromium",
-      "firefox",
-      "webkit"
-    ],
-    "crossBrowserRequired": true,
-    "timeoutMs": 30000,
-    "retries": 2,
-    "mobileBrowsers": [
-      "mobile-chrome",
-      "mobile-safari"
-    ],
-    "crossBrowserDiffThreshold": 0.03
-  },
-  "qualityGate": {
-    "testsRequired": true,
-    "typescriptRequired": true,
-    "buildRequired": true,
-    "tokenVerificationRequired": true,
-    "lighthouseRequired": true,
-    "lighthouseThresholds": {
-      "performance": 80,
-      "accessibility": 90,
-      "bestPractices": 90,
-      "seo": 90
-    },
-    "e2eRequired": true,
-    "crossBrowserScreenshotsRequired": false,
-    "testCoverageEnforced": true,
-    "mutationScore": {
-      "enabled": false,
-      "threshold": 80,
-      "tool": "stryker",
-      "blocking": false
+    "lockfile": "brand-guidelines.json",
+    "requireLockfileBeforeDrafting": true,
+    "lintBlocking": true,
+    "bannedWordsPolicy": "block",
+    "driftCheck": {
+      "autoCheck": true,
+      "warnOnDrift": true
     }
   },
-  "appTypes": {
-    "web-app": {
-      "description": "Standard React web application (SPA or SSR)",
-      "e2eStrategy": "navigate-interact-verify",
-      "defaultE2eFlows": [
-        "page-navigation",
-        "form-submission",
-        "responsive-layout"
-      ],
-      "testHarness": "playwright",
-      "devServer": true,
-      "browsers": [
-        "chromium",
-        "firefox",
-        "webkit"
-      ],
-      "mobileBrowsers": [
-        "mobile-chrome",
-        "mobile-safari"
-      ],
-      "browserContextOptions": {}
-    },
-    "chrome-extension": {
-      "description": "Chrome browser extension with popup, background, and/or content scripts",
-      "e2eStrategy": "load-extension-interact",
-      "defaultE2eFlows": [
-        "extension-load",
-        "popup-open",
-        "popup-interact",
-        "content-script-inject",
-        "manifest-v3-compat"
-      ],
-      "testHarness": "playwright-chromium-persistent",
-      "devServer": false,
-      "browsers": [
-        "chromium"
-      ],
-      "firefoxWebExtSupport": true,
-      "browserContextOptions": {
-        "headless": false,
-        "args": [
-          "--disable-extensions-except=${extensionPath}",
-          "--load-extension=${extensionPath}"
-        ]
-      },
-      "buildCommand": "pnpm build",
-      "extensionPathDefault": "dist"
-    },
-    "pwa": {
-      "description": "Progressive Web App with offline support and installability",
-      "e2eStrategy": "navigate-interact-verify-offline",
-      "defaultE2eFlows": [
-        "page-navigation",
-        "install-prompt",
-        "offline-fallback",
-        "push-notification",
-        "sw-lifecycle"
-      ],
-      "testHarness": "playwright",
-      "devServer": true,
-      "browsers": [
-        "chromium",
-        "firefox",
-        "webkit"
-      ],
-      "mobileBrowsers": [
-        "mobile-chrome",
-        "mobile-safari"
-      ],
-      "browserContextOptions": {}
-    },
-    "react-native": {
-      "description": "React Native mobile app via Expo",
-      "e2eStrategy": "launch-app-interact-verify",
-      "defaultE2eFlows": [
-        "app-launch",
-        "screen-navigation",
-        "form-interaction",
-        "deep-link"
-      ],
-      "testHarness": "maestro",
-      "devServer": true,
-      "buildCommand": "expo build",
-      "platforms": [
-        "ios",
-        "android"
-      ]
-    }
-  },
-  "screenshotCapture": {
-    "fullPage": true,
-    "format": "png",
-    "quality": 100,
-    "waitForNetworkIdle": true,
-    "waitAfterLoadMs": 1000,
-    "outputDir": ".claude/visual-qa/screenshots"
-  },
-  "darkMode": {
-    "enabled": true,
-    "diffThreshold": 0.03,
-    "emulateMediaFeature": "prefers-color-scheme: dark",
-    "compareAgainst": "light",
-    "screenshotDir": ".claude/visual-qa/screenshots/dark"
-  },
-  "storybook": {
-    "autoGenerate": true,
-    "includeResponsiveViewports": true,
-    "viewports": [
-      "mobile",
-      "tablet",
-      "desktop"
-    ],
-    "skipPatterns": [
-      "**/index.ts",
-      "**/*.test.*",
-      "**/*.stories.*"
-    ],
-    "generateMdx": true,
-    "maxVariantsPerProp": 10
-  },
-  "tokenSync": {
-    "autoCheck": true,
-    "warnOnDrift": true,
-    "autoUpdate": false
-  },
-  "reporting": {
-    "outputDir": ".claude/visual-qa",
-    "buildReportFile": "build-report.md",
-    "diffReportFile": "diff-report.md",
-    "e2eReportFile": "e2e-report.md",
-    "accessibilityReportFile": "accessibility-report.md",
-    "includeScreenshots": true,
-    "includeDiffImages": true
-  },
-  "security": {
-    "enabled": true,
-    "auditLevel": "moderate",
-    "failOnVulnerability": true,
-    "checkLockfile": true,
-    "snyk": {
-      "enabled": true,
-      "severityThreshold": "high",
-      "failOnIssues": false
-    },
-    "csp": {
-      "enabled": true,
-      "reportOnly": false,
-      "reportUri": "/api/csp-report"
-    },
-    "inputSanitization": {
-      "enabled": true,
-      "blockPrivateUrls": true,
-      "allowLocalhostInDev": true
-    },
-    "headers": {
-      "hsts": true,
-      "noSniff": true,
-      "frameOptions": "SAMEORIGIN",
-      "xssProtection": true,
-      "referrerPolicy": "strict-origin-when-cross-origin"
-    }
-  },
-  "bundleSize": {
-    "enabled": true,
-    "maxSizeKb": 200,
-    "warnSizeKb": 150
-  },
-  "mutationTesting": {
-    "enabled": true,
-    "tool": "stryker",
-    "scoreThreshold": 80,
-    "reminder": true
-  },
-  "errorMonitoring": {
-    "provider": "sentry",
-    "dsn": "",
-    "environment": "production",
-    "sampleRate": 1,
-    "tracesSampleRate": 0.2,
-    "enableInDev": false,
-    "sourceMapUpload": true
-  },
-  "deployPreview": {
-    "enabled": true,
-    "provider": "vercel",
-    "autoDeployOnPR": true,
-    "runVisualQAOnPreview": true,
-    "runLighthouseOnPreview": true
-  },
-  "responsiveVerification": {
-    "enabled": true,
-    "breakpoints": {
-      "small-mobile": 320,
-      "mobile": 375,
-      "tablet": 768,
-      "desktop": 1440,
-      "wide": 1920
-    },
-    "diffThreshold": 0.03,
-    "blocking": false
-  },
-  "regressionTesting": {
-    "enabled": true,
-    "baselineDir": ".claude/visual-qa/baselines",
-    "screenshotDir": ".claude/visual-qa/screenshots/regression",
-    "diffDir": ".claude/visual-qa/diffs/regression",
-    "threshold": 0.02,
-    "failOnMissingBaseline": false,
-    "updateBaselinesOnPass": false,
-    "breakpoints": {
-      "mobile": 375,
-      "desktop": 1440
-    },
-    "waitAfterLoadMs": 1500,
-    "fullPage": true,
-    "routes": ["/"],
-    "browsers": ["chromium"],
-    "reportFile": "regression-report.md"
-  },
-  "visualBaselines": {
-    "enabled": true,
-    "backend": "commit",
-    "storage": "git",
-    "baselineDir": ".claude/visual-qa/baselines",
-    "screenshotDir": ".claude/visual-qa/screenshots/cross-browser",
-    "diffDir": ".claude/visual-qa/diffs/cross-browser",
-    "browsers": ["chromium", "firefox", "webkit"],
-    "routes": ["/"],
-    "breakpoints": {
-      "mobile": 375,
-      "desktop": 1440
-    },
-    "threshold": 0.03,
+  "readability": {
     "blocking": false,
-    "reportFile": "cross-browser-report.md",
-    "capture": {
-      "mode": "container",
-      "image": "mcr.microsoft.com/playwright:v1.61.1-noble",
-      "waitAfterLoadMs": 1500,
-      "fullPage": true
-    },
-    "provenance": {
-      "manifest": ".claude/visual-qa/baselines/manifest.json",
-      "policy": "warn"
-    },
-    "ciArtifact": {
-      "compareAgainst": "last-green-main",
-      "retentionDays": 30
-    },
-    "service": {
-      "provider": "chromatic",
-      "projectTokenEnv": "CHROMATIC_PROJECT_TOKEN"
+    "targets": {
+      "blog-post":     { "fleschMin": 60, "maxAvgSentenceWords": 22, "maxPassiveVoicePct": 12 },
+      "email":         { "fleschMin": 65, "maxAvgSentenceWords": 18, "maxPassiveVoicePct": 10 },
+      "email-sequence":{ "fleschMin": 65, "maxAvgSentenceWords": 18, "maxPassiveVoicePct": 10 },
+      "social-batch":  { "fleschMin": 70, "maxAvgSentenceWords": 14, "maxPassiveVoicePct": 8 },
+      "ad-campaign":   { "fleschMin": 75, "maxAvgSentenceWords": 12, "maxPassiveVoicePct": 5 },
+      "landing-page":  { "fleschMin": 65, "maxAvgSentenceWords": 16, "maxPassiveVoicePct": 8 },
+      "press-release": { "fleschMin": 55, "maxAvgSentenceWords": 24, "maxPassiveVoicePct": 15 },
+      "video-script":  { "fleschMin": 70, "maxAvgSentenceWords": 14, "maxPassiveVoicePct": 8 }
     }
   },
-  "deadCode": {
-    "enabled": true,
-    "tool": "knip",
-    "ignorePatterns": [
-      "**/*.stories.*",
-      "**/*.test.*",
-      "**/*.e2e.*"
+  "editorialLoop": {
+    "maxRevisions": 5,
+    "maxFixAttemptsPerFinding": 2,
+    "stopOnFirstPass": true,
+    "escalateOnExhaustion": true
+  },
+  "factCheck": {
+    "required": true,
+    "blocking": true,
+    "citationRequiredForStatistics": true,
+    "superlativesRequireSubstantiation": true,
+    "testimonialPolicy": "real-permissioned-documented",
+    "fabricationPolicy": "block",
+    "unverifiableClaimPolicy": "reword-or-cut"
+  },
+  "seoChecklist": {
+    "blocking": false,
+    "titleMaxChars": 60,
+    "metaDescriptionMaxChars": 155,
+    "requireKeywordInTitle": true,
+    "requireKeywordInH1": true,
+    "minInternalLinks": 2,
+    "minCitedSources": 1,
+    "enforceHeadingHierarchy": true
+  },
+  "humanApproval": {
+    "required": true,
+    "blocking": true,
+    "nonNegotiable": true,
+    "perAsset": true,
+    "scope": ["publish", "send", "spend", "schedule"],
+    "autoApprove": false,
+    "waiverLogging": true,
+    "packageFile": "approval-package.md"
+  },
+  "assetTypes": {
+    "blog-post": {
+      "description": "Long-form article for the blog or guest placement",
+      "ownerAgent": "blog-writer",
+      "draftSkill": null,
+      "qaChecks": ["brand-voice", "readability", "fact-check", "seo"],
+      "approvalScope": ["publish"]
+    },
+    "email": {
+      "description": "Single broadcast email or newsletter issue",
+      "ownerAgent": "email-marketer",
+      "draftSkill": null,
+      "qaChecks": ["brand-voice", "readability", "fact-check", "email-compliance"],
+      "approvalScope": ["send"],
+      "complianceElements": ["unsubscribe", "physical-address", "sender-identity"]
+    },
+    "email-sequence": {
+      "description": "Multi-step automated email journey",
+      "ownerAgent": "lifecycle-email",
+      "draftSkill": "email-sequence",
+      "qaChecks": ["brand-voice", "readability", "fact-check", "email-compliance", "sequence-arc"],
+      "approvalScope": ["send"],
+      "complianceElements": ["unsubscribe", "physical-address", "sender-identity"]
+    },
+    "social-batch": {
+      "description": "Coordinated batch of platform-native social posts",
+      "ownerAgent": "social-media-manager",
+      "draftSkill": "social-content-batching",
+      "qaChecks": ["brand-voice", "readability", "fact-check", "platform-limits", "disclosure"],
+      "approvalScope": ["publish", "schedule"]
+    },
+    "ad-campaign": {
+      "description": "Paid media campaign with copy variants and spend plan",
+      "ownerAgent": "paid-ads-specialist",
+      "draftSkill": "ad-copy-variants",
+      "qaChecks": ["brand-voice", "readability", "fact-check", "platform-policy", "message-match"],
+      "approvalScope": ["spend", "publish"],
+      "spendGovernance": {
+        "killCriteriaRequired": true,
+        "pacingCheck": "daily",
+        "scaleUpRequiresApproval": true
+      }
+    },
+    "landing-page": {
+      "description": "Conversion-focused page copy from hero to final CTA",
+      "ownerAgent": "copywriter",
+      "draftSkill": "landing-page-copy",
+      "qaChecks": ["brand-voice", "readability", "fact-check", "seo", "message-match"],
+      "approvalScope": ["publish"]
+    },
+    "press-release": {
+      "description": "Earned-media release with verified quotes and embargo terms",
+      "ownerAgent": "pr-outreach",
+      "draftSkill": null,
+      "qaChecks": ["brand-voice", "fact-check", "quote-verification", "inverted-pyramid"],
+      "approvalScope": ["send", "publish"],
+      "embargoIntegrity": true
+    },
+    "video-script": {
+      "description": "Production-ready script for short- or long-form video",
+      "ownerAgent": "video-script-writer",
+      "draftSkill": null,
+      "qaChecks": ["brand-voice", "readability", "fact-check", "hook-payoff"],
+      "approvalScope": ["publish"]
+    }
+  },
+  "calendar": {
+    "file": "content-calendar.json",
+    "leadTimes": {
+      "draftToQaDays": 3,
+      "qaToApprovalDays": 2,
+      "approvalToPublishDays": 2
+    },
+    "cadenceDefaults": {
+      "blog":   { "perWeek": 2, "maxPerDay": 1 },
+      "email":  { "perWeek": 1, "maxPerDay": 1 },
+      "social": { "perWeek": 5, "maxPerDay": 2 }
+    },
+    "staleStatusDays": 10
+  },
+  "measurement": {
+    "utmRequired": true,
+    "utmCampaignPattern": "[cycle]-[campaign-slug]",
+    "utmContentPattern": "[campaign]-[platform]-[test]-[variable]-[variant]",
+    "baselineRequired": true,
+    "reportSchedule": ["launch+7d", "launch+30d"],
+    "doubleCountingAudit": "monthly"
+  },
+  "compliance": {
+    "regulatedTopics": ["health", "finance", "legal", "employment", "housing"],
+    "legalReviewTriggers": [
+      "regulated topics",
+      "named-competitor comparisons",
+      "sweepstakes or contests",
+      "testimonials and endorsements",
+      "personal data collection"
     ],
-    "reportUnusedExports": true,
-    "reportUnusedDependencies": true,
-    "reportUnusedFiles": true
+    "disclosureRules": ["Sponsored and affiliate content labeled per FTC guidance"]
   },
-  "canva": {
-    "enabled": true,
-    "tokenInference": {
-      "confirmWithUser": true,
-      "confidenceThreshold": "medium",
-      "maxInferenceRetries": 2
-    },
-    "export": {
-      "format": "png",
-      "scale": 2,
-      "quality": 100
-    },
-    "mcpServer": "canva",
-    "restApiFallback": false,
-    "retry": {
-      "maxAttempts": 3,
-      "initialDelayMs": 2000,
-      "backoffMultiplier": 2,
-      "maxDelayMs": 30000,
-      "retryableErrors": [
-        "rate_limit",
-        "timeout",
-        "server_error",
-        "export_failed",
-        "mcp_connection_lost"
-      ]
-    }
-  },
-  "screenshot": {
-    "enabled": true,
-    "tokenInference": {
-      "confirmWithUser": true,
-      "confidenceThreshold": "medium",
-      "maxInferenceRetries": 2
-    },
-    "capture": {
-      "format": "png",
-      "scale": 2,
-      "quality": 100,
-      "fullPage": true,
-      "waitForNetworkIdle": true,
-      "waitAfterLoadMs": 1000
-    },
-    "urlCapture": {
-      "enabled": true,
-      "viewports": [
-        {
-          "name": "desktop",
-          "width": 1440,
-          "height": 900
-        },
-        {
-          "name": "mobile",
-          "width": 375,
-          "height": 812
-        }
-      ]
-    }
-  },
-  "conversation": {
-    "enabled": true,
-    "interview": {
-      "maxQuestions": 7,
-      "confirmBriefWithUser": true
-    },
-    "designGeneration": {
-      "mockupDir": ".claude/design-mockups",
-      "mockupServerPort": 4173,
-      "reviewBeforeHandoff": true,
-      "maxRegenerationAttempts": 2,
-      "capturePollIntervalMs": 5000,
-      "capturePollMaxAttempts": 10
-    },
-    "retry": {
-      "maxAttempts": 3,
-      "initialDelayMs": 2000,
-      "backoffMultiplier": 2,
-      "maxDelayMs": 30000,
-      "retryableErrors": [
-        "rate_limit",
-        "timeout",
-        "server_error",
-        "capture_failed",
-        "mcp_connection_lost"
-      ]
+  "campaignCadence": {
+    "cycleWeeks": 6,
+    "structure": {
+      "weeks-1-2": "research & strategy (brief, personas, keywords, competitive)",
+      "weeks-3-4": "production & editorial QA (drafts through the bounded loop)",
+      "week-5": "approvals & launch prep (approval gate, scheduling, tracking QA)",
+      "week-6": "launch & measurement (go-live, monitoring, wrap report)"
     }
   },
   "orchestration": {
     "enabled": true,
     "maxConcurrent": 3,
     "phases": {
-      "token-sync": {
+      "brand-sync": {
         "depends": [],
-        "resources": ["filesystem:tokens"],
-        "blocking": true,
-        "description": "Check for token drift against lockfile"
-      },
-      "intake": {
-        "depends": ["token-sync"],
-        "resources": ["filesystem:build-spec"],
-        "blocking": true,
-        "description": "Discover design structure and create build spec"
-      },
-      "token-lock": {
-        "depends": ["intake"],
-        "resources": ["filesystem:tokens"],
-        "blocking": true,
-        "description": "Extract and lock design tokens"
-      },
-      "tdd-scaffold": {
-        "depends": ["token-lock"],
-        "resources": ["filesystem:src", "filesystem:tests"],
-        "blocking": true,
-        "description": "Write failing tests for all components (RED phase)"
-      },
-      "component-build": {
-        "depends": ["tdd-scaffold"],
-        "resources": ["filesystem:src", { "name": "port:dev-server", "mode": "shared" }],
-        "blocking": true,
-        "description": "Build components to pass tests (GREEN phase)"
-      },
-      "storybook": {
-        "depends": ["component-build"],
-        "resources": ["filesystem:stories"],
+        "resources": ["filesystem:brand"],
         "blocking": false,
-        "description": "Auto-generate Storybook stories"
+        "description": "Drift check vs brand-guidelines.json (conditional, if lockfile exists)"
       },
-      "visual-diff": {
-        "depends": ["component-build"],
-        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+      "brief-intake": {
+        "depends": ["brand-sync"],
+        "resources": ["filesystem:brief"],
         "blocking": true,
-        "description": "Pixel-diff visual verification loop"
+        "description": "Structured interview producing campaign-brief.json"
       },
-      "dark-mode": {
-        "depends": ["component-build"],
-        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
-        "blocking": false,
-        "description": "Dark mode screenshot comparison"
-      },
-      "e2e-tests": {
-        "depends": ["visual-diff"],
-        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
+      "brand-voice-lock": {
+        "depends": ["brief-intake"],
+        "resources": ["filesystem:brand"],
         "blocking": true,
-        "description": "Generate and run Playwright E2E tests"
+        "description": "Create or refresh brand-guidelines.json — no drafting without a lockfile"
       },
-      "cross-browser": {
-        "depends": ["component-build"],
-        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
-        "blocking": false,
-        "description": "Firefox and WebKit baseline comparison (cross-browser-baseline.sh compare)"
-      },
-      "quality-gate": {
-        "depends": ["component-build"],
+      "strategy-gate": {
+        "depends": ["brand-voice-lock"],
         "resources": [],
         "blocking": true,
-        "description": "Coverage, types, build, tokens, Lighthouse checks"
+        "humanGate": true,
+        "description": "Human approves objective, audience, channels, and budget before production"
       },
-      "responsive": {
-        "depends": ["component-build"],
+      "calendar": {
+        "depends": ["strategy-gate"],
+        "resources": ["filesystem:calendar"],
+        "blocking": true,
+        "description": "Generate and validate content-calendar.json"
+      },
+      "drafts": {
+        "depends": ["calendar"],
+        "resources": ["filesystem:content"],
+        "blocking": true,
+        "perAsset": true,
+        "description": "Channel specialists draft every asset in the plan (parallel lanes)"
+      },
+      "editorial-qa": {
+        "depends": ["drafts"],
+        "resources": ["filesystem:content"],
+        "blocking": true,
+        "perAsset": true,
+        "description": "Brand voice + readability + fact-check loop, max revisions bounded"
+      },
+      "channel-checks": {
+        "depends": ["drafts"],
         "resources": [],
         "blocking": false,
-        "description": "Responsive screenshots at 5 breakpoints"
+        "perAsset": true,
+        "description": "SEO checklist and platform-limit checks (advisory)"
+      },
+      "approval-gate": {
+        "depends": ["editorial-qa", "channel-checks"],
+        "resources": [],
+        "blocking": true,
+        "humanGate": true,
+        "description": "Per-asset human sign-off — nothing publishes, sends, or spends without it"
       },
       "report": {
-        "depends": ["quality-gate", "e2e-tests"],
+        "depends": ["approval-gate"],
         "resources": ["filesystem:report"],
         "blocking": true,
-        "description": "Generate build report with all results"
-      }
-    },
-    "qualityGateSubtasks": {
-      "coverage": {
-        "resources": [],
-        "description": "Run vitest with coverage, check 80% threshold"
-      },
-      "typecheck": {
-        "resources": [],
-        "description": "Run tsc --noEmit"
-      },
-      "build": {
-        "resources": [{ "name": "port:build", "mode": "shared" }],
-        "description": "Run pnpm build"
-      },
-      "token-verify": {
-        "resources": ["filesystem:tokens"],
-        "description": "Run verify-tokens.sh"
-      },
-      "lighthouse": {
-        "resources": [{ "name": "port:dev-server", "mode": "shared" }],
-        "description": "Run Lighthouse audit per page"
-      },
-      "mutation-score": {
-        "resources": [],
-        "description": "Run Stryker mutation testing, check score against threshold (opt-in)"
+        "description": "campaign-report.md with measurement plan and QA evidence"
       }
     },
     "reporting": {
@@ -563,66 +246,11 @@
       "includeTimeline": true
     }
   },
-  "caching": {
-    "enabled": true,
-    "strategy": "content-hash",
-    "directory": ".claude/pipeline-cache",
-    "maxAgeDays": 7,
-    "inputCategories": {
-      "source": ["src/**/*.{ts,tsx,js,jsx}", "src/**/*.astro", "components/**/*.{ts,tsx}"],
-      "styles": ["src/**/*.css", "styles/**/*.css", "tailwind.config.*"],
-      "tests": ["**/*.test.{ts,tsx,js,jsx}", "**/*.spec.{ts,tsx}"],
-      "config": ["package.json", "tsconfig.json", "vite.config.*", "next.config.*", "astro.config.*"],
-      "tokens": ["design-tokens.lock.json", "tailwind.config.*"],
-      "figma": ["build-spec.json", "design-tokens.lock.json"]
-    },
-    "phaseInputs": {
-      "token-sync": ["tokens", "config"],
-      "intake": ["figma"],
-      "token-lock": ["figma", "tokens"],
-      "tdd-scaffold": ["figma", "tokens", "tests"],
-      "component-build": ["source", "styles", "tokens", "tests", "config"],
-      "storybook": ["source", "styles"],
-      "visual-diff": ["source", "styles"],
-      "dark-mode": ["source", "styles"],
-      "e2e-tests": ["source", "tests", "config"],
-      "cross-browser": ["source", "styles"],
-      "quality-gate": ["source", "tests", "config"],
-      "responsive": ["source", "styles"]
-    },
-    "invalidateOnConfigChange": true
-  },
-  "profiling": {
-    "enabled": true,
-    "metricsDirectory": ".claude/pipeline-cache/metrics",
-    "historyLimit": 50,
-    "slowStageThresholdMs": 30000,
-    "alerts": {
-      "enabled": true,
-      "slowStageWarning": true,
-      "memoryThresholdMb": 1024,
-      "trendDegradationPercent": 20
-    },
-    "reporting": {
-      "generateOnComplete": true,
-      "formats": ["md", "json"],
-      "includeMemoryMetrics": true,
-      "includeTimeline": true
-    }
-  },
-  "incrementalBuild": {
-    "enabled": true,
-    "parallelPhases": true,
-    "skipCachedPhases": true,
-    "forceRebuildOn": ["package.json", "pnpm-lock.yaml", "pipeline.config.json"],
-    "maxParallelPhases": 4
-  },
-  "dashboard": {
-    "enabled": true,
-    "outputDirectory": ".claude/visual-qa/dashboard",
-    "formats": ["html", "md"],
-    "autoGenerateAfterBuild": true,
-    "includeCharts": true,
-    "retentionDays": 30
+  "reporting": {
+    "outputDir": ".claude/campaigns",
+    "campaignReportFile": "campaign-report.md",
+    "qaReportFile": "editorial-qa-report.md",
+    "approvalPackageFile": "approval-package.md",
+    "includeQaEvidence": true
   }
 }
