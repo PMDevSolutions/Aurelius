@@ -4,6 +4,72 @@ All notable changes to the Aurelius framework will be documented in this file.
 
 This changelog is automatically generated from [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [2.0.0](https://github.com/PMDevSolutions/Aurelius/compare/v1.1.0...v2.0.0) (2026-08-15)
+
+
+### Features
+
+* **agents:** add astro-converter (hybrid .astro + react islands) ([a419577](https://github.com/PMDevSolutions/Aurelius/commit/a419577f1926ba561f3eb667e7a32426884dbb56))
+* **astro:** add --astro flag and wire the Astro starter into the pipeline ([6de51e8](https://github.com/PMDevSolutions/Aurelius/commit/6de51e8c69ca0a7c8fc2efc6387dab2c5e8d1fe2)), closes [#78](https://github.com/PMDevSolutions/Aurelius/issues/78) [#78](https://github.com/PMDevSolutions/Aurelius/issues/78)
+* **build-spec:** add renderer field, deprecate framework.type ([5695aca](https://github.com/PMDevSolutions/Aurelius/commit/5695acabcdd27fb583f5d4c0fe04bb0be0ecc394))
+* **config:** add visualBaselines section for cross-browser baseline storage (RFC 0002) ([e23f2ca](https://github.com/PMDevSolutions/Aurelius/commit/e23f2ca349b3b7b2585d77e018e4fe11c85432f2))
+* **conversation:** add /build-from-conversation pipeline ([bf1cfc0](https://github.com/PMDevSolutions/Aurelius/commit/bf1cfc086bfe68328b6df09b4846244d939e5c90)), closes [#33](https://github.com/PMDevSolutions/Aurelius/issues/33)
+* **design-system:** add token re-import + round-trip and document consumers ([167278f](https://github.com/PMDevSolutions/Aurelius/commit/167278f39e3b81a4e566655907a224bc69edc0b7)), closes [#3](https://github.com/PMDevSolutions/Aurelius/issues/3) [#4](https://github.com/PMDevSolutions/Aurelius/issues/4) [#82](https://github.com/PMDevSolutions/Aurelius/issues/82)
+* **pipeline:** add InDesign IDML parser and intermediate representation ([9cfd6c9](https://github.com/PMDevSolutions/Aurelius/commit/9cfd6c9a8e55020e313e0634509876d24f8774a2)), closes [#62](https://github.com/PMDevSolutions/Aurelius/issues/62) [#63](https://github.com/PMDevSolutions/Aurelius/issues/63) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62)
+* **pipeline:** add InDesign React component generator ([355fb56](https://github.com/PMDevSolutions/Aurelius/commit/355fb56f58cf13c4a3b637644164682bd0450c2e)), closes [#66](https://github.com/PMDevSolutions/Aurelius/issues/66) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62) [#66](https://github.com/PMDevSolutions/Aurelius/issues/66) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62)
+* **pipeline:** add InDesign style and design-token mapper ([dfaf538](https://github.com/PMDevSolutions/Aurelius/commit/dfaf5380775a3366872ccf872c079e513c4192d2)), closes [#65](https://github.com/PMDevSolutions/Aurelius/issues/65) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62) [#65](https://github.com/PMDevSolutions/Aurelius/issues/65) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62)
+* **pipeline:** add PDF as a first-class InDesign input ([51141f1](https://github.com/PMDevSolutions/Aurelius/commit/51141f1851aa9ccf2adc885bcf041935776c2311)), closes [#64](https://github.com/PMDevSolutions/Aurelius/issues/64) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62) [#64](https://github.com/PMDevSolutions/Aurelius/issues/64) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62)
+* **pipeline:** ship InDesign pipeline agent, skill, CLI, and docs ([c1a9d09](https://github.com/PMDevSolutions/Aurelius/commit/c1a9d098e3247742d40a87a6415ca49ff6a18903)), closes [#67](https://github.com/PMDevSolutions/Aurelius/issues/67) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62) [#67](https://github.com/PMDevSolutions/Aurelius/issues/67) [#62](https://github.com/PMDevSolutions/Aurelius/issues/62)
+* **plugins:** add agent plugin manifest JSON schema ([f97f9d6](https://github.com/PMDevSolutions/Aurelius/commit/f97f9d6f873f211a920dcf602e10c3b1867d7fa9))
+* **plugins:** add catalog builder and semver range check ([f2caeac](https://github.com/PMDevSolutions/Aurelius/commit/f2caeac040f7b1b7a16891108deca46b62e87dc7))
+* **plugins:** add frontmatter + example parsing helpers ([717b054](https://github.com/PMDevSolutions/Aurelius/commit/717b054ceefb9b0b23e6d5b379725a25a5756fb7))
+* **plugins:** add manifest + structural validator ([b9cfded](https://github.com/PMDevSolutions/Aurelius/commit/b9cfdeda2058577259a3d73c0c2ed2781a6c4b0f))
+* **plugins:** add registry with dependency resolution, install/uninstall, lifecycle hooks ([6be51d3](https://github.com/PMDevSolutions/Aurelius/commit/6be51d39689ae9c44fbd2f2dc9eaaf5cff9e14aa))
+* **plugins:** add scaffolding CLI for new agent plugins ([ea49fda](https://github.com/PMDevSolutions/Aurelius/commit/ea49fda04cbdb9b71018345735e8364d4d55a68f))
+* **plugins:** add static assertion test runner ([1aa904d](https://github.com/PMDevSolutions/Aurelius/commit/1aa904db1e5ff7e6911464cc283d726e916c3416))
+* **plugins:** add transitive dependency resolver with cycle detection ([ef96341](https://github.com/PMDevSolutions/Aurelius/commit/ef963413d6f315ca3258629e693fc33dda2799d7))
+* **renderers:** add renderer manifest JSON schema ([66816c6](https://github.com/PMDevSolutions/Aurelius/commit/66816c67e56d403586c25782f4b1487761001afd))
+* **renderers:** add renderer-registry detect with priority precedence ([5bb6254](https://github.com/PMDevSolutions/Aurelius/commit/5bb6254d53cee0a46408444de1b57884bab36c41))
+* **renderers:** add renderer-registry list command ([6f62069](https://github.com/PMDevSolutions/Aurelius/commit/6f620697fe27de54e98e3c2b87a657196424d9b4))
+* **renderers:** add renderer-registry resolve command ([67441d9](https://github.com/PMDevSolutions/Aurelius/commit/67441d9cdf163c8d4b2deb5fdd9c9fe5df79cdd1))
+* **renderers:** add validate-renderer (schema + cross-reference checks) ([4519a23](https://github.com/PMDevSolutions/Aurelius/commit/4519a23d76edd839a58e5198517a4bdf559359e0))
+* **renderers:** author astro manifest ([ec85dcf](https://github.com/PMDevSolutions/Aurelius/commit/ec85dcfef485fccc0a444e47814cae533f67d472))
+* **renderers:** author nextjs/vite/sveltekit/expo manifests ([a286cf0](https://github.com/PMDevSolutions/Aurelius/commit/a286cf07b04a3a14c4199c3bade035c5671f5a0f))
+* **scripts:** add baseline provenance manifest lib (record/sync/verify) ([4f3aba1](https://github.com/PMDevSolutions/Aurelius/commit/4f3aba121ed1353173976c42e6a30c65ff181e27))
+* **scripts:** add cross-browser-baseline capture/compare with provenance verification ([7da6ead](https://github.com/PMDevSolutions/Aurelius/commit/7da6eadccb023e243fa61511ea5e3cfda88e511b))
+* **scripts:** ci-artifact and service baseline backends behind the adapter contract ([8eb139b](https://github.com/PMDevSolutions/Aurelius/commit/8eb139b3bcb60398344b563254313667f7a399fc))
+* **scripts:** git-lfs storage automation for large baseline sets ([cb95e5f](https://github.com/PMDevSolutions/Aurelius/commit/cb95e5f70ed399b870a8dbda8a304901d3e6fc82))
+* **scripts:** pinned Playwright container capture for cross-browser baselines ([16fd000](https://github.com/PMDevSolutions/Aurelius/commit/16fd0003d22ea5b1ddc47c9a40bc7f6c4730088e))
+* **setup:** add --renderer flag backed by the registry ([bdc590f](https://github.com/PMDevSolutions/Aurelius/commit/bdc590fdd5a1e6fecfc642d213dbcbb134e9d711))
+* **skills:** add storybook-story-generation skill ([cad7cbc](https://github.com/PMDevSolutions/Aurelius/commit/cad7cbc9a0e287f35ef33b4f854820fb3a3ded9c)), closes [#81](https://github.com/PMDevSolutions/Aurelius/issues/81)
+* **templates:** add astro starter (react islands + tailwind + container-api tests) ([3bb4e2a](https://github.com/PMDevSolutions/Aurelius/commit/3bb4e2ae3926c15ae132623ed4fd08261f82b575))
+
+
+### Bug Fixes
+
+* **deps:** bump fast-xml-parser to v5.9.3 to clear XMLBuilder injection advisory ([c30bc8c](https://github.com/PMDevSolutions/Aurelius/commit/c30bc8c5c13dd55b4f5ba5abf0748518008d4c1a)), closes [#108](https://github.com/PMDevSolutions/Aurelius/issues/108) [#108](https://github.com/PMDevSolutions/Aurelius/issues/108)
+* **pipeline:** make Phase 7 cross-browser phase perform the comparison it advertises ([c7332f1](https://github.com/PMDevSolutions/Aurelius/commit/c7332f113e0e14c5a6324f6a13fbd158f501d8bc))
+* **plugins:** guard scaffolder against non-interactive hang, normalize tools, roll back writes ([739b541](https://github.com/PMDevSolutions/Aurelius/commit/739b5411c039e5c044cb97ae002a4dc14f94158e))
+* **plugins:** harden frontmatter list parsing and null-safe example count ([3c794ca](https://github.com/PMDevSolutions/Aurelius/commit/3c794cabfd41e826514630c2b5391bc46cc5e839))
+* **plugins:** harden validator IO handling, sibling dep resolution, and schema error detail ([4352a72](https://github.com/PMDevSolutions/Aurelius/commit/4352a72d24c4f6760f093747d7062218df49475c))
+* **plugins:** persist install state incrementally, guard installed.json, cover hook paths ([83b50de](https://github.com/PMDevSolutions/Aurelius/commit/83b50de922bbf1f57c789f7df245c4b131102edd))
+* **plugins:** track plugin sources in git and validate before install ([a30f43f](https://github.com/PMDevSolutions/Aurelius/commit/a30f43f4ebeb544cacacf4f3aa2735bb0d951488))
+* **scripts:** report visual mismatch as a true percentage ([cdddd21](https://github.com/PMDevSolutions/Aurelius/commit/cdddd21d23709db00a01d8c36ff4651bdd5388a2))
+* **templates,renderers:** add user-event dep to astro, document fixture annotations ([9e2b5a6](https://github.com/PMDevSolutions/Aurelius/commit/9e2b5a68a36742285760db17b8ebadfd325ec7ba))
+* **templates:** migrate Astro starter to v6.4.8 + Tailwind 4 to clear SSRF/XSS advisories ([e9e4559](https://github.com/PMDevSolutions/Aurelius/commit/e9e45599e0afc628e6b911060e0e21f6581f5141)), closes [#107](https://github.com/PMDevSolutions/Aurelius/issues/107)
+
+
+### Refactoring
+
+* **intake:** detect framework via renderer-registry, not hardcoded sniffing ([a4582f6](https://github.com/PMDevSolutions/Aurelius/commit/a4582f6d6e6c60da23ba90c0c0895cac39976afb))
+* **orchestration:** exclude phases via manifest.phases.exclude ([11654c9](https://github.com/PMDevSolutions/Aurelius/commit/11654c993013e5ad457d73647e5d4a4785f0d289))
+* **pipeline:** dispatch Phase-4 converter via renderer manifest ([6085286](https://github.com/PMDevSolutions/Aurelius/commit/6085286e900b386082d13cd0b931e3fa7bdbc762))
+* **pipeline:** phase 4.5 skip note reads renderer not outputTarget ([577bef7](https://github.com/PMDevSolutions/Aurelius/commit/577bef7c92ac8da22a51e0f86ddb0fdbe68e94fe))
+* **plugins:** share plugin-dir scan, surface validator detail in runner ([b75f3a8](https://github.com/PMDevSolutions/Aurelius/commit/b75f3a80e1e616ad67a5aa5f14a67b44be420795))
+* **renderers:** extract renderer-lib, guard trailing flags, stable detect tie-break ([b7d6160](https://github.com/PMDevSolutions/Aurelius/commit/b7d6160762cd90ada8fd69f5fcd0cb73005eb2a2))
+* **tdd:** select test runner/library from manifest.test ([51f67d2](https://github.com/PMDevSolutions/Aurelius/commit/51f67d2309273c03cdd3f8580ca93974f40bfcab))
+* **tokens:** derive token config target from renderer manifest ([7346767](https://github.com/PMDevSolutions/Aurelius/commit/7346767868eadcd2e257888e98da95a18e3e56c0))
+
 ## [1.1.0](https://github.com/PMDevSolutions/Aurelius/compare/v1.0.0...v1.1.0) (2026-05-25)
 
 
