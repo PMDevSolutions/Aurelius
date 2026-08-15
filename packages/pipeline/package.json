@@ -44,7 +44,7 @@
   "dependencies": {
     "fast-xml-parser": "^5.9.3",
     "fflate": "^0.8.2",
-    "pdfjs-dist": "^6.0.227",
+    "pdfjs-dist": "^6.2.108",
     "pngjs": "^7.0.0",
     "zod": "^3.24.1"
   },
