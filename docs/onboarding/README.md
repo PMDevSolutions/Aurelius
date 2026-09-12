@@ -33,7 +33,7 @@ Before starting, make sure you have:
 
 | Requirement | Version | Check Command |
 |-------------|---------|---------------|
-| Node.js | 18+ | `node --version` |
+| Node.js | 22.13+ | `node --version` |
 | pnpm | 8+ | `pnpm --version` |
 | Git | 2.30+ | `git --version` |
 | Claude Code | Latest | `claude --version` |
