@@ -42,7 +42,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "fast-xml-parser": "^5.9.3",
+    "fast-xml-parser": "^5.10.1",
     "fflate": "^0.8.2",
     "pdfjs-dist": "^6.0.227",
     "pngjs": "^7.0.0",
