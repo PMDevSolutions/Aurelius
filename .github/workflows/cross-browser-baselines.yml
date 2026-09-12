@@ -72,8 +72,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Check for cross-browser baselines
         id: baselines
@@ -190,8 +188,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Mark workspace safe for git in-container
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -280,8 +276,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Mark workspace safe for git in-container
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
