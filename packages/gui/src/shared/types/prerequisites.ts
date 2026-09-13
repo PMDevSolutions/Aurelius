@@ -2,7 +2,7 @@
  * Structured model of a `scripts/check-prerequisites.sh` run. The bash script
  * prints `[PASS]/[FAIL]/[SKIP]/[INFO]/[WARN]` lines under section headers plus a
  * summary; prereq-parser.ts turns that text into this model, and the renderer
- * renders it. Warnings (e.g. missing Wix credentials) are never blocking.
+ * renders it. Warnings (e.g. missing Playwright browsers) are never blocking.
  */
 
 export type PrereqStatus = "pass" | "fail" | "skip" | "info" | "warn";
@@ -11,7 +11,6 @@ export type PrereqGroup =
   | "required-software"
   | "required-accounts"
   | "optional-software"
-  | "wix-credentials"
   | "system-requirements"
   | "unknown";
 
@@ -24,9 +23,9 @@ export interface PrereqGuidance {
 export interface PrereqItem {
   group: PrereqGroup;
   status: PrereqStatus;
-  /** Canonical tool key when recognized: git|node|pnpm|claude|gh|jq|wix|playwright|env|ram|disk|os. */
+  /** Canonical tool key when recognized: git|node|pnpm|claude|gh|jq|playwright|ram|disk|os. */
   key?: string;
-  /** Human label, e.g. "Git", "Wix CLI". */
+  /** Human label, e.g. "Git", "Playwright". */
   label: string;
   /** Full message text after the status tag. */
   detail: string;

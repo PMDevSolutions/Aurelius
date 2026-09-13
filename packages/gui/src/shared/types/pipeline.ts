@@ -1,21 +1,14 @@
-/** The three design-to-Wix conversion pipelines the GUI can launch. */
-export type PipelineKind = "figma" | "canva" | "indesign";
+/** The design-to-app pipelines the GUI can launch (Canva/screenshot/conversation are follow-ups). */
+export type PipelineKind = "figma";
 
 export interface PipelineInput {
   kind: PipelineKind;
-  /** Target site/plan slug (names the plan dir .aurelius/plans/<slug>; a hint for Claude runs). */
-  slug: string;
-  /** Figma file URL (kind === 'figma'). */
-  figmaUrl?: string;
-  /** Canva HTML/CSS export directory (kind === 'canva'). */
-  canvaExport?: string;
-  /** Path to an .idml or .pdf (kind === 'indesign'). */
-  indesignFile?: string;
+  /** Figma file/design URL, optionally with ?node-id=. */
+  figmaUrl: string;
 }
 
 export interface PipelineResult {
   ok: boolean;
   kind: PipelineKind;
-  slug: string;
   error?: string;
 }

@@ -1,35 +1,21 @@
 /**
- * Setup-wizard model. The GUI collects an InitInput, which main maps to the CLI
- * "flags" shape and feeds to the existing resolveDefaults()/apply() in scripts/init/
- * — sharing one code path with `pnpm run init`.
+ * Setup-wizard model. The GUI collects an InitInput and the engine runs
+ * `scripts/setup-project.sh <name> --renderer <renderer> [--dry-run]` — the same
+ * script a terminal user runs, so the GUI and CLI share one scaffolding path.
  */
-
-/** How the wizard handles the target Wix site (mirrors scripts/init's site modes). */
-export type SiteMode = "skip" | "create" | "connect";
-
 export interface InitInput {
-  /** Project slug. */
+  /** Project directory name (lowercase letters, digits, hyphens). */
   name: string;
-  /** Human-readable site title; empty → derived from the slug. */
-  title: string;
-  /** Account-level Wix API key (optional — dry-run works without one). */
-  apiKey: string;
-  /** Wix account GUID (optional). */
-  accountId: string;
-  /** skip: record next steps · create: provision a Studio site · connect: use an existing one. */
-  siteMode: SiteMode;
-  /** Existing site GUID; required when siteMode === 'connect'. */
-  siteId: string;
-  /** Initialize a git repo (maps to the inverse of --no-git). */
-  git: boolean;
+  /** Renderer id from renderers/ (nextjs | vite | astro | sveltekit | expo). */
+  renderer: string;
+  /** Print the resolved plan without creating anything (--dry-run). */
+  preview: boolean;
 }
 
 export interface InitResult {
   ok: boolean;
   projectName: string;
-  siteTitle: string;
-  siteMode: SiteMode;
-  /** The connected site id, when siteMode === 'connect'. */
-  siteId?: string;
+  renderer: string;
+  preview: boolean;
   error?: string;
 }

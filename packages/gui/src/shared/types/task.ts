@@ -1,6 +1,6 @@
 /**
  * Task model — the uniform shape for every long-running, streamed operation the
- * GUI orchestrates (prereq check, Wix site lifecycle, conversions, visual QA).
+ * GUI orchestrates (prereq check, setup wizard, Figma pipeline, visual QA).
  * Shared verbatim across core, main, preload and renderer.
  */
 
@@ -12,14 +12,14 @@ export type TaskState = "pending" | "running" | "succeeded" | "failed" | "cancel
  */
 export type TaskKind =
   | "prereq-check"
+  | "prereq:playwright"
   | "init"
-  | "site:list"
-  | "site:use"
-  | "site:apply"
-  | "site:publish"
-  | "pipeline:indesign"
-  | "pipeline:canva"
   | "pipeline:figma"
+  | "qa:baselines"
+  | "qa:regression"
+  | "qa:responsive"
+  | "qa:dark-mode"
+  | "qa:cross-browser"
   // (string & {}) preserves literal autocomplete while still allowing any string.
   | (string & {});
 

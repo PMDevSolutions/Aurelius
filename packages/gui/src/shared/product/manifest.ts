@@ -9,7 +9,7 @@
  * the engine. See docs/GUI-PLATFORM.md.
  *
  * It deliberately speaks the vocabulary the engine already uses — TaskKind,
- * SiteCommand, QaScript, PipelineKind — rather than inventing a parallel
+ * QaStepId, PipelineKind — rather than inventing a parallel
  * language. A manifest is PURE, SERIALIZABLE DATA (no functions, no node
  * imports) so it is safe to import from the sandboxed renderer as well as
  * from main/preload; behaviour (building a RunSpec, parsing output) is bound in
@@ -18,20 +18,20 @@
 import type { TaskKind } from "../types/task";
 
 /** Stable identifier for a product the engine can drive. */
-export type ProductId = "aurelius" | "aurelius" | "nerva" | (string & {});
+export type ProductId = "aurelius" | "vespasian" | "flavian" | "nerva" | (string & {});
 
 /**
  * The screens a product exposes in the shell. These mirror the renderer's views;
  * `(string & {})` keeps literal autocomplete while letting a product add its own.
  */
-export type ScreenId = "prereq" | "wizard" | "site" | "pipeline" | "qa" | (string & {});
+export type ScreenId = "prereq" | "wizard" | "pipeline" | "qa" | (string & {});
 
 /**
  * How a step's command is executed. The generic engine (core/product/command-spec)
  * interprets a descriptor into a RunSpec via CommandBuilder — there is no
  * per-product code path. Script/module paths are PROJECT-ROOT-RELATIVE; the engine
  * resolves them against the active project root. `argsTemplate` entries may contain
- * `{name}` placeholders filled from the step's runtime variables (e.g. a site id,
+ * `{name}` placeholders filled from the step's runtime variables (e.g. a project name,
  * a Figma URL); see buildCommandSpec.
  */
 export type CommandDescriptor =
@@ -42,9 +42,7 @@ export type CommandDescriptor =
     }
   | { readonly exec: "bashCommand"; readonly command: string }
   | { readonly exec: "nodeBin"; readonly script: string; readonly argsTemplate?: readonly string[] }
-  | { readonly exec: "claude"; readonly argsTemplate: readonly string[] }
-  /** Dynamic-import a repo module and run it in-process (the init wizard's apply()). */
-  | { readonly exec: "module"; readonly module: string };
+  | { readonly exec: "claude"; readonly argsTemplate: readonly string[] };
 
 /**
  * Key into the engine's output-parser registry (core/product/parsers). A step that
@@ -66,11 +64,11 @@ export type Prerequisite =
 
 /**
  * One operation a screen can run. `id` reuses the screen's own vocabulary — a
- * SiteCommand for the Wix-site screen, a QaScript for QA, a PipelineKind for
+ * a QaStepId for QA, a PipelineKind for
  * conversions — so a step *is* the thing the engine already knows how to dispatch.
  */
 export interface ProductStep {
-  /** Stable id; for site/qa/pipeline screens this is the SiteCommand/QaScript/PipelineKind. */
+  /** Stable id; for qa/pipeline screens this is the QaStepId/PipelineKind. */
   readonly id: string;
   /** Canonical human label (headings, task names). */
   readonly label: string;
@@ -78,7 +76,7 @@ export interface ProductStep {
   readonly cta?: string;
   /** The task kind this step produces — reuses the shared TaskKind vocabulary. */
   readonly taskKind: TaskKind;
-  /** Optional grouping hint for panels that lay steps out in sections (e.g. site). */
+  /** Optional grouping hint for panels that lay steps out in sections (e.g. qa). */
   readonly group?: string;
   /** How to build and run the command. */
   readonly command: CommandDescriptor;
@@ -96,10 +94,12 @@ export interface ProductStep {
  * panel that renders them is product-specific.
  */
 export interface ScreenExtras {
-  /** Wix-site screen: external links (dashboard, API keys, …). */
+  /** Any screen: external links (docs sites, dashboards, …). */
   readonly links?: readonly { readonly label: string; readonly url: string }[];
   /** Pipeline screen: per-kind reference docs (repo-relative). */
   readonly docs?: Readonly<Record<string, string>>;
+  /** Wizard screen: the framework choices offered, in display order. */
+  readonly frameworks?: readonly { readonly id: string; readonly label: string }[];
 }
 
 /** A screen in the shell: a nav entry plus the steps it can run. */

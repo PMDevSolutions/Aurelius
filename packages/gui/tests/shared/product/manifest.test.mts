@@ -1,108 +1,120 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
   ACTIVE_PRODUCT_ID,
   PRODUCTS,
   activeManifest,
   getScreen,
   getStep,
-  initModuleDir,
   soleStep,
 } from "../../../src/shared/product";
 import { aureliusManifest } from "../../../src/shared/product/aurelius";
 
-// Proves the shell renders its catalog (brand, screens, steps) from the manifest, and
-// that the Aurelius manifest describes the Wix-retargeted catalog.
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(here, "..", "..", "..", "..", "..");
 
 test("the active product is Aurelius", () => {
   assert.equal(ACTIVE_PRODUCT_ID, "aurelius");
-  // The active manifest is the one registered under that id (same registry instance).
   assert.equal(activeManifest, PRODUCTS.aurelius);
-  assert.equal(activeManifest.id, "aurelius");
   assert.equal(activeManifest.displayName, "Aurelius");
 });
 
-test("Aurelius exposes the five expected screens, in order, with their nav labels", () => {
+test("Aurelius exposes the four screens, in order, with their nav labels", () => {
   assert.deepEqual(
     aureliusManifest.screens.map((s) => s.id),
-    ["prereq", "wizard", "site", "pipeline", "qa"],
+    ["prereq", "wizard", "pipeline", "qa"],
   );
   assert.deepEqual(
     aureliusManifest.screens.map((s) => s.navLabel),
-    ["Prerequisites", "Setup wizard", "Wix site", "Convert design", "Visual QA"],
+    ["Prerequisites", "Setup wizard", "Build from Figma", "Visual QA"],
   );
 });
 
-test("the Wix-site screen lists the site lifecycle vocabulary", () => {
-  const ids = getScreen(aureliusManifest, "site").steps.map((s) => s.id);
-  assert.deepEqual(ids, ["list", "use", "apply", "publish"]);
-});
-
-test("every site step runs bin/aurelius.mjs (nodeBin)", () => {
-  for (const step of getScreen(aureliusManifest, "site").steps) {
-    assert.equal(step.command.exec, "nodeBin");
-    if (step.command.exec === "nodeBin") {
-      assert.equal(step.command.script, "bin/aurelius.mjs");
-    }
-  }
-});
-
-test("every step has a label and a task kind; every screen has steps", () => {
-  for (const screen of aureliusManifest.screens) {
-    assert.ok(screen.steps.length > 0, `${screen.id} has no steps`);
-    for (const step of screen.steps) {
-      assert.ok(step.label.length > 0, `${screen.id}/${step.id} missing label`);
-      assert.ok(String(step.taskKind).length > 0, `${screen.id}/${step.id} missing taskKind`);
-    }
-  }
-});
-
-test("task kinds reuse the shared vocabulary the engine already emits", () => {
-  assert.equal(soleStep(aureliusManifest, "prereq").taskKind, "prereq-check");
-  assert.equal(soleStep(aureliusManifest, "wizard").taskKind, "init");
-  assert.equal(getStep(getScreen(aureliusManifest, "site"), "publish").taskKind, "site:publish");
-  assert.equal(
-    getStep(getScreen(aureliusManifest, "pipeline"), "figma").taskKind,
-    "pipeline:figma",
-  );
-  assert.equal(
-    getStep(getScreen(aureliusManifest, "qa"), "lighthouse:run").taskKind,
-    "qa:lighthouse:run",
-  );
-});
-
-test("the pipeline screen drives the three design sources with the right descriptors", () => {
-  const pipeline = getScreen(aureliusManifest, "pipeline");
+test("prereq screen: check (parsed, exit 0|1 ok) + Playwright installer", () => {
+  const prereq = getScreen(aureliusManifest, "prereq");
   assert.deepEqual(
-    pipeline.steps.map((s) => s.id),
-    ["figma", "canva", "indesign"],
+    prereq.steps.map((s) => s.id),
+    ["check", "playwright"],
   );
-  assert.equal(getStep(pipeline, "figma").command.exec, "claude");
-  assert.equal(getStep(pipeline, "canva").command.exec, "claude");
-  assert.equal(getStep(pipeline, "indesign").command.exec, "nodeBin");
-  // Reference docs point at the Wix pipeline guides.
-  assert.match(pipeline.extras?.docs?.figma ?? "", /figma-to-wix/);
-  assert.match(pipeline.extras?.docs?.canva ?? "", /canva-to-wix/);
+  const check = soleStep(aureliusManifest, "prereq");
+  assert.equal(check.parser, "prereq");
+  assert.deepEqual(check.successExitCodes, [0, 1]);
+  assert.equal(check.taskKind, "prereq-check");
+  assert.equal(getStep(prereq, "playwright").taskKind, "prereq:playwright");
 });
 
-test("selectors resolve manifest entries and throw on unknown ids", () => {
-  assert.equal(initModuleDir(aureliusManifest), "scripts/init");
-  assert.equal(soleStep(aureliusManifest, "wizard").command.exec, "module");
-  assert.throws(() => getScreen(aureliusManifest, "nope"));
-  assert.throws(() => getStep(getScreen(aureliusManifest, "qa"), "nope"));
+test("wizard runs setup-project.sh with name/renderer/dryRun placeholders", () => {
+  const create = soleStep(aureliusManifest, "wizard");
+  assert.equal(create.taskKind, "init");
+  assert.equal(create.command.exec, "bashScript");
+  if (create.command.exec === "bashScript") {
+    assert.equal(create.command.script, "scripts/setup-project.sh");
+    assert.deepEqual(create.command.argsTemplate, [
+      "{name}",
+      "--renderer",
+      "{renderer}",
+      "{dryRun}",
+    ]);
+  }
+  assert.deepEqual(
+    getScreen(aureliusManifest, "wizard").extras?.frameworks?.map((f) => f.id),
+    ["nextjs", "vite", "astro", "sveltekit", "expo"],
+  );
 });
 
-test("prereq step treats exit 0 and 1 as success and names the prereq parser", () => {
-  const step = soleStep(aureliusManifest, "prereq");
-  assert.deepEqual(step.successExitCodes, [0, 1]);
-  assert.equal(step.parser, "prereq");
+test("pipeline screen drives /build-from-figma through headless Claude Code", () => {
+  const figma = getStep(getScreen(aureliusManifest, "pipeline"), "figma");
+  assert.equal(figma.taskKind, "pipeline:figma");
+  assert.equal(figma.command.exec, "claude");
+  if (figma.command.exec === "claude") {
+    assert.deepEqual(figma.command.argsTemplate, ["-p", "/build-from-figma {figmaUrl}"]);
+  }
+  assert.equal(
+    getScreen(aureliusManifest, "pipeline").extras?.docs?.figma,
+    "docs/figma-to-react/README.md",
+  );
 });
 
-test("project identity carries the Aurelius checkout markers and chooser copy", () => {
+test("qa screen lists the five visual-QA scripts with a {url} argument", () => {
+  const qa = getScreen(aureliusManifest, "qa");
+  assert.deepEqual(
+    qa.steps.map((s) => s.id),
+    ["baselines", "regression", "responsive", "dark-mode", "cross-browser"],
+  );
+  for (const step of qa.steps) {
+    assert.equal(step.command.exec, "bashScript");
+    assert.equal(step.taskKind, `qa:${step.id}`);
+    if (step.command.exec === "bashScript") {
+      assert.ok(step.command.argsTemplate?.includes("{url}"), `${step.id} takes {url}`);
+    }
+  }
+});
+
+test("every bashScript step points at a script that exists in this repo", async () => {
+  for (const screen of aureliusManifest.screens) {
+    for (const step of screen.steps) {
+      if (step.command.exec !== "bashScript") continue;
+      await assert.doesNotReject(
+        () => access(join(repoRoot, ...step.command.script.split("/"))),
+        `${screen.id}/${step.id}: ${step.command.script} missing`,
+      );
+    }
+  }
+});
+
+test("project identity carries the Aurelius checkout markers", () => {
   assert.deepEqual(aureliusManifest.project.markers, [
-    "bin/aurelius.mjs",
-    "scripts/check-prerequisites.sh",
+    "scripts/setup-project.sh",
+    ".claude/pipeline.config.json",
   ]);
   assert.equal(aureliusManifest.project.packageName, "aurelius");
   assert.match(aureliusManifest.project.selectTitle, /Aurelius/);
+});
+
+test("selectors throw on unknown ids", () => {
+  assert.throws(() => getScreen(aureliusManifest, "site"));
+  assert.throws(() => getStep(getScreen(aureliusManifest, "qa"), "nope"));
 });

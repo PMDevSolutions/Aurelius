@@ -1,8 +1,8 @@
-import type { SiteCommand, WixSiteStatus } from "./site";
+import type { ScreenId } from "../product/manifest";
 import type { InitInput, InitResult } from "./init";
 import type { PipelineInput, PipelineResult } from "./pipeline";
 import type { PrereqReport } from "./prerequisites";
-import type { QaArtifacts, QaScript } from "./qa";
+import type { QaArtifacts } from "./qa";
 import type { ProjectRef } from "./project";
 import type { TaskEvent, TaskSnapshot } from "./task";
 
@@ -17,7 +17,7 @@ export interface TaskEventEnvelope {
  * This is the ONLY way the renderer talks to main — it can invoke these named,
  * typed operations and nothing else (no arbitrary command execution).
  *
- * Extension model for sub-issues 2–6: add one typed method here + a matching
+ * Extension model: add one typed method here + a matching
  * ipcMain.handle, and (optionally) a new TaskKind. The generic task methods
  * (onTaskEvent / getTaskSnapshot / cancelTask) already work for any task.
  */
@@ -46,24 +46,19 @@ export interface AureliusBridge {
   /** Fetch the init outcome once the init task reaches a terminal state. */
   getInitResult(taskId: string): Promise<InitResult>;
 
-  /** Run a Wix site lifecycle command (bin/aurelius.mjs); returns a task id.
-   *  `arg` carries the site id for 'use' and the plan path for 'apply'. */
-  runSite(command: SiteCommand, arg?: string): Promise<{ taskId: string }>;
+  /** Run any manifest step by screen/step id with runtime vars; returns a task id.
+   *  Used for script-backed buttons (QA scripts, the Playwright installer). */
+  runStep(
+    screenId: ScreenId,
+    stepId: string,
+    vars?: Record<string, string>,
+  ): Promise<{ taskId: string }>;
 
-  /** Local connection state (from .env + .aurelius/) for the current project. */
-  getSiteStatus(): Promise<WixSiteStatus>;
-
-  /** Compiled plan slugs available under .aurelius/plans/ (for the apply picker). */
-  listPlans(): Promise<string[]>;
-
-  /** Launch a design-to-Wix conversion (Figma/Canva/InDesign); returns a task id. */
+  /** Launch the Figma-to-app pipeline; returns a task id. */
   runPipeline(input: PipelineInput): Promise<{ taskId: string }>;
 
   /** Fetch the conversion outcome once the pipeline task reaches a terminal state. */
   getPipelineResult(taskId: string): Promise<PipelineResult>;
-
-  /** Run a visual-QA script (visual:diff / lighthouse:run); returns a task id. */
-  runQa(script: QaScript): Promise<{ taskId: string }>;
 
   /** Discover the QA artifacts currently on disk. */
   getQaArtifacts(): Promise<QaArtifacts>;

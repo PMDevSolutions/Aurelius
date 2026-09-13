@@ -1,19 +1,16 @@
 /**
  * Product registry + the single switch point for which product the shell drives.
  *
- * This is the engine's entry into the per-product layer: main and the renderer both
- * import `activeManifest` from here, and `getScreen`/`getStep` are the typed lookups
- * the engine uses instead of hard-coding Aurelius specifics.
+ * Main and the renderer both import `activeManifest` from here, and `getScreen` /
+ * `getStep` / `soleStep` are the typed lookups the engine uses instead of
+ * hard-coding product specifics.
  *
  * ── Extension point ─────────────────────────────────────────────────────────────
- * Adding a second product (the staged plan's "prove reuse with Aurelius" step) is:
- *   1. author packages/gui/src/shared/product/aurelius.ts (another ProductManifest);
+ * Adding another product is:
+ *   1. author packages/gui/src/shared/product/<product>.ts (another ProductManifest);
  *   2. register it in PRODUCTS below;
  *   3. flip ACTIVE_PRODUCT_ID (or, for the unified Trajan app, choose it at runtime).
- * No engine/core/renderer change is required. A scaffold lives in ./aurelius — it is
- * intentionally NOT wired in here yet.
- *     // import { aureliusManifest } from './aurelius';
- *     // export const PRODUCTS = { aurelius: aureliusManifest, aurelius: aureliusManifest };
+ * No engine/core/renderer change is required. See docs/GUI-PLATFORM.md.
  * ────────────────────────────────────────────────────────────────────────────────
  */
 import { aureliusManifest } from "./aurelius";
@@ -52,16 +49,4 @@ export function soleStep(manifest: ProductManifest, screenId: ScreenId): Product
   const step = screen.steps[0];
   if (!step) throw new Error(`Screen "${screenId}" has no steps.`);
   return step;
-}
-
-/**
- * The repo-relative directory the init wizard imports its resolver/apply from.
- * Read from the wizard step's `module` command so the path lives only in the manifest.
- */
-export function initModuleDir(manifest: ProductManifest): string {
-  const { command } = soleStep(manifest, "wizard");
-  if (command.exec !== "module") {
-    throw new Error(`Product "${manifest.id}" wizard step is not a 'module' command.`);
-  }
-  return command.module;
 }
