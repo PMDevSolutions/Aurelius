@@ -1,0 +1,38 @@
+
+=== Aurelius Prerequisites Check ===
+
+REQUIRED SOFTWARE
+-----------------
+[PASS] Git 2.43.0 (minimum: 2.30.0)
+[PASS] Node.js 22.12.0 (minimum: 22.12.0)
+[PASS] pnpm 9.15.9 (major >= 9)
+[PASS] Claude Code 2.1.208
+
+REQUIRED ACCOUNTS
+-----------------
+[INFO] Figma Dev Mode (for the Figma pipeline) - Manual verification required
+       Open Figma > Press Shift+D > Dev Mode panel should appear
+[PASS] GitHub CLI 2.86.0 (authenticated)
+
+OPTIONAL SOFTWARE
+-----------------
+[PASS] jq 1.7 (used by hook scripts)
+[PASS] Playwright Chromium browser installed
+
+SYSTEM REQUIREMENTS
+-------------------
+[PASS] RAM: 16 GB (minimum: 4 GB)
+[PASS] Disk: 120 GB free (minimum: 5 GB)
+[PASS] OS: Ubuntu 24.04 LTS (supported)
+
+=== Summary ===
+Required: 4/4 passed
+Optional: 3/3 installed
+System:   3/3 passed
+
+Ready to use Aurelius: YES
+
+Next steps:
+  1. Install dependencies:  pnpm install
+  2. Create a project:      ./scripts/setup-project.sh my-app --vite
+  3. Open Claude Code:      claude

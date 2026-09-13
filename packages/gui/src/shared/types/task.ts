@@ -1,0 +1,40 @@
+/**
+ * Task model — the uniform shape for every long-running, streamed operation the
+ * GUI orchestrates (prereq check, setup wizard, Figma pipeline, visual QA).
+ * Shared verbatim across core, main, preload and renderer.
+ */
+
+export type TaskState = "pending" | "running" | "succeeded" | "failed" | "cancelled";
+
+/**
+ * Known task kinds. The `(string & {})` member keeps literal autocompletion while
+ * still allowing new screens to introduce new kinds without editing this union.
+ */
+export type TaskKind =
+  | "prereq-check"
+  | "prereq:playwright"
+  | "init"
+  | "pipeline:figma"
+  | "qa:baselines"
+  | "qa:regression"
+  | "qa:responsive"
+  | "qa:dark-mode"
+  | "qa:cross-browser"
+  // (string & {}) preserves literal autocomplete while still allowing any string.
+  | (string & {});
+
+/** An incremental event emitted while a task runs. */
+export type TaskEvent =
+  | { kind: "log"; stream: "stdout" | "stderr"; line: string }
+  | { kind: "state"; state: TaskState; exitCode?: number | null };
+
+/** A point-in-time view of a task, including a bounded tail of its log. */
+export interface TaskSnapshot {
+  id: string;
+  kind: TaskKind;
+  state: TaskState;
+  exitCode: number | null;
+  startedAt: number | null;
+  endedAt: number | null;
+  logTail: string[];
+}

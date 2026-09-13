@@ -1,20 +1,61 @@
 {
   "header": "# Changelog\n\nAll notable changes to the Aurelius framework will be documented in this file.\n\nThis changelog is automatically generated from [Conventional Commits](https://www.conventionalcommits.org/).\n",
   "types": [
-    { "type": "feat", "section": "Features" },
-    { "type": "fix", "section": "Bug Fixes" },
-    { "type": "perf", "section": "Performance" },
-    { "type": "refactor", "section": "Refactoring" },
-    { "type": "docs", "section": "Documentation", "hidden": true },
-    { "type": "chore", "hidden": true },
-    { "type": "style", "hidden": true },
-    { "type": "test", "hidden": true },
-    { "type": "build", "hidden": true },
-    { "type": "ci", "hidden": true }
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "Performance"
+    },
+    {
+      "type": "refactor",
+      "section": "Refactoring"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation",
+      "hidden": true
+    },
+    {
+      "type": "chore",
+      "hidden": true
+    },
+    {
+      "type": "style",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "hidden": true
+    }
   ],
   "commitUrlFormat": "{{host}}/{{owner}}/{{repository}}/commit/{{hash}}",
   "compareUrlFormat": "{{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{currentTag}}",
   "tagPrefix": "v",
+  "bumpFiles": [
+    {
+      "filename": "package.json",
+      "type": "json"
+    },
+    {
+      "filename": "packages/gui/package.json",
+      "type": "json"
+    }
+  ],
   "scripts": {
     "postchangelog": "node scripts/extract-release-notes.js"
   }
