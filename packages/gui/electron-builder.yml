@@ -1,0 +1,29 @@
+# Packaging config. Build installers locally with:
+#   pnpm --filter @aurelius/gui package      (electron-vite build && electron-builder)
+#
+# The GUI operates on an Aurelius checkout on disk — it locates the repo markers
+# (or you point it at a folder) and runs the repo's scripts there: scaffolding
+# new apps next to scripts/, running the Figma pipeline, and writing visual-QA
+# artifacts under .claude/visual-qa/. So the app bundle ships only the GUI
+# itself; it deliberately does NOT embed the project or its scripts (those live
+# in, and must stay writable in, the user's checkout).
+appId: net.pmds.aurelius.gui
+productName: Aurelius
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+asar: true
+win:
+  target: nsis
+  # Unsigned local builds: skip the code-sign + exe-edit step so electron-builder
+  # doesn't fetch the winCodeSign toolchain (whose archive holds macOS symlinks that
+  # can't be extracted on Windows without Developer Mode / an elevated shell).
+  signAndEditExecutable: false
+mac:
+  target: dmg
+  category: public.app-category.developer-tools
+linux:
+  target: AppImage
+  category: Development

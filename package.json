@@ -12,6 +12,12 @@
     "release:dry": "commit-and-tag-version --dry-run",
     "release:first": "commit-and-tag-version --first-release",
     "new-app": "node scripts/create-app.js",
+    "gui:dev": "pnpm --filter @aurelius/gui dev",
+    "gui:build": "pnpm --filter @aurelius/gui build",
+    "gui:test": "pnpm --filter @aurelius/gui test",
+    "gui:lint": "pnpm --filter @aurelius/gui lint",
+    "gui:typecheck": "pnpm --filter @aurelius/gui typecheck",
+    "gui:package": "pnpm --filter @aurelius/gui package",
     "prepare": "husky"
   },
   "repository": {

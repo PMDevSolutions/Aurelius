@@ -1,0 +1,45 @@
+{
+  "name": "@aurelius/gui",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Desktop GUI for Aurelius — a thin orchestration shell over the setup wizard, the Figma-to-React pipeline, and the visual-QA scripts. Invokes the existing scripts and Claude Code; does not reimplement them.",
+  "license": "MIT",
+  "author": "PMDevSolutions",
+  "main": "./out/main/index.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test \"tests/**/*.test.mts\"",
+    "smoke": "node tests/smoke/smoke.mjs",
+    "package": "electron-vite build && electron-builder"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^39.8.10",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "playwright": "1.60.0",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vite": "^6.4.3"
+  }
+}
