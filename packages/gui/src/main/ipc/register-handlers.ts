@@ -2,12 +2,12 @@ import { BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from "e
 import { isAbsolute, relative, resolve } from "node:path";
 import { IPC } from "../../shared/ipc-channels";
 import type { ProductManifest } from "../../shared/product/manifest";
-import { getScreen, getStep, initModuleDir, soleStep } from "../../shared/product";
-import type { SiteCommand, WixSiteStatus } from "../../shared/types/site";
+import { getScreen, getStep, soleStep } from "../../shared/product";
+import type { ScreenId } from "../../shared/product/manifest";
 import type { InitInput, InitResult } from "../../shared/types/init";
 import type { PipelineInput, PipelineResult } from "../../shared/types/pipeline";
 import type { PrereqReport } from "../../shared/types/prerequisites";
-import type { QaArtifacts, QaScript } from "../../shared/types/qa";
+import type { QaArtifacts } from "../../shared/types/qa";
 import type { ProjectRef } from "../../shared/types/project";
 import type { TaskSnapshot } from "../../shared/types/task";
 import type { TaskManager } from "../../core/task/task-manager";
@@ -17,10 +17,8 @@ import { DefaultShellResolver } from "../../core/shell/shell-resolver";
 import { buildCommandSpec } from "../../core/product/command-spec";
 import { streamResultParser } from "../../core/product/parsers";
 import { createPrereqRun } from "../../core/prerequisites/run-prerequisites";
-import { createInitRun } from "../../core/init/run-init";
+import { toSetupVars, validateInitInput } from "../../core/init/init-flags";
 import { createPipelineRun } from "../../core/pipelines/pipeline-run";
-import { readSiteStatus } from "../../core/wix/site-status";
-import { listPlanDirs } from "../../core/project/list-plans";
 import { validateRepoRoot } from "../../core/project/locate-root";
 import { discoverQaArtifacts } from "../../core/qa/discover";
 import { readImageDataUrl, readTextArtifact } from "../../core/fs/read-artifact";
@@ -116,20 +114,28 @@ export function registerHandlers(deps: HandlerDeps): void {
   });
 
   ipcMain.handle(IPC.initRun, async (_event, input: InitInput): Promise<{ taskId: string }> => {
-    // createInitRun validates via resolveDefaults and throws on bad input — that
-    // rejection surfaces to the renderer before any task is created.
-    const init = await createInitRun({
-      repoRoot: root(),
-      moduleDir: initModuleDir(manifest),
-      input,
-    });
+    const screen = getScreen(manifest, "wizard");
+    const step = soleStep(manifest, "wizard");
+    // Validate before any task is created — the rejection surfaces to the renderer.
+    const problem = validateInitInput(input, screen.extras?.frameworks ?? []);
+    if (problem) throw new Error(problem);
+    const vars = toSetupVars(input);
+    const spec = await buildCommandSpec(commands, root(), step.command, vars);
     const task = deps.taskManager.create({
-      kind: soleStep(manifest, "wizard").taskKind,
-      run: init.run,
+      kind: step.taskKind,
+      run: (onEvent) => runner.run(spec, onEvent),
     });
     deps.bridge.attach(task);
-    initResults.set(task.id, init.result);
-    task.start();
+    initResults.set(
+      task.id,
+      task.start().done.then((res) => ({
+        ok: res.code === 0,
+        projectName: vars.name,
+        renderer: vars.renderer,
+        preview: input.preview,
+        error: res.code === 0 ? undefined : "Setup failed — see the log for details.",
+      })),
+    );
     return { taskId: task.id };
   });
 
@@ -140,26 +146,25 @@ export function registerHandlers(deps: HandlerDeps): void {
   });
 
   ipcMain.handle(
-    IPC.siteRun,
-    async (_event, command: SiteCommand, arg?: string): Promise<{ taskId: string }> => {
-      const step = getStep(getScreen(manifest, "site"), command);
-      // One vars bag; the step's argsTemplate picks the placeholder it declares
-      // ({siteId} for 'use', {plan} for 'apply').
-      const vars: Record<string, string> = arg !== undefined ? { siteId: arg, plan: arg } : {};
+    IPC.stepRun,
+    async (
+      _event,
+      screenId: ScreenId,
+      stepId: string,
+      vars: Record<string, string> = {},
+    ): Promise<{ taskId: string }> => {
+      const step = getStep(getScreen(manifest, screenId), stepId);
       const spec = await buildCommandSpec(commands, root(), step.command, vars);
       const task = deps.taskManager.create({
         kind: step.taskKind,
         run: (onEvent) => runner.run(spec, onEvent),
+        isSuccess: (result) => (step.successExitCodes ?? [0]).includes(result.code ?? -1),
       });
       deps.bridge.attach(task);
       task.start();
       return { taskId: task.id };
     },
   );
-
-  ipcMain.handle(IPC.siteStatus, (): Promise<WixSiteStatus> => readSiteStatus(root()));
-
-  ipcMain.handle(IPC.listPlans, (): Promise<string[]> => listPlanDirs(root()));
 
   ipcMain.handle(
     IPC.pipelineRun,
@@ -184,18 +189,6 @@ export function registerHandlers(deps: HandlerDeps): void {
     const result = pipelineResults.get(taskId);
     if (!result) throw new Error(`Unknown pipeline task: ${taskId}`);
     return result;
-  });
-
-  ipcMain.handle(IPC.qaRun, async (_event, script: QaScript): Promise<{ taskId: string }> => {
-    const step = getStep(getScreen(manifest, "qa"), script);
-    const spec = await buildCommandSpec(commands, root(), step.command);
-    const task = deps.taskManager.create({
-      kind: step.taskKind,
-      run: (onEvent) => runner.run(spec, onEvent),
-    });
-    deps.bridge.attach(task);
-    task.start();
-    return { taskId: task.id };
   });
 
   ipcMain.handle(IPC.qaArtifacts, (): Promise<QaArtifacts> => discoverQaArtifacts(root()));

@@ -96,10 +96,11 @@ test("qa screen lists the five visual-QA scripts with a {url} argument", () => {
 test("every bashScript step points at a script that exists in this repo", async () => {
   for (const screen of aureliusManifest.screens) {
     for (const step of screen.steps) {
-      if (step.command.exec !== "bashScript") continue;
+      const command = step.command;
+      if (command.exec !== "bashScript") continue;
       await assert.doesNotReject(
-        () => access(join(repoRoot, ...step.command.script.split("/"))),
-        `${screen.id}/${step.id}: ${step.command.script} missing`,
+        () => access(join(repoRoot, ...command.script.split("/"))),
+        `${screen.id}/${step.id}: ${command.script} missing`,
       );
     }
   }

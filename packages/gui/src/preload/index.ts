@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { IPC } from "../shared/ipc-channels";
-import type { SiteCommand, WixSiteStatus } from "../shared/types/site";
 import type { InitResult } from "../shared/types/init";
 import type { PipelineResult } from "../shared/types/pipeline";
 import type { QaArtifacts } from "../shared/types/qa";
@@ -20,14 +19,11 @@ const bridge: AureliusBridge = {
     ipcRenderer.invoke(IPC.prereqResult, taskId) as Promise<PrereqReport>,
   runInit: (input) => ipcRenderer.invoke(IPC.initRun, input) as Promise<{ taskId: string }>,
   getInitResult: (taskId) => ipcRenderer.invoke(IPC.initResult, taskId) as Promise<InitResult>,
-  runSite: (command: SiteCommand, arg?: string) =>
-    ipcRenderer.invoke(IPC.siteRun, command, arg) as Promise<{ taskId: string }>,
-  getSiteStatus: () => ipcRenderer.invoke(IPC.siteStatus) as Promise<WixSiteStatus>,
-  listPlans: () => ipcRenderer.invoke(IPC.listPlans) as Promise<string[]>,
+  runStep: (screenId, stepId, vars) =>
+    ipcRenderer.invoke(IPC.stepRun, screenId, stepId, vars) as Promise<{ taskId: string }>,
   runPipeline: (input) => ipcRenderer.invoke(IPC.pipelineRun, input) as Promise<{ taskId: string }>,
   getPipelineResult: (taskId) =>
     ipcRenderer.invoke(IPC.pipelineResult, taskId) as Promise<PipelineResult>,
-  runQa: (script) => ipcRenderer.invoke(IPC.qaRun, script) as Promise<{ taskId: string }>,
   getQaArtifacts: () => ipcRenderer.invoke(IPC.qaArtifacts) as Promise<QaArtifacts>,
   readQaImage: (relPath) => ipcRenderer.invoke(IPC.qaImage, relPath) as Promise<string | null>,
   readQaText: (relPath) => ipcRenderer.invoke(IPC.qaText, relPath) as Promise<string | null>,
