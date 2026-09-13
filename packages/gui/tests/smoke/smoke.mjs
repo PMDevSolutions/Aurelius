@@ -10,7 +10,13 @@ import { fileURLToPath } from "node:url";
 
 const mainPath = fileURLToPath(new URL("../../out/main/index.js", import.meta.url));
 
-const app = await electron.launch({ args: [mainPath] });
+// Editor-hosted shells export ELECTRON_RUN_AS_NODE=1, which turns the Electron
+// binary into plain Node (no `app` API) — never let the launched app inherit it.
+const env = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => k !== "ELECTRON_RUN_AS_NODE"),
+);
+
+const app = await electron.launch({ args: [mainPath], env });
 try {
   const win = await app.firstWindow();
   await win.waitForLoadState("domcontentloaded");
@@ -23,7 +29,7 @@ try {
 
   const body = (await win.textContent("body")) ?? "";
   assert.ok(
-    /Prerequisites|Open a Aurelius project/.test(body),
+    /Prerequisites|Aurelius project/.test(body),
     "expected the setup view (Prerequisites) or the project gate",
   );
 

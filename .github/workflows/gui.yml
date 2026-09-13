@@ -1,0 +1,94 @@
+name: GUI Tests
+
+on:
+  pull_request:
+    paths:
+      - "packages/gui/**"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/gui.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/gui/**"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/gui.yml"
+
+jobs:
+  gui:
+    name: GUI lint, typecheck, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The GUI's orchestration core is pure Node/TS and its tests run headless — no
+    # Electron window is launched, so this lane needs no display server.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        # Skip the ~100 MB Electron binary — typecheck only needs the bundled types.
+        # side-effects-cache off so pnpm never records the skipped postinstall.
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: pnpm install --frozen-lockfile --config.side-effects-cache=false
+
+      - name: Lint
+        run: pnpm --filter @aurelius/gui lint
+
+      - name: Typecheck
+        run: pnpm --filter @aurelius/gui typecheck
+
+      - name: Run GUI unit tests
+        run: pnpm --filter @aurelius/gui test
+
+  smoke:
+    name: GUI smoke (Xvfb)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Launches the built Electron app under Xvfb and asserts it reaches the shell.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --config.side-effects-cache=false
+
+      - name: Ensure Electron binary present
+        working-directory: packages/gui
+        run: |
+          ELECTRON_DIR="$(node -e "console.log(require('path').dirname(require.resolve('electron/package.json')))")"
+          if [ ! -f "$ELECTRON_DIR/path.txt" ] || [ ! -e "$ELECTRON_DIR/dist" ]; then
+            echo "Electron binary missing — running its install script"
+            (cd "$ELECTRON_DIR" && node install.js)
+          fi
+
+      - name: Install Electron runtime libraries + Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          pnpm --filter @aurelius/gui exec playwright install-deps chromium
+
+      - name: Build GUI
+        run: pnpm --filter @aurelius/gui build
+
+      - name: Smoke test
+        run: xvfb-run --auto-servernum pnpm --filter @aurelius/gui smoke
