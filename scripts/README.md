@@ -50,6 +50,10 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Purpose**: One-time setup for Playwright browser engines
 - **Usage**: `./scripts/setup-playwright.sh`
 
+### Check Prerequisites (`check-prerequisites.sh`)
+- **Purpose**: Verify Git, Node 22.12+, pnpm 9+, Claude Code, and optional tools (GitHub CLI, jq, Playwright browsers); also drives the desktop GUI's Prerequisites screen
+- **Usage**: `./scripts/check-prerequisites.sh` (exit 0 ready, 1 missing requirements, 2 error)
+
 ## Pipeline Verification
 
 ### Verify Design Tokens (`verify-tokens.sh`)
