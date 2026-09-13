@@ -106,7 +106,7 @@ Branch names should be lowercase, use hyphens as separators, and be descriptive 
 
 ## Release Process
 
-Releases are cut from the **Release** GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)), which drives [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) as configured in [`.versionrc.json`](.versionrc.json). The `version` in `package.json` and the published git tag are kept in sync automatically — do not edit `package.json`'s `version` field by hand.
+Releases are cut from the **Release** GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)), which drives [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) as configured in [`.versionrc.json`](.versionrc.json). The `version` in `package.json` and the published git tag are kept in sync automatically — do not edit `package.json`'s `version` field by hand. The desktop GUI's `packages/gui/package.json` is a `bumpFiles` entry in `.versionrc.json`, so it tracks the repo version automatically.
 
 `main` is protected by a ruleset (pull request + required status checks, no bypass for the Actions token), so the release happens in two stages around a pull request:
 

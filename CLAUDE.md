@@ -24,7 +24,8 @@ project-root/
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
 ├── scripts/              # Development automation scripts
 ├── packages/             # TypeScript pipeline packages (pnpm workspace)
-│   └── pipeline/         # Design-to-code core: InDesign IDML parser + IR (@aurelius/pipeline)
+│   ├── pipeline/         # Design-to-code core: InDesign IDML parser + IR (@aurelius/pipeline)
+│   └── gui/              # Desktop GUI (Electron + React, @aurelius/gui) — see docs/GUI.md
 ├── renderers/            # Pluggable framework renderer manifests (renderer.json + schema)
 ├── templates/            # Starter configs (ESLint, Tailwind, Vitest, Chrome ext, PWA, etc.)
 ├── docs/                 # Documentation
@@ -165,6 +166,11 @@ node scripts/stage-profiler.js history              # View build history
 node scripts/metrics-dashboard.js generate          # Generate HTML dashboard
 node scripts/metrics-dashboard.js summary           # Show metrics summary
 node scripts/metrics-dashboard.js trends            # Show performance trends
+
+# Desktop GUI (experimental) — docs/GUI.md
+pnpm gui:dev                                        # Launch in development
+pnpm gui:test                                       # Headless core tests
+pnpm gui:package                                    # Build an installer (packages/gui/dist/)
 ```
 
 ## Development Commands

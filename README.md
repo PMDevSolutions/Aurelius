@@ -132,6 +132,10 @@ shared IR, mapped to design tokens, and turned into typed React components plus
 Storybook stories — driven by the `indesign-to-react` agent or the
 `indesign-conversion` skill. See [`docs/pipelines/indesign.md`](docs/pipelines/indesign.md).
 
+## Desktop GUI (experimental)
+
+Prefer not to use a terminal? A cross-platform **desktop GUI** wraps the workflow behind four screens: **Prerequisites**, **Setup wizard**, **Build from Figma**, and **Visual QA**. It's a thin orchestration layer over the existing scripts and Claude Code — the same pattern as Flavian's and Vespasian's GUIs. Run it from source with `pnpm gui:dev` (or build an installer with `pnpm gui:package`). See **[docs/GUI.md](docs/GUI.md)**.
+
 ## The Figma-to-React Pipeline
 
 ### How It Works
@@ -350,6 +354,7 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | Conversation pipeline guide | `docs/conversation-to-app/README.md` | Conversational app creation via generated Figma designs |
 | InDesign pipeline guide | `docs/pipelines/indesign.md` | Convert exported IDML/PDF into React components, tokens, and Storybook stories |
 | Design system export | `docs/design-system-export/consumers.md` | Export format, round-trip re-import, and how Flavian/Nerva consume the tokens |
+| Desktop GUI | `docs/GUI.md` | The experimental Electron GUI: screens, commands, packaging |
 | Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 56 agents with use cases |
 | Skills catalog | `.claude/skills/README.md` | All 24 skills with triggers |
 | Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
