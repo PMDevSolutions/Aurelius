@@ -19,32 +19,18 @@ export interface PipelineRun {
 }
 
 /**
- * Prepare a conversion run from a manifest-declared command descriptor:
- *   - `claude`  (Figma, Canva) → a headless `claude -p "<prompt>"` session driving
- *     the figma/canva-to-wix autonomous workflow (BuildPlan → apply → QA);
- *   - `nodeBin` (InDesign)     → the deterministic `node bin/aurelius.mjs pipeline
- *     indesign …`, which compiles a plan under .aurelius/plans/<slug>/.
+ * Prepare a pipeline run from a manifest-declared command descriptor:
+ *   - `claude` (Figma) → a headless `claude -p "/build-from-figma <url>"` session
+ *     that runs the autonomous pipeline (intake → token lock → TDD → build →
+ *     visual diff → E2E → quality gate → report).
  * Required-input validation runs first and throws before any task is created.
  */
 export async function createPipelineRun(deps: PipelineDeps): Promise<PipelineRun> {
-  const { kind, slug } = deps.input;
+  const { kind } = deps.input;
+  const figmaUrl = deps.input.figmaUrl?.trim() ?? "";
+  if (!figmaUrl) throw new Error("A Figma file URL is required.");
 
-  if (kind === "figma" && !deps.input.figmaUrl?.trim())
-    throw new Error("A Figma file URL is required.");
-  if (kind === "canva" && !deps.input.canvaExport?.trim())
-    throw new Error("A Canva export directory is required.");
-  if (kind === "indesign" && !deps.input.indesignFile?.trim())
-    throw new Error("An .idml or .pdf file is required.");
-
-  // One vars bag for every conversion descriptor; fillTemplate uses whichever
-  // placeholders the manifest's argsTemplate actually references.
-  const vars = {
-    figmaUrl: deps.input.figmaUrl?.trim() ?? "",
-    canvaExport: deps.input.canvaExport?.trim() ?? "",
-    file: deps.input.indesignFile?.trim() ?? "",
-    slug,
-  };
-  const spec = await buildCommandSpec(deps.commands, deps.repoRoot, deps.command, vars);
+  const spec = await buildCommandSpec(deps.commands, deps.repoRoot, deps.command, { figmaUrl });
 
   let resolveResult!: (result: PipelineResult) => void;
   const result = new Promise<PipelineResult>((resolve) => {
@@ -57,8 +43,7 @@ export async function createPipelineRun(deps: PipelineDeps): Promise<PipelineRun
       resolveResult({
         ok: res.code === 0,
         kind,
-        slug,
-        error: res.code === 0 ? undefined : "Conversion failed — see the log for details.",
+        error: res.code === 0 ? undefined : "Pipeline failed — see the log for details.",
       });
     });
     return handle;

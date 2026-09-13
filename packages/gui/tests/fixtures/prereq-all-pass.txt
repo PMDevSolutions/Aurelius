@@ -4,44 +4,35 @@
 REQUIRED SOFTWARE
 -----------------
 [PASS] Git 2.43.0 (minimum: 2.30.0)
-[PASS] Node.js 22.0.0 (minimum: 20.0.0)
-[PASS] pnpm 9.15.0 (major >= 9)
-[PASS] Claude Code 1.0.0
+[PASS] Node.js 22.12.0 (minimum: 22.12.0)
+[PASS] pnpm 9.15.9 (major >= 9)
+[PASS] Claude Code 2.1.208
 
 REQUIRED ACCOUNTS
 -----------------
-[INFO] Wix account with a Studio workspace - Manual verification required
-       API keys: https://manage.wix.com/account/api-keys (account-level)
 [INFO] Figma Dev Mode (for the Figma pipeline) - Manual verification required
        Open Figma > Press Shift+D > Dev Mode panel should appear
-[PASS] GitHub CLI 2.40.0 (authenticated)
+[PASS] GitHub CLI 2.86.0 (authenticated)
 
 OPTIONAL SOFTWARE
 -----------------
-[PASS] jq 1.7 (used by hooks and plan-lint)
-[PASS] Wix CLI 1.5.0
-[PASS] Playwright package installed
+[PASS] jq 1.7 (used by hook scripts)
 [PASS] Playwright Chromium browser installed
-
-WIX CREDENTIALS (.env)
-----------------------
-[PASS] .env carries WIX_API_KEY and WIX_ACCOUNT_ID
-       Validate formats with: ./scripts/validate-env.sh
 
 SYSTEM REQUIREMENTS
 -------------------
 [PASS] RAM: 16 GB (minimum: 4 GB)
 [PASS] Disk: 120 GB free (minimum: 5 GB)
-[PASS] OS: macOS 15.6 (supported)
+[PASS] OS: Ubuntu 24.04 LTS (supported)
 
 === Summary ===
 Required: 4/4 passed
-Optional: 4/4 installed
+Optional: 3/3 installed
 System:   3/3 passed
 
 Ready to use Aurelius: YES
 
 Next steps:
   1. Install dependencies:  pnpm install
-  2. Run the setup wizard:  pnpm run init
+  2. Create a project:      ./scripts/setup-project.sh my-app --vite
   3. Open Claude Code:      claude

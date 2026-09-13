@@ -5,45 +5,49 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readImageDataUrl, readTextArtifact } from "../../../src/core/fs/read-artifact";
 
-test("readImageDataUrl reads an allowlisted PNG and rejects everything else", async () => {
+test("readImageDataUrl reads a PNG under .claude/visual-qa and rejects everything else", async () => {
   const root = await mkdtemp(join(tmpdir(), "aurelius-qa-"));
   try {
-    await mkdir(join(root, "tests", "visual", "diffs"), { recursive: true });
-    await writeFile(
-      join(root, "tests", "visual", "diffs", "diff-home.png"),
-      Buffer.from("png-bytes"),
-    );
+    const diffs = join(root, ".claude", "visual-qa", "diffs", "regression");
+    await mkdir(diffs, { recursive: true });
+    await writeFile(join(diffs, "diff-home.png"), Buffer.from("png-bytes"));
 
-    const dataUrl = await readImageDataUrl(root, "tests/visual/diffs/diff-home.png");
+    const dataUrl = await readImageDataUrl(
+      root,
+      ".claude/visual-qa/diffs/regression/diff-home.png",
+    );
     assert.ok(dataUrl?.startsWith("data:image/png;base64,"));
 
-    // outside the allowlisted dirs
+    // outside the allowlisted dir
     await writeFile(join(root, "secret.png"), Buffer.from("x"));
     assert.equal(await readImageDataUrl(root, "secret.png"), null);
+    await mkdir(join(root, "tests", "visual"), { recursive: true });
+    await writeFile(join(root, "tests", "visual", "x.png"), Buffer.from("x"));
+    assert.equal(await readImageDataUrl(root, "tests/visual/x.png"), null);
     // path traversal
     assert.equal(await readImageDataUrl(root, "../evil.png"), null);
-    // wrong extension within an allowed dir
-    await writeFile(join(root, "tests", "visual", "note.txt"), "hi");
-    assert.equal(await readImageDataUrl(root, "tests/visual/note.txt"), null);
+    // wrong extension within the allowed dir
+    await writeFile(join(root, ".claude", "visual-qa", "note.txt"), "hi");
+    assert.equal(await readImageDataUrl(root, ".claude/visual-qa/note.txt"), null);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("readTextArtifact reads allowlisted markdown and rejects traversal", async () => {
+test("readTextArtifact reads allowlisted markdown and rejects traversal and secrets", async () => {
   const root = await mkdtemp(join(tmpdir(), "aurelius-qa2-"));
   try {
     await mkdir(join(root, ".claude", "visual-qa"), { recursive: true });
-    await writeFile(join(root, ".claude", "visual-qa", "report.md"), "# Report");
-    assert.equal(await readTextArtifact(root, ".claude/visual-qa/report.md"), "# Report");
+    await writeFile(join(root, ".claude", "visual-qa", "regression-report.md"), "# Report");
+    assert.equal(
+      await readTextArtifact(root, ".claude/visual-qa/regression-report.md"),
+      "# Report",
+    );
     assert.equal(await readTextArtifact(root, "../../etc/passwd"), null);
-
-    // FidelityReports under .aurelius/plans are allowlisted; .env never is.
-    await mkdir(join(root, ".aurelius", "plans", "s"), { recursive: true });
-    await writeFile(join(root, ".aurelius", "plans", "s", "fidelity-report.md"), "# losses");
-    assert.equal(await readTextArtifact(root, ".aurelius/plans/s/fidelity-report.md"), "# losses");
-    await writeFile(join(root, ".env"), "WIX_API_KEY=secret");
+    await writeFile(join(root, ".env"), "SECRET=1");
     assert.equal(await readTextArtifact(root, ".env"), null);
+    await writeFile(join(root, "README.md"), "# not an artifact");
+    assert.equal(await readTextArtifact(root, "README.md"), null);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

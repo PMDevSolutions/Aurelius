@@ -64,9 +64,9 @@ test("resolveTool finds a tool on PATH or returns null", async () => {
     fakeEnv({
       platform: "linux",
       env: { PATH: "/usr/bin:/usr/local/bin" },
-      exists: ["/usr/local/bin/wix"],
+      exists: ["/usr/local/bin/claude"],
     }),
   );
-  assert.equal(await resolver.resolveTool("wix"), "/usr/local/bin/wix");
+  assert.equal(await resolver.resolveTool("claude"), "/usr/local/bin/claude");
   assert.equal(await resolver.resolveTool("nonexistent-xyz"), null);
 });

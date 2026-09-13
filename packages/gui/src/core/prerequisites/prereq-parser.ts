@@ -14,7 +14,6 @@ const GROUP_HEADERS: Record<string, PrereqGroup> = {
   "REQUIRED SOFTWARE": "required-software",
   "REQUIRED ACCOUNTS": "required-accounts",
   "OPTIONAL SOFTWARE": "optional-software",
-  "WIX CREDENTIALS (.env)": "wix-credentials",
   "SYSTEM REQUIREMENTS": "system-requirements",
 };
 
@@ -36,10 +35,7 @@ const RECOGNIZERS: Array<[RegExp, string, string]> = [
   [/^pnpm\b/i, "pnpm", "pnpm"],
   [/^Claude Code\b/i, "claude", "Claude Code"],
   [/^jq\b/i, "jq", "jq"],
-  [/^Wix CLI\b/i, "wix", "Wix CLI"],
   [/^Playwright\b/i, "playwright", "Playwright"],
-  [/^(\.env|No \.env)\b/i, "env", "Wix credentials (.env)"],
-  [/^WIX_[A-Z_]+\b/, "env", "Wix credentials (.env)"],
   [/^RAM\b/i, "ram", "RAM"],
   [/^Disk\b/i, "disk", "Disk"],
   [/^OS\b/i, "os", "OS"],
@@ -68,7 +64,6 @@ function extractMinVersion(detail: string): string | undefined {
  * Strips ANSI, tracks the current section, classifies [PASS]/[FAIL]/[SKIP]/[INFO]/
  * [WARN] lines, attaches indented continuation lines as hints, parses the summary
  * block, and derives `ready` from the script's exit-code contract (cross-checked).
- * Warnings (missing Wix credentials, missing Playwright browsers) never block.
  */
 export function parsePrereqOutput(raw: string, exitCode: number | null): PrereqReport {
   const cleaned = raw.replace(ANSI, "");

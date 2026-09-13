@@ -4,15 +4,13 @@
 REQUIRED SOFTWARE
 -----------------
 [PASS] Git 2.43.0 (minimum: 2.30.0)
-[PASS] Node.js 22.0.0 (minimum: 20.0.0)
+[PASS] Node.js 22.12.0 (minimum: 22.12.0)
 [FAIL] pnpm not installed
-       Install: corepack enable && corepack prepare pnpm@9.15.0 --activate
-[PASS] Claude Code 1.0.0
+       Install: corepack enable && corepack prepare pnpm@9 --activate
+[PASS] Claude Code 2.1.208
 
 REQUIRED ACCOUNTS
 -----------------
-[INFO] Wix account with a Studio workspace - Manual verification required
-       API keys: https://manage.wix.com/account/api-keys (account-level)
 [INFO] Figma Dev Mode (for the Figma pipeline) - Manual verification required
        Open Figma > Press Shift+D > Dev Mode panel should appear
 [SKIP] GitHub CLI not installed
@@ -20,33 +18,24 @@ REQUIRED ACCOUNTS
 
 OPTIONAL SOFTWARE
 -----------------
-[SKIP] jq not installed (hook scripts and plan-lint need it)
+[SKIP] jq not installed (hook scripts use it)
        Install: https://jqlang.github.io/jq/ (brew install jq / apt install jq)
-[SKIP] Wix CLI not installed (only needed for global.css/Velo code pushes)
-       Install: npm install -g @wix/cli
-[PASS] Playwright package installed
-[WARN] Playwright browsers may be missing — run: pnpm playwright:install (or ./scripts/setup-playwright.sh)
-
-WIX CREDENTIALS (.env)
-----------------------
-[WARN] .env missing: WIX_API_KEY WIX_ACCOUNT_ID
-       Get an account-level API key: https://manage.wix.com/account/api-keys
-       Dry-run mode (AURELIUS_DRY_RUN=1) works without credentials.
+[WARN] Playwright browsers missing — run: ./scripts/setup-playwright.sh
 
 SYSTEM REQUIREMENTS
 -------------------
 [PASS] RAM: 16 GB (minimum: 4 GB)
 [PASS] Disk: 120 GB free (minimum: 5 GB)
-[PASS] OS: Windows 10.0 (supported)
+[PASS] OS: Ubuntu 24.04 LTS (supported)
 
 === Summary ===
 Required: 3/4 passed
-Optional: 1/3 installed
+Optional: 0/2 installed
 System:   3/3 passed
-Warnings: 2 (see above — none are blocking)
+Warnings: 1 (see above — none are blocking)
 
 Ready to use Aurelius: NO
 
 Please install missing requirements above, then run this script again.
 
-Documentation: docs/PREREQUISITES.md
+Documentation: docs/onboarding/README.md#prerequisites

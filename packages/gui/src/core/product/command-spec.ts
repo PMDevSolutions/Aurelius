@@ -6,11 +6,25 @@ import type { CommandBuilder } from "../shell/command-builder";
 /** Variables substituted into a command's `{name}` placeholders at run time. */
 export type CommandVars = Readonly<Record<string, string>>;
 
-/** Fill `{name}` placeholders in a template's parts from `vars` (missing → ''). */
+const SOLE_PLACEHOLDER = /^\{(\w+)\}$/;
+
+/**
+ * Fill `{name}` placeholders in a template's parts from `vars` (missing → '').
+ * A part that is exactly one placeholder whose value is empty is dropped, so
+ * optional flags (`{dryRun}` → '--dry-run' | '') never produce a stray '' argument.
+ */
 export function fillTemplate(template: readonly string[] | undefined, vars: CommandVars): string[] {
-  return (template ?? []).map((part) =>
-    part.replace(/\{(\w+)\}/g, (_match, key: string) => vars[key] ?? ""),
-  );
+  const out: string[] = [];
+  for (const part of template ?? []) {
+    const sole = SOLE_PLACEHOLDER.exec(part);
+    if (sole) {
+      const value = vars[sole[1]] ?? "";
+      if (value !== "") out.push(value);
+      continue;
+    }
+    out.push(part.replace(/\{(\w+)\}/g, (_m, key: string) => vars[key] ?? ""));
+  }
+  return out;
 }
 
 /**
@@ -18,9 +32,6 @@ export function fillTemplate(template: readonly string[] | undefined, vars: Comm
  * CommandBuilder. This is the single place a step's declared command becomes a
  * process — there is no per-product branch. Script/module paths are resolved against
  * the active project root; `argsTemplate` placeholders are filled from `vars`.
- *
- * `module` descriptors are NOT runnable here — they have a dedicated engine flow
- * (the init wizard's in-process apply()).
  */
 export async function buildCommandSpec(
   commands: CommandBuilder,
@@ -45,9 +56,5 @@ export async function buildCommandSpec(
       );
     case "claude":
       return commands.claude(fillTemplate(descriptor.argsTemplate, vars), repoRoot);
-    case "module":
-      throw new Error(
-        `buildCommandSpec cannot run a '${descriptor.exec}' command — it has a dedicated engine flow.`,
-      );
   }
 }

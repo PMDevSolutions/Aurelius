@@ -15,92 +15,67 @@ const fakeShell: ShellResolver = {
 };
 const commands = new CommandBuilder(fakeShell);
 
-test("fillTemplate substitutes {placeholders} and passes through the rest", () => {
+test("fillTemplate substitutes {placeholders} and drops empty placeholder-only parts", () => {
   assert.deepEqual(fillTemplate(["a", "{x}", "c-{y}"], { x: "B", y: "D" }), ["a", "B", "c-D"]);
   assert.deepEqual(fillTemplate(undefined, {}), []);
-  assert.deepEqual(fillTemplate(["{missing}"], {}), [""]); // unknown placeholder → ''
+  assert.deepEqual(fillTemplate(["{missing}"], {}), []); // placeholder-only + empty → dropped
+  assert.deepEqual(fillTemplate(["pre-{missing}"], {}), ["pre-"]); // mixed text is kept
 });
 
-test("bashScript descriptor → bash <root>/<script> <args>", async () => {
-  const spec = await buildCommandSpec(commands, "/repo", {
-    exec: "bashScript",
-    script: "scripts/check-prerequisites.sh",
-    argsTemplate: [],
+test("wizard step renders setup-project.sh name --renderer id, omitting dryRun when empty", async () => {
+  const step = soleStep(aureliusManifest, "wizard");
+  const spec = await buildCommandSpec(commands, "/repo", step.command, {
+    name: "my-app",
+    renderer: "vite",
+    dryRun: "",
   });
   assert.equal(spec.command, "bash");
-  assert.ok(spec.args[0].endsWith("check-prerequisites.sh"));
-  assert.equal(spec.cwd, "/repo");
+  assert.ok(spec.args[0].endsWith("setup-project.sh"));
+  assert.deepEqual(spec.args.slice(1), ["my-app", "--renderer", "vite"]);
 });
 
-test("module descriptors are not runnable through buildCommandSpec", async () => {
-  await assert.rejects(() =>
-    buildCommandSpec(commands, "/repo", { exec: "module", module: "scripts/init" }),
+test("wizard step appends --dry-run when previewing", async () => {
+  const step = soleStep(aureliusManifest, "wizard");
+  const spec = await buildCommandSpec(commands, "/repo", step.command, {
+    name: "my-app",
+    renderer: "expo",
+    dryRun: "--dry-run",
+  });
+  assert.deepEqual(spec.args.slice(1), ["my-app", "--renderer", "expo", "--dry-run"]);
+});
+
+test('qa steps pass the app URL; cross-browser prefixes "compare"', async () => {
+  const qa = getScreen(aureliusManifest, "qa");
+  const regression = await buildCommandSpec(commands, "/repo", getStep(qa, "regression").command, {
+    url: "http://localhost:5173",
+  });
+  assert.ok(regression.args[0].endsWith("regression-test.sh"));
+  assert.deepEqual(regression.args.slice(1), ["http://localhost:5173"]);
+  const cross = await buildCommandSpec(commands, "/repo", getStep(qa, "cross-browser").command, {
+    url: "http://localhost:5173",
+  });
+  assert.deepEqual(cross.args.slice(1), ["compare", "http://localhost:5173"]);
+});
+
+test("prereq + playwright steps target their scripts", async () => {
+  const prereq = getScreen(aureliusManifest, "prereq");
+  assert.ok(
+    (await buildCommandSpec(commands, "/repo", getStep(prereq, "check").command)).args[0].endsWith(
+      "check-prerequisites.sh",
+    ),
+  );
+  assert.ok(
+    (
+      await buildCommandSpec(commands, "/repo", getStep(prereq, "playwright").command)
+    ).args[0].endsWith("setup-playwright.sh"),
   );
 });
 
-// ── Driven by the real Aurelius manifest ─────────────────────────────────────────
-
-test('site "list" step renders `node bin/aurelius.mjs site list`', async () => {
-  const step = getStep(getScreen(aureliusManifest, "site"), "list");
-  const spec = await buildCommandSpec(commands, "/repo", step.command);
-  assert.equal(spec.command, process.execPath);
-  assert.ok(spec.args[0].endsWith("aurelius.mjs"));
-  assert.deepEqual(spec.args.slice(1), ["site", "list"]);
-});
-
-test('site "use" step fills the {siteId} placeholder', async () => {
-  const step = getStep(getScreen(aureliusManifest, "site"), "use");
-  const spec = await buildCommandSpec(commands, "/repo", step.command, { siteId: "abc-123" });
-  assert.deepEqual(spec.args.slice(1), ["site", "use", "abc-123"]);
-});
-
-test('site "apply" step fills the {plan} placeholder', async () => {
-  const step = getStep(getScreen(aureliusManifest, "site"), "apply");
-  const spec = await buildCommandSpec(commands, "/repo", step.command, {
-    plan: ".aurelius/plans/my-site/plan.json",
-  });
-  assert.deepEqual(spec.args.slice(1), ["apply", ".aurelius/plans/my-site/plan.json"]);
-});
-
-test('site "publish" step renders `node bin/aurelius.mjs publish`', async () => {
-  const step = getStep(getScreen(aureliusManifest, "site"), "publish");
-  const spec = await buildCommandSpec(commands, "/repo", step.command);
-  assert.deepEqual(spec.args.slice(1), ["publish"]);
-});
-
-test('qa "visual:diff" step renders `bash -c "pnpm run visual:diff"`', async () => {
-  const step = getStep(getScreen(aureliusManifest, "qa"), "visual:diff");
-  const spec = await buildCommandSpec(commands, "/repo", step.command);
-  assert.equal(spec.command, "bash");
-  assert.deepEqual(spec.args, ["-c", "pnpm run visual:diff"]);
-});
-
-test("prereq step targets scripts/check-prerequisites.sh", async () => {
-  const step = soleStep(aureliusManifest, "prereq");
-  const spec = await buildCommandSpec(commands, "/repo", step.command);
-  assert.equal(spec.command, "bash");
-  assert.ok(spec.args[0].endsWith("check-prerequisites.sh"));
-});
-
-test('pipeline "figma" step renders a `claude -p` prompt with the URL and slug', async () => {
+test('pipeline "figma" step renders `claude -p "/build-from-figma <url>"`', async () => {
   const step = getStep(getScreen(aureliusManifest, "pipeline"), "figma");
   const spec = await buildCommandSpec(commands, "/repo", step.command, {
     figmaUrl: "https://figma.com/x",
-    slug: "my-site",
   });
   assert.equal(spec.command, "claude");
-  assert.equal(spec.args[0], "-p");
-  assert.match(spec.args[1], /https:\/\/figma\.com\/x/);
-  assert.match(spec.args[1], /my-site/);
-});
-
-test('pipeline "indesign" step renders the `node bin/aurelius.mjs` CLI', async () => {
-  const step = getStep(getScreen(aureliusManifest, "pipeline"), "indesign");
-  const spec = await buildCommandSpec(commands, "/repo", step.command, {
-    file: "./a.idml",
-    slug: "broch",
-  });
-  assert.equal(spec.command, process.execPath);
-  assert.ok(spec.args[0].endsWith("aurelius.mjs"));
-  assert.deepEqual(spec.args.slice(1), ["pipeline", "indesign", "./a.idml", "--slug", "broch"]);
+  assert.deepEqual(spec.args, ["-p", "/build-from-figma https://figma.com/x"]);
 });

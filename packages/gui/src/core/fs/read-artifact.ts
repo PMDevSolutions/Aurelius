@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 /** Repo-relative directories the renderer is allowed to read QA artifacts from. */
-const ALLOWED_DIRS = ["tests/visual", ".claude/visual-qa", ".lighthouseci", ".aurelius/plans"];
+const ALLOWED_DIRS = [".claude/visual-qa"];
 
 /**
  * Resolve a renderer-supplied relative path safely under repoRoot: it must stay

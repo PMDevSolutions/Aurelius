@@ -1,51 +1,36 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { toInitFlags } from "../../../src/core/init/init-flags";
-import type { InitInput } from "../../../src/shared/types/init";
+import { toSetupVars, validateInitInput } from "../../../src/core/init/init-flags";
 
-const base: InitInput = {
-  name: "my-site",
-  title: "",
-  apiKey: "",
-  accountId: "",
-  siteMode: "skip",
-  siteId: "",
-  git: true,
-};
+const frameworks = [{ id: "nextjs" }, { id: "vite" }];
 
-test("maps a minimal skip-mode input to CLI flags", () => {
-  const f = toInitFlags(base);
-  assert.equal(f.name, "my-site");
-  assert.equal(f.title, undefined); // empty → undefined (resolver derives)
-  assert.equal(f.apiKey, undefined);
-  assert.equal(f.accountId, undefined);
-  assert.equal(f.siteId, undefined); // skip mode → neither site flag
-  assert.equal(f.createSite, false);
-  assert.equal(f.noGit, false); // git:true → noGit:false
-});
-
-test("connect mode passes the site id and never sets createSite", () => {
-  const f = toInitFlags({ ...base, siteMode: "connect", siteId: "  abc-123  " });
-  assert.equal(f.siteId, "abc-123"); // trimmed
-  assert.equal(f.createSite, false);
-});
-
-test("create mode sets createSite and suppresses siteId (the flags are exclusive)", () => {
-  const f = toInitFlags({
-    ...base,
-    siteMode: "create",
-    siteId: "stale-value-from-a-previous-toggle",
-    apiKey: " key ",
-    accountId: " acct ",
+test("maps a real run to name/renderer with an empty dryRun", () => {
+  assert.deepEqual(toSetupVars({ name: " my-app ", renderer: "vite", preview: false }), {
+    name: "my-app",
+    renderer: "vite",
+    dryRun: "",
   });
-  assert.equal(f.createSite, true);
-  assert.equal(f.siteId, undefined); // never both — the resolver rejects the pair
-  assert.equal(f.apiKey, "key");
-  assert.equal(f.accountId, "acct");
 });
 
-test("git:false → noGit:true; title passes through trimmed", () => {
-  const f = toInitFlags({ ...base, git: false, title: "My Site" });
-  assert.equal(f.noGit, true);
-  assert.equal(f.title, "My Site");
+test("preview maps to --dry-run", () => {
+  assert.equal(toSetupVars({ name: "x", renderer: "vite", preview: true }).dryRun, "--dry-run");
+});
+
+test("validateInitInput enforces the create-app.js name rule and a known renderer", () => {
+  assert.equal(
+    validateInitInput({ name: "my-app", renderer: "vite", preview: false }, frameworks),
+    null,
+  );
+  assert.match(
+    validateInitInput({ name: "", renderer: "vite", preview: false }, frameworks) ?? "",
+    /name/i,
+  );
+  assert.match(
+    validateInitInput({ name: "My App", renderer: "vite", preview: false }, frameworks) ?? "",
+    /lowercase/,
+  );
+  assert.match(
+    validateInitInput({ name: "ok", renderer: "rails", preview: false }, frameworks) ?? "",
+    /framework/i,
+  );
 });

@@ -10,10 +10,10 @@ const project = aureliusManifest.project;
 
 async function makeAureliusRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "aurelius-gui-test-"));
-  await mkdir(join(root, "bin"), { recursive: true });
-  await writeFile(join(root, "bin", "aurelius.mjs"), "// cli\n");
   await mkdir(join(root, "scripts"), { recursive: true });
-  await writeFile(join(root, "scripts", "check-prerequisites.sh"), "#!/bin/bash\n");
+  await writeFile(join(root, "scripts", "setup-project.sh"), "#!/bin/bash\n");
+  await mkdir(join(root, ".claude"), { recursive: true });
+  await writeFile(join(root, ".claude", "pipeline.config.json"), "{}");
   await writeFile(join(root, "package.json"), JSON.stringify({ name: "aurelius" }));
   return root;
 }

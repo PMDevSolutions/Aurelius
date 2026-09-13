@@ -3,83 +3,47 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  listFidelityReports,
-  mapLighthouse,
-  mapVisualReport,
-  pairDesignResults,
-} from "../../../src/core/qa/discover";
+import { discoverQaArtifacts } from "../../../src/core/qa/discover";
 
-// NOTE: building the `pnpm run <script>` QA spec is manifest-driven and covered in
-// tests/core/product/command-spec.test.mts (qa steps). This file keeps QA artifact
-// discovery/mapping, which is generic engine.
+async function tree(files: string[]): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "aurelius-qa-"));
+  for (const f of files) {
+    await mkdir(join(root, ...f.split("/").slice(0, -1)), { recursive: true });
+    await writeFile(join(root, ...f.split("/")), "x");
+  }
+  return root;
+}
 
-test("mapVisualReport reconstructs image paths from file names", () => {
-  const report = mapVisualReport({
-    totalFiles: 1,
-    passed: 0,
-    failed: 1,
-    skipped: 0,
-    overallPass: false,
-    results: [{ file: "home-desktop-1440px.png", status: "FAIL", mismatchPct: 0.02, pass: false }],
-  });
-  assert.equal(report.failed, 1);
-  const r = report.results[0];
-  assert.equal(r.actualRel, "tests/visual/actual/home-desktop-1440px.png");
-  assert.equal(r.baselineRel, "tests/visual/baselines/home-desktop-1440px.png");
-  assert.equal(r.diffRel, "tests/visual/diffs/diff-home-desktop-1440px.png");
-});
-
-test("mapLighthouse summarizes pass/fail and collects failures", () => {
-  const summary = mapLighthouse([
-    { url: "http://x/", auditId: "perf", passed: true },
-    { url: "http://x/", auditId: "a11y", passed: false, expected: 0.9, actual: 0.8 },
+test("discovers only the reports and galleries that exist, in display order", async () => {
+  const root = await tree([
+    ".claude/visual-qa/regression-report.md",
+    ".claude/visual-qa/diffs/regression/home-desktop.png",
+    ".claude/visual-qa/diffs/regression/about-desktop.png",
+    ".claude/visual-qa/diffs/regression/notes.txt",
+    ".claude/visual-qa/screenshots/responsive/home-mobile-375px.png",
   ]);
-  assert.equal(summary.total, 2);
-  assert.equal(summary.passed, 1);
-  assert.equal(summary.failed, 1);
-  assert.equal(summary.failures[0].auditId, "a11y");
-  assert.equal(summary.failures[0].expected, "0.9");
-});
-
-test("pairDesignResults pairs design shots with desktop live-site renders by page stem", () => {
-  const pairs = pairDesignResults(
-    ["home.png", "about.png"],
-    ["home-desktop-1440px.png", "home-mobile-375px.png"],
-  );
-  assert.equal(pairs.length, 2);
-  const home = pairs.find((p) => p.name === "home");
-  assert.equal(home?.designRel, ".claude/visual-qa/screenshots/figma/home.png");
-  assert.equal(
-    home?.resultRel,
-    ".claude/visual-qa/screenshots/wix/chromium/home-desktop-1440px.png",
-  );
-  const about = pairs.find((p) => p.name === "about");
-  assert.equal(about?.resultRel, undefined); // no matching live-site render
-});
-
-test("listFidelityReports finds fidelity-report.md under .aurelius/plans, sorted", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aurelius-fidelity-"));
   try {
-    const plans = join(root, ".aurelius", "plans");
-    await mkdir(join(plans, "zeta"), { recursive: true });
-    await writeFile(join(plans, "zeta", "fidelity-report.md"), "# losses");
-    await mkdir(join(plans, "alpha"), { recursive: true });
-    await writeFile(join(plans, "alpha", "fidelity-report.md"), "# losses");
-    await mkdir(join(plans, "no-report"), { recursive: true });
-    assert.deepEqual(await listFidelityReports(root), [
-      ".aurelius/plans/alpha/fidelity-report.md",
-      ".aurelius/plans/zeta/fidelity-report.md",
+    const a = await discoverQaArtifacts(root);
+    assert.deepEqual(a.reports, [
+      { title: "Regression report", relPath: ".claude/visual-qa/regression-report.md" },
+    ]);
+    assert.deepEqual(
+      a.galleries.map((g) => g.title),
+      ["Regression diffs", "Responsive screenshots"],
+    );
+    assert.deepEqual(a.galleries[0].images, [
+      ".claude/visual-qa/diffs/regression/about-desktop.png",
+      ".claude/visual-qa/diffs/regression/home-desktop.png",
     ]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
 
-test("listFidelityReports returns [] when no plans exist", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aurelius-nofidelity-"));
+test("an empty project yields no reports and no galleries", async () => {
+  const root = await tree([]);
   try {
-    assert.deepEqual(await listFidelityReports(root), []);
+    assert.deepEqual(await discoverQaArtifacts(root), { reports: [], galleries: [] });
   } finally {
     await rm(root, { recursive: true, force: true });
   }

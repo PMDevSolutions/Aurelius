@@ -16,8 +16,8 @@ test("all-pass fixture → ready, groups, versions, summary", async () => {
   assert.deepEqual(report.summary, {
     requiredPassed: 4,
     requiredTotal: 4,
-    optionalInstalled: 4,
-    optionalTotal: 4,
+    optionalInstalled: 3,
+    optionalTotal: 3,
     systemPassed: 3,
     systemTotal: 3,
   });
@@ -33,14 +33,19 @@ test("all-pass fixture → ready, groups, versions, summary", async () => {
   assert.equal(pnpm?.status, "pass");
   assert.equal(pnpm?.group, "required-software");
 
-  const env = report.items.find((i) => i.key === "env");
-  assert.equal(env?.status, "pass");
-  assert.equal(env?.group, "wix-credentials");
+  const playwright = report.items.find((i) => i.key === "playwright");
+  assert.equal(playwright?.status, "pass");
+  assert.equal(playwright?.group, "optional-software");
 
+  assert.equal(
+    report.items.find((i) => i.key === "env"),
+    undefined,
+    "no credentials group",
+  );
   assert.ok(!report.items.some((i) => i.status === "fail"), "no failures");
   // The trailing "1. 2. 3." footer must NOT have leaked into the last item's hints.
   const os = report.items.find((i) => i.key === "os");
-  assert.ok(!os?.hints.some((h) => /setup wizard/.test(h)), "footer steps must not be hints");
+  assert.ok(!os?.hints.some((h) => /setup-project/.test(h)), "footer steps must not be hints");
 });
 
 test("with-failures fixture → pnpm fails with guidance + hints, not ready", async () => {
@@ -59,28 +64,23 @@ test("with-failures fixture → pnpm fails with guidance + hints, not ready", as
   assert.equal(report.summary.requiredPassed, 3);
 
   // [WARN] lines parse as warn items and never block readiness on their own.
-  const envWarn = report.items.find((i) => i.key === "env");
-  assert.equal(envWarn?.status, "warn");
-  assert.equal(envWarn?.group, "wix-credentials");
   const playwrightWarn = report.items.find((i) => i.key === "playwright" && i.status === "warn");
   assert.ok(playwrightWarn, "playwright browser warning parsed");
+  assert.ok(playwrightWarn?.detail.includes("setup-playwright.sh"));
 });
 
-test("with-skips fixture → optional skips + credential warning stay non-blocking", async () => {
+test("with-skips fixture → optional skips + browser warning stay non-blocking", async () => {
   const report = parsePrereqOutput(await fixture("prereq-with-skips.txt"), 0);
 
   assert.equal(report.ready, true, "warnings and skips do not block readiness");
-  const wix = report.items.find((i) => i.key === "wix");
-  assert.equal(wix?.status, "skip");
-  assert.equal(wix?.group, "optional-software");
-  const env = report.items.find((i) => i.key === "env");
-  assert.equal(env?.status, "warn");
-  assert.ok(
-    env?.hints.some((h) => /AURELIUS_DRY_RUN/.test(h)),
-    "dry-run hint attached",
-  );
+  const gh = report.items.find((i) => i.key === "gh");
+  assert.equal(gh?.status, "skip");
+  assert.equal(gh?.group, "required-accounts");
+  const jq = report.items.find((i) => i.key === "jq");
+  assert.equal(jq?.status, "skip");
+  assert.equal(jq?.group, "optional-software");
   assert.equal(report.summary.optionalInstalled, 0);
-  assert.equal(report.summary.optionalTotal, 3);
+  assert.equal(report.summary.optionalTotal, 2);
 });
 
 test("strips ANSI color codes before parsing", () => {

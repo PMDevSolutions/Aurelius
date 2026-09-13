@@ -1,32 +1,33 @@
 import type { InitInput } from "../../shared/types/init";
 
-/** The CLI "flags" shape consumed by scripts/init/default-resolver.mjs's resolveDefaults. */
-export interface InitFlags {
+/** Runtime vars for the wizard step's argsTemplate (`{name}`, `{renderer}`, `{dryRun}`). */
+export interface SetupVars extends Record<string, string> {
   name: string;
-  title?: string;
-  apiKey?: string;
-  accountId?: string;
-  /** Set only in connect mode — the resolver derives siteMode 'connect' from it. */
-  siteId?: string;
-  /** Set only in create mode — conflicts with siteId (the resolver enforces this). */
-  createSite: boolean;
-  noGit: boolean;
+  renderer: string;
+  /** '--dry-run' when previewing, '' otherwise (an empty placeholder-only arg is dropped). */
+  dryRun: "--dry-run" | "";
 }
 
-/**
- * Map the wizard's InitInput to the exact flag shape `pnpm run init --yes` passes
- * to resolveDefaults, so the GUI and CLI share one resolution + apply path.
- * The GUI's explicit siteMode collapses into the CLI's --site-id / --create-site
- * flags (mutually exclusive; neither means 'skip').
- */
-export function toInitFlags(input: InitInput): InitFlags {
+/** Same rule scripts/create-app.js enforces for app names. */
+const NAME_RULE = /^[a-z0-9-]+$/;
+
+export function toSetupVars(input: InitInput): SetupVars {
   return {
-    name: input.name,
-    title: input.title.trim() || undefined,
-    apiKey: input.apiKey.trim() || undefined,
-    accountId: input.accountId.trim() || undefined,
-    siteId: input.siteMode === "connect" ? input.siteId.trim() || undefined : undefined,
-    createSite: input.siteMode === "create",
-    noGit: !input.git,
+    name: input.name.trim(),
+    renderer: input.renderer,
+    dryRun: input.preview ? "--dry-run" : "",
   };
+}
+
+/** Validate before any task is created; returns a user-facing message or null when valid. */
+export function validateInitInput(
+  input: InitInput,
+  frameworks: readonly { readonly id: string }[],
+): string | null {
+  const name = input.name.trim();
+  if (!name) return "Enter a project name.";
+  if (!NAME_RULE.test(name))
+    return "Project name must be lowercase letters, numbers, and hyphens only.";
+  if (!frameworks.some((f) => f.id === input.renderer)) return "Choose a framework.";
+  return null;
 }
