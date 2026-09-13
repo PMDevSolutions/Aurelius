@@ -13,7 +13,7 @@ cd Aurelius
 
 # Install pnpm if you do not have it
 corepack enable
-corepack prepare pnpm@latest --activate
+corepack prepare pnpm@10.34.5 --activate
 ```
 
 > **Important:** This project uses pnpm exclusively. npm and yarn are not supported.
@@ -32,7 +32,7 @@ The `setup-project.sh` script scaffolds a new application with all framework con
 ./scripts/setup-project.sh my-app --vite
 ```
 
-This creates an `app/` directory (or the name you specified) with:
+This creates a `my-app/` directory (whatever project name you passed) with:
 - TypeScript strict mode
 - Tailwind CSS with design token structure
 - ESLint + Prettier configured

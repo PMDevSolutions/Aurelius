@@ -22,7 +22,7 @@ cd aurelius
 ./scripts/setup-project.sh my-app --vite    # or --next, --astro, --svelte, --expo
 
 # Install dependencies
-cd app && pnpm install
+cd my-app && pnpm install
 
 # Start development
 pnpm dev
