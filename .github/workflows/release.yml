@@ -1,5 +1,26 @@
 name: Release
 
+# Two-stage release (see issue #121).
+#
+# `main` is protected by a ruleset that requires a pull request plus passing
+# status checks, and GITHUB_TOKEN has no bypass. A version-bump commit can
+# therefore never be pushed to `main` directly from a workflow, so the release
+# is split around a pull request:
+#
+#   workflow_dispatch → prepare: bump package.json + CHANGELOG.md with
+#                       commit-and-tag-version (commit only, no tag), push a
+#                       `release/vX.Y.Z` branch and open a PR against main.
+#   push to main      → publish: when package.json carries a version that has
+#                       no `vX.Y.Z` tag yet (i.e. the release PR just merged),
+#                       tag the merge commit and create the GitHub Release
+#                       from that version's CHANGELOG section.
+#
+# CI on the release PR: pull requests opened with GITHUB_TOKEN do not trigger
+# `pull_request` workflows, so the required checks would never run. Add a
+# RELEASE_TOKEN repository secret (fine-grained PAT with contents + pull
+# requests: write) and the PR is opened as that user, which triggers CI as
+# normal. Without it, close and reopen the PR once to kick off the checks.
+
 on:
   workflow_dispatch:
     inputs:
@@ -13,19 +34,32 @@ on:
           - patch
           - minor
           - major
+      dry_run:
+        description: "Preview the bump and changelog without pushing anything"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - package.json
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  release:
-    name: Create Release
+  # ── Stage 1: bump + changelog → release PR ─────────────────────────────
+  prepare:
+    name: Prepare release PR
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,40 +81,137 @@ jobs:
 
       - name: Bump version and generate changelog
         id: version
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ "${{ inputs.release_type }}" = "auto" ]; then
-            pnpm release
+          set -euo pipefail
+
+          # Call the binary directly. `pnpm release -- --release-as X` forwards
+          # the literal `--`, after which commit-and-tag-version treats every
+          # flag as a positional argument and silently auto-detects the bump.
+          DRY=""
+          if [ "$DRY_RUN" = "true" ]; then DRY="--dry-run"; fi
+
+          if [ "$RELEASE_TYPE" = "auto" ]; then
+            pnpm exec commit-and-tag-version --skip.tag $DRY
           else
-            pnpm release -- --release-as ${{ inputs.release_type }}
+            pnpm exec commit-and-tag-version --skip.tag --release-as "$RELEASE_TYPE" $DRY
           fi
 
-          # Extract the new version from package.json
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=release/v$VERSION" >> "$GITHUB_OUTPUT"
 
-          # Extract release notes for this version from CHANGELOG.md
-          if [ -f "RELEASE_NOTES.md" ]; then
-            echo "Release notes extracted"
-          else
-            echo "No release notes file found, extracting from CHANGELOG..."
-            # Fallback: extract section between first two ## headers
-            sed -n "/^## \[${VERSION}\]/,/^## \[/{ /^## \[${VERSION}\]/d; /^## \[/d; p; }" CHANGELOG.md > RELEASE_NOTES.md
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run — nothing was committed or pushed." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
-      - name: Push changes and tag
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists on origin — this version has already been released."
+            exit 1
+          fi
+
+      - name: Push release branch
+        if: inputs.dry_run != true
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
         run: |
-          git push --follow-tags origin ${{ github.ref_name }}
+          set -euo pipefail
+          git checkout -B "$BRANCH"
+          # Force so re-dispatching for the same version refreshes the branch.
+          git push --force origin "$BRANCH"
+
+      - name: Open release PR
+        if: inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          HAS_RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Release **$TAG** prepared by the Release workflow (\`$RELEASE_TYPE\` bump)."
+            echo
+            echo "Merging this PR tags the merge commit as \`$TAG\` and publishes the GitHub Release automatically."
+            echo
+            echo "## Release notes"
+            echo
+            cat RELEASE_NOTES.md
+          } > /tmp/release-pr-body.md
+
+          EXISTING=$(gh pr list --head "$BRANCH" --base main --state open --json url --jq '.[0].url // empty')
+          if [ -n "$EXISTING" ]; then
+            gh pr edit "$EXISTING" --title "chore(release): $TAG" --body-file /tmp/release-pr-body.md
+            URL="$EXISTING"
+          else
+            URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "chore(release): $TAG" \
+              --body-file /tmp/release-pr-body.md)
+          fi
+          echo "Release PR: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$HAS_RELEASE_TOKEN" != "true" ]; then
+            echo "::notice::PR opened with GITHUB_TOKEN, which does not trigger CI. Close and reopen it to run the required checks, or add a RELEASE_TOKEN secret."
+          fi
+
+  # ── Stage 2: merged bump on main → tag + GitHub Release ────────────────
+  publish:
+    name: Tag and publish release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect unreleased version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "$TAG already exists — nothing to publish."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "$TAG not yet tagged — publishing."
+          fi
+
+      - name: Extract release notes
+        if: steps.version.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/extract-release-notes.js --version "$VERSION"
+
+      - name: Tag the release commit
+        if: steps.version.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "chore(release): $TAG"
+          git push origin "refs/tags/$TAG"
 
       - name: Create GitHub Release
+        if: steps.version.outputs.release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           body_path: RELEASE_NOTES.md
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cleanup
-        run: rm -f RELEASE_NOTES.md
