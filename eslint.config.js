@@ -35,6 +35,9 @@ export default [
       "templates/",
       "docs/",
       "app/",
+      // The desktop GUI lints itself (packages/gui/eslint.config.mjs, ESLint 9 + React
+      // rules) in its own CI lane; ESLint 10 would otherwise load that config here.
+      "packages/gui/",
     ],
   },
 ];

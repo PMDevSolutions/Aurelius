@@ -31,9 +31,8 @@ jobs:
           node-version: "22"
 
       - name: Install pnpm
+        # Version comes from package.json "packageManager" (pnpm 10), as in ci.yml.
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install dependencies
         # Skip the ~100 MB Electron binary — typecheck only needs the bundled types.
@@ -65,9 +64,8 @@ jobs:
           node-version: "22"
 
       - name: Install pnpm
+        # Version comes from package.json "packageManager" (pnpm 10), as in ci.yml.
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --config.side-effects-cache=false
