@@ -9,6 +9,9 @@
 # in, and must stay writable in, the user's checkout).
 appId: net.pmds.aurelius.gui
 productName: Aurelius
+# electron-builder derives the binary name from the package name ("@aurelius/gui"
+# → "@aureliusgui"), which it then rejects as unsafe for paths; name it explicitly.
+executableName: aurelius
 directories:
   output: dist
   buildResources: build
