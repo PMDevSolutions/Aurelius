@@ -1,73 +1,44 @@
 import { useState } from "react";
-import { activeManifest, getScreen } from "../../shared/product";
-import type { PipelineInput, PipelineKind } from "../../shared/types/pipeline";
+import { activeManifest, getScreen, getStep } from "../../shared/product";
 import { bridge } from "../api/bridge";
 import { usePipeline } from "../hooks/usePipeline";
 import { LogStream } from "./LogStream";
 
-// The conversion kinds and their reference docs come from the manifest.
-const PIPELINE_SCREEN = getScreen(activeManifest, "pipeline");
-const KINDS = PIPELINE_SCREEN.steps.map((s) => ({ value: s.id as PipelineKind, label: s.label }));
-const DOCS = (PIPELINE_SCREEN.extras?.docs ?? {}) as Record<PipelineKind, string>;
+const PIPELINE = getScreen(activeManifest, "pipeline");
+const FIGMA = getStep(PIPELINE, "figma");
+const DOC = PIPELINE.extras?.docs?.figma ?? "docs/figma-to-react/README.md";
+const LINKS = PIPELINE.extras?.links ?? [];
 
-const FIGMA_URL = /^https?:\/\/(www\.)?figma\.com\//i;
+/** figma.com/file|design|proto/<key>/… with an optional ?node-id=. */
+const FIGMA_URL =
+  /^https?:\/\/(www\.)?figma\.com\/(file|design|proto|board)\/[A-Za-z0-9]+(\/|$|\?)/i;
 
 export function PipelinePanel() {
-  const [kind, setKind] = useState<PipelineKind>("figma");
-  const [slug, setSlug] = useState("");
   const [figmaUrl, setFigmaUrl] = useState("");
-  const [canvaExport, setCanvaExport] = useState("");
-  const [indesignFile, setIndesignFile] = useState("");
-
   const { result, error, running, lines, run, cancel, reset } = usePipeline();
 
-  const figmaUrlValid = FIGMA_URL.test(figmaUrl.trim());
-  const inputReady =
-    kind === "figma"
-      ? figmaUrlValid
-      : kind === "canva"
-        ? canvaExport.trim() !== ""
-        : indesignFile.trim() !== "";
-  const canLaunch = slug.trim() !== "" && inputReady && !running;
+  const urlValid = FIGMA_URL.test(figmaUrl.trim());
+  const canLaunch = urlValid && !running;
 
-  const browseDir = (): void => {
-    void bridge()
-      .selectDirectory()
-      .then((p) => {
-        if (p) setCanvaExport(p);
-      });
-  };
-  const browseFile = (): void => {
-    void bridge()
-      .selectFile(["idml", "pdf"])
-      .then((p) => {
-        if (p) setIndesignFile(p);
-      });
-  };
   const openDoc = (): void => {
-    void bridge().openPath(DOCS[kind]);
+    void bridge().openPath(DOC);
   };
   const openHelp = (relPath: string): void => {
     void bridge().openPath(relPath);
-  };
-
-  const launch = () => {
-    const input: PipelineInput = { kind, slug: slug.trim(), figmaUrl, canvaExport, indesignFile };
-    run(input);
   };
 
   if (running) {
     return (
       <section className="panel">
         <header className="panel-header">
-          <h1>Converting…</h1>
+          <h1>Building…</h1>
           <button type="button" onClick={cancel}>
             Cancel
           </button>
         </header>
         <p className="panel-intro">
-          Running the {kind} pipeline.{" "}
-          {kind !== "indesign" && "This drives a headless Claude Code session."}
+          Running <code>/build-from-figma</code> in a headless Claude Code session: intake, token
+          lock, TDD, build, visual diff, E2E, quality gate, report. This takes a while.
         </p>
         <LogStream lines={lines} />
       </section>
@@ -78,52 +49,36 @@ export function PipelinePanel() {
     return (
       <section className="panel">
         <header className="panel-header">
-          <h1>Convert design</h1>
+          <h1>{PIPELINE.title}</h1>
           <button type="button" onClick={reset}>
-            New conversion
+            New build
           </button>
         </header>
         {result.ok ? (
           <>
             <div className="banner banner-ok">
-              <strong>Conversion finished ({result.kind})</strong>
+              <strong>Pipeline finished</strong>
               <span className="summary">
-                Plan artifacts: <code>.aurelius/plans/{result.slug}/</code>
+                Report: <code>build-report.md</code> in the project
               </span>
             </div>
             <div className="next-steps">
               <h2>Next steps</h2>
-              {result.kind === "indesign" ? (
-                <ol>
-                  <li>
-                    Review <code>.aurelius/plans/{result.slug}/plan-report.md</code>.
-                  </li>
-                  <li>
-                    Open the <strong>Wix site</strong> tab, pick the plan, and{" "}
-                    <strong>Apply</strong> it (API steps run directly; editor steps surface as
-                    pending work for the <code>wix-site-builder</code> agent).
-                  </li>
-                  <li>
-                    <strong>Publish</strong>, then verify from the <strong>Visual QA</strong> tab.
-                  </li>
-                </ol>
-              ) : (
-                <ol>
-                  <li>
-                    The Claude Code session compiled and applied the plan — check the log below and
-                    the FidelityReport for anything it escalated.
-                  </li>
-                  <li>
-                    Publish (if it didn&rsquo;t) and verify from the <strong>Visual QA</strong> tab.
-                  </li>
-                </ol>
-              )}
+              <ol>
+                <li>
+                  Read the build report and the log below for anything the pipeline escalated.
+                </li>
+                <li>
+                  Start the dev server in a terminal (<code>pnpm dev</code>) and verify it on the{" "}
+                  <strong>Visual QA</strong> tab.
+                </li>
+              </ol>
             </div>
           </>
         ) : (
           <>
             <div className="banner banner-error">
-              <strong>Conversion failed</strong>
+              <strong>Pipeline failed</strong>
               <span>{result.error}</span>
             </div>
             <p className="panel-intro">
@@ -131,23 +86,19 @@ export function PipelinePanel() {
               <button
                 type="button"
                 className="link-btn"
-                onClick={() => openHelp("docs/COMMON-FAILURES-FIXES.md")}
+                onClick={() => openHelp("docs/onboarding/troubleshooting.md")}
               >
-                Common failures &amp; fixes
+                Troubleshooting FAQ
               </button>
               {" · "}
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => openHelp("docs/TROUBLESHOOTING.md")}
-              >
-                Troubleshooting guide
+              <button type="button" className="link-btn" onClick={openDoc}>
+                Figma pipeline guide
               </button>
             </p>
           </>
         )}
         <details className="raw" open={!result.ok}>
-          <summary>Conversion log</summary>
+          <summary>Pipeline log</summary>
           <LogStream lines={lines} />
         </details>
       </section>
@@ -157,13 +108,12 @@ export function PipelinePanel() {
   return (
     <section className="panel">
       <header className="panel-header">
-        <h1>Convert design</h1>
+        <h1>{PIPELINE.title}</h1>
       </header>
       <p className="panel-intro">
-        Turn a design into a live Wix Studio site. Figma and Canva run as autonomous Claude Code
-        workflows (compile the BuildPlan, apply, QA); InDesign runs the deterministic{" "}
-        <code>aurelius pipeline indesign</code> CLI, which compiles a plan you then apply from the{" "}
-        <strong>Wix site</strong> tab.
+        Turn a Figma design into a working, tested app. This launches the same{" "}
+        <code>/build-from-figma</code> command a terminal user would type, in a headless Claude Code
+        session, and streams its progress here.
       </p>
 
       {error && <div className="banner banner-error">Could not start: {error}</div>}
@@ -172,103 +122,48 @@ export function PipelinePanel() {
         className="form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (canLaunch) launch();
+          if (canLaunch) run({ kind: "figma", figmaUrl: figmaUrl.trim() });
         }}
       >
         <label className="field">
-          <span>Pipeline</span>
-          <select value={kind} onChange={(e) => setKind(e.target.value as PipelineKind)}>
-            {KINDS.map((k) => (
-              <option key={k.value} value={k.value}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span>Site slug</span>
+          <span>Figma file URL (Dev Mode)</span>
           <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="my-site"
+            value={figmaUrl}
+            onChange={(e) => setFigmaUrl(e.target.value)}
+            placeholder="https://www.figma.com/design/<key>/<name>?node-id=1-2"
             spellCheck={false}
           />
+          {figmaUrl.trim() !== "" && !urlValid && (
+            <span className="field-error">Enter a figma.com file, design, or proto URL.</span>
+          )}
         </label>
 
-        {kind === "figma" && (
-          <label className="field">
-            <span>Figma file URL (Dev Mode)</span>
-            <input
-              value={figmaUrl}
-              onChange={(e) => setFigmaUrl(e.target.value)}
-              placeholder="https://www.figma.com/design/…"
-              spellCheck={false}
-            />
-            {figmaUrl.trim() !== "" && !figmaUrlValid && (
-              <span className="field-error">Enter a valid figma.com URL.</span>
-            )}
-          </label>
-        )}
-
-        {kind === "canva" && (
-          <div className="field">
-            <span>Canva export directory</span>
-            <div className="input-row">
-              <input
-                value={canvaExport}
-                onChange={(e) => setCanvaExport(e.target.value)}
-                placeholder="./canva-export"
-                spellCheck={false}
-              />
-              <button type="button" onClick={browseDir}>
-                Browse…
-              </button>
-            </div>
-          </div>
-        )}
-
-        {kind === "indesign" && (
-          <div className="field">
-            <span>InDesign file (.idml or .pdf)</span>
-            <div className="input-row">
-              <input
-                value={indesignFile}
-                onChange={(e) => setIndesignFile(e.target.value)}
-                placeholder="./brochure.idml"
-                spellCheck={false}
-              />
-              <button type="button" onClick={browseFile}>
-                Browse…
-              </button>
-            </div>
-          </div>
-        )}
-
-        {kind === "figma" && (
-          <p className="hint-note">
-            Figma conversion needs <strong>Figma Dev Mode</strong> (a Figma Professional plan or
-            higher) and opens a headless Claude Code session — Claude Code with Figma access must be
-            configured.
-          </p>
-        )}
-
-        {kind === "canva" && (
-          <p className="hint-note">
-            Canva conversion opens a headless Claude Code session that reads the exported HTML/CSS
-            and drives the canva-to-wix workflow.
-          </p>
-        )}
+        <p className="hint-note">
+          Needs <strong>Figma Dev Mode</strong> (Professional plan or higher) and Claude Code with
+          the Figma MCP server configured — see the pipeline guide.
+        </p>
 
         <p className="panel-intro">
           <button type="button" className="link-btn" onClick={openDoc}>
-            Learn more about the {KINDS.find((k) => k.value === kind)?.label} pipeline →
+            Figma pipeline guide →
           </button>
+          {LINKS.map((l) => (
+            <span key={l.url}>
+              {" · "}
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => void bridge().openExternal(l.url)}
+              >
+                {l.label}
+              </button>
+            </span>
+          ))}
         </p>
 
         <div className="form-actions">
           <button type="submit" disabled={!canLaunch}>
-            Launch conversion
+            {FIGMA.cta}
           </button>
         </div>
       </form>

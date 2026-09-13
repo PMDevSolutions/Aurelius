@@ -6,7 +6,6 @@ import { PipelinePanel } from "./components/PipelinePanel";
 import { PrereqPanel } from "./components/PrereqPanel";
 import { ProjectGate } from "./components/ProjectGate";
 import { QaPanel } from "./components/QaPanel";
-import { SitePanel } from "./components/SitePanel";
 import { WizardPanel } from "./components/WizardPanel";
 
 // The shell is generic: the brand and the nav come from the active manifest, not
@@ -87,7 +86,6 @@ export function App() {
           <>
             {view === "prereq" && <PrereqPanel />}
             {view === "wizard" && <WizardPanel />}
-            {view === "site" && <SitePanel />}
             {view === "pipeline" && <PipelinePanel />}
             {view === "qa" && <QaPanel />}
           </>

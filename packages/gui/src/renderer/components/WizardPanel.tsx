@@ -1,61 +1,42 @@
-import { useEffect, useState, type FormEvent } from "react";
-import type { InitInput, SiteMode } from "../../shared/types/init";
-import { bridge } from "../api/bridge";
+import { useState, type FormEvent } from "react";
+import { activeManifest, getScreen } from "../../shared/product";
+import type { InitInput } from "../../shared/types/init";
 import { useInit } from "../hooks/useInit";
 import { LogStream } from "./LogStream";
 
+const WIZARD = getScreen(activeManifest, "wizard");
+const FRAMEWORKS = WIZARD.extras?.frameworks ?? [];
+const NAME_RULE = /^[a-z0-9-]+$/;
+
 const DEFAULT_INPUT: InitInput = {
   name: "",
-  title: "",
-  apiKey: "",
-  accountId: "",
-  siteMode: "skip",
-  siteId: "",
-  git: true,
+  renderer: FRAMEWORKS[0]?.id ?? "vite",
+  preview: false,
 };
-
-const SITE_MODES: { value: SiteMode; label: string }[] = [
-  { value: "skip", label: "Not yet — record the steps in docs/NEXT-STEPS.md" },
-  { value: "create", label: "Create a new Wix Studio site (needs API key + account id)" },
-  { value: "connect", label: "Connect an existing site by id" },
-];
 
 export function WizardPanel() {
   const [input, setInput] = useState<InitInput>(DEFAULT_INPUT);
   const { result, error, running, lines, run, reset } = useInit();
 
-  useEffect(() => {
-    bridge()
-      .getProject()
-      .then((p) => {
-        if (!p.valid) return;
-        const base = p.root.split(/[\\/]/).pop() ?? "";
-        setInput((prev) => (prev.name ? prev : { ...prev, name: base }));
-      })
-      .catch(() => {});
-  }, []);
-
   function update<K extends keyof InitInput>(key: K, value: InitInput[K]): void {
     setInput((prev) => ({ ...prev, [key]: value }));
   }
 
-  const hasCreds = input.apiKey.trim() !== "" && input.accountId.trim() !== "";
-  const canSubmit =
-    input.name.trim() !== "" &&
-    (input.siteMode !== "connect" || input.siteId.trim() !== "") &&
-    (input.siteMode !== "create" || hasCreds) &&
-    !running;
+  const name = input.name.trim();
+  const nameValid = NAME_RULE.test(name);
+  const canSubmit = nameValid && !running;
 
   function submit(e: FormEvent): void {
     e.preventDefault();
-    run(input);
+    if (canSubmit) run({ ...input, name });
   }
 
   if (result) {
+    const label = FRAMEWORKS.find((f) => f.id === result.renderer)?.label ?? result.renderer;
     return (
       <section className="panel">
         <header className="panel-header">
-          <h1>Setup wizard</h1>
+          <h1>{WIZARD.title}</h1>
           <button type="button" onClick={reset}>
             Start over
           </button>
@@ -63,38 +44,27 @@ export function WizardPanel() {
         {result.ok ? (
           <>
             <div className="banner banner-ok">
-              <strong>Project ready: {result.projectName}</strong>
-              <span className="summary">
-                Site title: {result.siteTitle}
-                {result.siteMode === "connect" && result.siteId
-                  ? ` · Connected to ${result.siteId}`
-                  : result.siteMode === "create"
-                    ? " · Site provisioning requested"
-                    : " · No site yet"}
-              </span>
+              <strong>
+                {result.preview ? "Preview complete" : `Project created: ${result.projectName}`}
+              </strong>
+              <span className="summary">{label}</span>
             </div>
-            <div className="next-steps">
-              <h2>Next steps</h2>
-              <ol>
-                <li>
-                  Open the <strong>Wix site</strong> tab to check the connection
-                  {result.siteMode === "skip" && (
-                    <>
-                      {" "}
-                      (the exact commands were written to <code>docs/NEXT-STEPS.md</code>)
-                    </>
-                  )}
-                  .
-                </li>
-                <li>
-                  Convert a design from the <strong>Convert design</strong> tab — it compiles a
-                  BuildPlan under <code>.aurelius/plans/</code>.
-                </li>
-                <li>
-                  Apply the plan and publish from the <strong>Wix site</strong> tab.
-                </li>
-              </ol>
-            </div>
+            {!result.preview && (
+              <div className="next-steps">
+                <h2>Next steps</h2>
+                <ol>
+                  <li>
+                    In a terminal: <code>cd {result.projectName} && pnpm install && pnpm dev</code>
+                  </li>
+                  <li>
+                    Build the app from a design on the <strong>Build from Figma</strong> tab.
+                  </li>
+                  <li>
+                    Verify it on the <strong>Visual QA</strong> tab while the dev server runs.
+                  </li>
+                </ol>
+              </div>
+            )}
           </>
         ) : (
           <div className="banner banner-error">
@@ -102,7 +72,7 @@ export function WizardPanel() {
             <span>{result.error}</span>
           </div>
         )}
-        <details className="raw" open={!result.ok}>
+        <details className="raw" open={!result.ok || result.preview}>
           <summary>Setup log</summary>
           <LogStream lines={lines} />
         </details>
@@ -114,10 +84,10 @@ export function WizardPanel() {
     return (
       <section className="panel">
         <header className="panel-header">
-          <h1>Setting up…</h1>
+          <h1>{input.preview ? "Previewing…" : "Creating project…"}</h1>
         </header>
         <p className="panel-intro">
-          Running project setup — the same code path as <code>pnpm run init</code>.
+          Running <code>scripts/setup-project.sh</code> — the same script as the CLI.
         </p>
         <LogStream lines={lines} />
       </section>
@@ -127,114 +97,58 @@ export function WizardPanel() {
   return (
     <section className="panel">
       <header className="panel-header">
-        <h1>Setup wizard</h1>
+        <h1>{WIZARD.title}</h1>
       </header>
       <p className="panel-intro">
-        Configure the project the same way <code>pnpm run init</code> does — this calls the
-        wizard&rsquo;s <code>apply()</code> directly, so the GUI and CLI stay in lockstep. It writes
-        the Wix credentials into <code>.env</code>, optionally provisions or connects the target
-        Studio site, and verifies the result.
+        Scaffold a new app the same way <code>./scripts/setup-project.sh</code> does: pick a name
+        and a framework, and the project is created next to this checkout&rsquo;s{" "}
+        <code>scripts/</code> folder with the shared Aurelius configs.
       </p>
 
       {error && <div className="banner banner-error">Could not start setup: {error}</div>}
 
       <form className="form" onSubmit={submit}>
         <label className="field">
-          <span>Project slug</span>
+          <span>Project name</span>
           <input
             value={input.name}
             onChange={(e) => update("name", e.target.value)}
-            placeholder="my-site"
+            placeholder="my-app"
             spellCheck={false}
           />
+          {input.name.trim() !== "" && !nameValid && (
+            <span className="field-error">Lowercase letters, numbers, and hyphens only.</span>
+          )}
         </label>
 
-        <label className="field">
-          <span>
-            Site title <em>(optional)</em>
-          </span>
-          <input
-            value={input.title}
-            onChange={(e) => update("title", e.target.value)}
-            placeholder="My Site"
-          />
-        </label>
-
-        <label className="field">
-          <span>
-            Wix API key <em>(optional — dry-run works without it)</em>
-          </span>
-          <input
-            type="password"
-            value={input.apiKey}
-            onChange={(e) => update("apiKey", e.target.value)}
-            placeholder="account-level key from manage.wix.com/account/api-keys"
-            spellCheck={false}
-          />
-        </label>
-
-        <label className="field">
-          <span>
-            Wix account id <em>(optional)</em>
-          </span>
-          <input
-            value={input.accountId}
-            onChange={(e) => update("accountId", e.target.value)}
-            placeholder="00000000-0000-0000-0000-000000000000"
-            spellCheck={false}
-          />
-        </label>
-
-        <label className="field">
-          <span>Target Wix site</span>
-          <select
-            value={input.siteMode}
-            onChange={(e) => update("siteMode", e.target.value as SiteMode)}
-          >
-            {SITE_MODES.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {input.siteMode === "connect" && (
-          <label className="field">
-            <span>Site id</span>
-            <input
-              value={input.siteId}
-              onChange={(e) => update("siteId", e.target.value)}
-              placeholder="site GUID (aurelius site list shows them)"
-              spellCheck={false}
-            />
-          </label>
-        )}
-
-        {input.siteMode === "create" && !hasCreds && (
-          <p className="hint-note">
-            Creating a site calls the Wix API, so it needs both the API key and the account id
-            above.
-          </p>
-        )}
+        <div className="field">
+          <span>Framework</span>
+          {FRAMEWORKS.map((f) => (
+            <label key={f.id} className="field-check">
+              <input
+                type="radio"
+                name="renderer"
+                value={f.id}
+                checked={input.renderer === f.id}
+                onChange={() => update("renderer", f.id)}
+              />
+              <span>{f.label}</span>
+            </label>
+          ))}
+        </div>
 
         <label className="field-check">
           <input
             type="checkbox"
-            checked={input.git}
-            onChange={(e) => update("git", e.target.checked)}
+            checked={input.preview}
+            onChange={(e) => update("preview", e.target.checked)}
           />
-          <span>Initialize a git repository</span>
+          <span>Preview only (dry run — print the plan, create nothing)</span>
         </label>
-
-        <p className="hint-note">
-          Editor automation (the consent-gated browser plane) is <em>not</em> enabled here — when
-          you need it, run <code>pnpm aurelius login --editor</code> in a terminal.
-        </p>
 
         <div className="form-actions">
           <button type="submit" disabled={!canSubmit}>
-            Run setup
+            {input.preview ? "Preview" : (WIZARD.steps[0]?.cta ?? "Create project")}
           </button>
         </div>
       </form>
