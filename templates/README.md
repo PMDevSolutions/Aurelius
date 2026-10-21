@@ -81,6 +81,8 @@ Copies shared templates plus Vite-specific config.
 |------|---------|
 | `astro.config.mjs` | Astro config with `@astrojs/react` (islands) + `@tailwindcss/vite` (Tailwind v4) |
 | `package.json` | Astro + React island deps; Vitest + RTL + jsdom for tests |
+| `pnpm-lock.yaml` | Locked dependency tree that `setup-project.sh` installs from |
+| `pnpm-workspace.yaml` | Marks the template as its own pnpm root, so pnpm and Dependabot update this lockfile rather than the Aurelius root workspace's |
 | `tsconfig.json` | Extends `astro/tsconfigs/strict`, `jsx: react-jsx` for islands |
 | `tailwind.config.mjs` | Tailwind content globs covering `.astro`, `.tsx`, `.ts`, `.md`, `.mdx` |
 | `vitest.config.ts` | `getViteConfig` wiring jsdom + Astro Container API testing |
