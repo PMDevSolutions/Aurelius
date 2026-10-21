@@ -1,0 +1,4 @@
+# Makes this directory its own pnpm root. Without it, pnpm (and Dependabot)
+# walk up to the nearest parent pnpm-workspace.yaml, resolve that workspace
+# instead, and never update this project's pnpm-lock.yaml.
+# No `packages` key: this is a single-project workspace.
