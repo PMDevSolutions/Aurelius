@@ -14,7 +14,7 @@ To participate in voting, you need to link your Patreon and GitHub accounts:
 
 1. Go to your [Patreon settings](https://www.patreon.com/settings/apps)
 2. Connect your GitHub account
-3. Join the [Aurelius Patreon community](https://www.patreon.com/aurelius) (if not already a member)
+3. Join the [Aurelius Patreon community](https://www.patreon.com/PaulMakesThings) (if not already a member)
 4. Visit [Aurelius Discussions](https://github.com/PMDevSolutions/Aurelius/discussions)
 
 ### 2. Access the Roadmap Category

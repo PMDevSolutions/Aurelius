@@ -1,5 +1,7 @@
 # Aurelius
 
+[![Patreon](https://img.shields.io/badge/Patreon-Support-orange?logo=patreon)](https://www.patreon.com/PaulMakesThings?utm_source=github)
+
 A Claude Code-integrated multi-framework app development framework with TypeScript, Tailwind CSS, and automated design-to-code pipelines.
 
 ## What This Framework Provides
