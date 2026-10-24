@@ -176,7 +176,7 @@ project-root/
 ├── docs/                 # Documentation
 └── .claude/              # Claude Code configuration
     ├── agents/           # 56 custom agents
-    ├── skills/           # 24 development skills
+    ├── skills/           # 32 development skills
     └── pipeline.config.json
 ```
 
@@ -203,7 +203,7 @@ pnpm build
 
 - `docs/figma-to-react/README.md` -- Figma-to-React conversion pipeline
 - `docs/canva-to-react/README.md` -- Canva-to-React conversion pipeline
-- `.claude/skills/README.md` -- Skills catalog (24 skills)
+- `.claude/skills/README.md` -- Skills catalog (32 skills)
 - `.claude/CUSTOM-AGENTS-GUIDE.md` -- Agent catalog (56 agents)
 - `.claude/PLUGINS-REFERENCE.md` -- Plugin reference
 - `scripts/README.md` -- Scripts reference

@@ -27,7 +27,9 @@ const list = (p) => {
   try { return readdirSync(p); } catch { return []; }
 };
 const day = (iso) => (iso ? String(iso).slice(0, 10) : "");
-const byPhase = (a, b) => parseFloat(a) - parseFloat(b);
+// Phase keys: "C0", "C1" (/build-from-conversation) come before "0" … "9".
+const phaseOrder = (k) => (/^C\d+$/.test(k) ? -100 + Number(k.slice(1)) : parseFloat(k));
+const byPhase = (a, b) => phaseOrder(a) - phaseOrder(b);
 
 // --- Pipeline run in flight -------------------------------------------------
 const state = readJson(join(projectDir, ".claude", "plans", "pipeline-state.json"));

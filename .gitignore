@@ -2,7 +2,6 @@
 .claude/*
 !.claude/agents/
 !.claude/skills/
-!.claude/commands/
 !.claude/hooks/
 !.claude/*.md
 !.claude/settings.json

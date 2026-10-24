@@ -1,6 +1,7 @@
 ---
 name: figma-to-react-workflow
 description: Orchestrates end-to-end Figma-to-React conversion pipeline with enforced TDD, automated pixel-diff visual QA, E2E testing, and app-type awareness (web apps, Chrome extensions, PWAs). Keywords: Figma to React, design tokens, autonomous component generation, Figma conversion, Tailwind config, component library, TDD, E2E, pixel-perfect
+argument-hint: "[figma-url]"
 ---
 
 # Figma-to-React Autonomous Workflow

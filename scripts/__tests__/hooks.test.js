@@ -620,6 +620,25 @@ describe("session-context (SessionStart)", () => {
     expect(out).toContain("continues from phase 5");
   });
 
+  it("orders /build-from-conversation's C0 and C1 before the numbered phases", () => {
+    const dir = aureliusProject();
+    mkdirSync(join(dir, ".claude", "plans"), { recursive: true });
+    writeFileSync(
+      join(dir, ".claude", "plans", "pipeline-state.json"),
+      JSON.stringify({
+        pipeline: "figma",
+        phase: "C1",
+        phases: {
+          2: { name: "token-lock", status: "pending" },
+          C1: { name: "design-brief-to-figma", status: "running" },
+          C0: { name: "conversation-intake", status: "done" },
+          1: { name: "intake", status: "pending" },
+        },
+      }),
+    );
+    expect(runHook("session-context.sh", start, { cwd: dir })).toContain("continues from phase C1");
+  });
+
   it("finds the lockfile of an app that lives beside the framework", () => {
     const dir = aureliusProject();
     mkdirSync(join(dir, "my-app", "src", "styles"), { recursive: true });

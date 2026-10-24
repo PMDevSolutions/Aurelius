@@ -1,15 +1,6 @@
 ---
 name: animation-motion
-description: Animation patterns for React — Framer Motion, CSS transitions, page transitions, micro-interactions, scroll-driven animations, and reduced-motion accessibility.
-triggers:
-  - "animation"
-  - "framer motion"
-  - "transition"
-  - "micro-interaction"
-  - "page transition"
-  - "scroll animation"
-  - "motion"
-  - "animate"
+description: Animation patterns for React — Framer Motion, CSS transitions, page transitions, micro-interactions, scroll-driven animations, and reduced-motion accessibility. Keywords: animation, framer motion, transition, micro-interaction, page transition, scroll animation, motion, animate
 ---
 
 # Animation & Motion — React Patterns

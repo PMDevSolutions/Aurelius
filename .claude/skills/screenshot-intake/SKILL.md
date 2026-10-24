@@ -1,6 +1,7 @@
 ---
 name: screenshot-intake
 description: Use when a user provides a URL or screenshot files and wants to build an app from them, or when starting /build-from-screenshot. Captures pages via Chrome DevTools or Playwright MCP, analyzes structure with Claude vision, and produces build-spec.json. Keywords: screenshot intake, URL capture, build spec, screenshot discovery, website clone, screenshot interview, image to code, URL to code
+argument-hint: "<url | image-path...>"
 ---
 
 # Screenshot Intake — Structured Discovery

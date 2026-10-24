@@ -1,15 +1,6 @@
 ---
 name: form-handling
-description: Form patterns with React Hook Form + Zod validation. Covers typed forms, field arrays, multi-step wizards, server actions, and accessible error handling.
-triggers:
-  - "form"
-  - "form handling"
-  - "react hook form"
-  - "zod"
-  - "validation"
-  - "form validation"
-  - "multi-step form"
-  - "wizard"
+description: Form patterns with React Hook Form + Zod validation. Covers typed forms, field arrays, multi-step wizards, server actions, and accessible error handling. Keywords: form, form handling, react hook form, zod, validation, form validation, multi-step form, wizard
 ---
 
 # Form Handling — React Hook Form + Zod

@@ -1,6 +1,8 @@
 ---
 name: storybook-story-generation
 description: Use after React components are built (Phase 4.5 of the Figma/Canva/screenshot pipeline) or whenever a project needs Storybook coverage — auto-generates .stories.tsx and .mdx docs from components via ts-morph AST parsing, with prop controls, variant stories, action args, and default args. Keywords: Storybook, generate stories, .stories.tsx, MDX docs, argTypes, controls, autodocs, CSF3, variant stories, action args, component documentation, story generation, ts-morph
+argument-hint: "[--force] [--dry-run] [--no-mdx]"
+allowed-tools: Bash(./scripts/generate-stories.sh *), Bash(pnpm build-storybook *)
 ---
 
 # Storybook Story Generation — AST-Based Stories + MDX Docs

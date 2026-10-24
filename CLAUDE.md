@@ -18,7 +18,7 @@ The framework is designed for:
 project-root/
 ├── .claude/              # Claude Code configuration
 │   ├── agents/           # 56 specialized agents
-│   ├── skills/           # 24 React-specific skills
+│   ├── skills/           # 32 React-specific skills
 │   ├── commands/         # Custom slash commands
 │   ├── hooks/            # Hook scripts (automated hooks configured in settings.json)
 │   └── pipeline.config.json  # Pipeline thresholds, iteration limits, app types
@@ -255,7 +255,7 @@ Agents are invoked automatically based on task context.
 
 ---
 
-### Skills (24 Total)
+### Skills (32 Total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -640,6 +640,6 @@ node scripts/metrics-dashboard.js summary  # Quick metrics summary
 ---
 
 **Last Updated:** 2026-07-01
-**Architecture:** 56 agents, 24 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 56 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
+**Architecture:** 56 agents, 32 skills, 4 plugins + gh CLI, Figma + Canva + Playwright MCP, 56 scripts, 8 hooks, 5 renderers (nextjs, vite, astro, sveltekit, expo)
 
 > **Keeping counts in sync:** When adding or removing agents, skills, scripts, or hooks, update all count references across the project. Search for the old count number in `*.md` files to find all references: `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `docs/onboarding/`, `docs/react-development/`, and `.claude/AGENT-NAMING-GUIDE.md`. The agent and skill counts are enforced automatically by `scripts/check-doc-counts.sh` (run in CI and on pre-commit), which recounts `.claude/agents/` and `.claude/skills/` and fails on any documented count that disagrees.

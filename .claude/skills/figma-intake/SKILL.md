@@ -1,6 +1,7 @@
 ---
 name: figma-intake
 description: Structured interview that auto-discovers Figma file structure, project context, and asks 3-5 targeted questions to produce a build-spec.json. Entry point for the autonomous build pipeline. Keywords: Figma intake, build spec, project discovery, figma interview, build plan
+argument-hint: "<figma-url>"
 ---
 
 # Figma Intake — Structured Discovery

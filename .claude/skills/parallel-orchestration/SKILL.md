@@ -1,9 +1,7 @@
 ---
 name: parallel-orchestration
-description: Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting dependency graphs and resource constraints
-globs:
-  - ".claude/pipeline.config.json"
-  - ".claude/commands/build-from-*.md"
+description: Concurrent phase runner for the build pipelines. Dispatches Phases 4.5-9 in parallel after the component-lanes workflow, or all of Phases 4-9 when workflows are unavailable, respecting the dependency graph and resource constraints in pipeline.config.json
+user-invocable: false
 ---
 
 # Parallel Orchestration
@@ -16,8 +14,10 @@ The scheduler produces real-time streaming output as phases start and finish, an
 
 ## When to Use
 
-- **Pipeline invocation:** Called by `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` after the sequential phases (0-3: token-sync, intake, token-lock, tdd-scaffold) complete. Phases 4+ are handed to this skill for parallel dispatch.
-- **Standalone:** Invoke directly for ad-hoc parallel work by providing a list of independent tasks.
+- **Pipeline invocation:** Called by `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` after the sequential phases (0-3: token-sync, intake, token-lock, tdd-scaffold) complete. When the Workflow tool is available, the pipelines run the per-item work of Phases 4-5 (component builds, visual-diff rounds) through the `component-lanes` workflow (`.claude/workflows/component-lanes.js`) first, then hand this skill the phase-level remainder: `storybook`, `dark-mode`, `e2e-tests`, `cross-browser`, `quality-gate`, `responsive`, `report`. Without workflows, this skill runs all of Phases 4-9.
+- **Standalone:** Claude can apply it to ad-hoc parallel work given a list of independent tasks. It is not offered as a slash command (`user-invocable: false`).
+
+This skill schedules phases in prose. The workflow is the deterministic part: loop bounds, the per-component lanes and the test-file checks are enforced in its code, so prefer it for Phases 4-5 whenever it is available.
 
 ## Input
 
@@ -233,7 +233,7 @@ The scheduler treats each task as a phase with no dependencies and no resource c
 
 ## Integration with Pipeline Commands
 
-Pipeline commands (`/build-from-figma`, `/build-from-canva`, `/build-from-screenshot`) invoke this skill after completing the sequential phases 0-3. The handoff looks like:
+Pipeline skills (`/build-from-figma`, `/build-from-canva`, `/build-from-screenshot`) invoke this skill after completing the sequential phases 0-3, and after the `component-lanes` workflow when it ran (then `component-build` and `visual-diff` are not in the requested set, so their dependents treat them as pre-satisfied). Each phase result is also written to `.claude/plans/pipeline-state.json`. The handoff without the workflow looks like:
 
 ```
 # Phases 0-3 run sequentially (mandatory ordering)

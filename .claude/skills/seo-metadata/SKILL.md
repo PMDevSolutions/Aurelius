@@ -1,16 +1,6 @@
 ---
 name: seo-metadata
-description: SEO patterns for React apps — Next.js Metadata API, Open Graph, structured data (JSON-LD), sitemap generation, and Core Web Vitals optimization.
-triggers:
-  - "SEO"
-  - "metadata"
-  - "open graph"
-  - "og image"
-  - "sitemap"
-  - "structured data"
-  - "json-ld"
-  - "meta tags"
-  - "social sharing"
+description: SEO patterns for React apps — Next.js Metadata API, Open Graph, structured data (JSON-LD), sitemap generation, and Core Web Vitals optimization. Keywords: SEO, metadata, open graph, og image, sitemap, structured data, json-ld, meta tags, social sharing
 ---
 
 # SEO & Metadata — React Patterns

@@ -1,10 +1,10 @@
 # Skills Catalog
 
-**Last Updated:** 2026-07-01
-**Total Skills:** 24
+**Last Updated:** 2026-10-24
+**Total Skills:** 32
 **Location:** `.claude/skills/`
 
-Skills are documentation-based workflows that trigger automatically when relevant keywords appear in conversation. They provide systematic guidance, not tool integrations.
+Skills are workflows and reference material in `.claude/skills/<name>/SKILL.md`. Claude loads one when a request matches its `description`, and every skill is also a slash command (`/<name>`). Custom slash commands were merged into skills, so the former `.claude/commands/` files live here now; a skill directory can carry supporting files beside its `SKILL.md`. Pipelines and other long runs with side effects set `disable-model-invocation: true`, so only a person starts them.
 
 ---
 
@@ -44,9 +44,9 @@ These skills power the `/build-from-figma` and `/build-from-canva` autonomous pi
 - **Triggers:** "visual QA", "compare to Figma", "screenshot diff", "verify app"
 - **Works with:** visual-qa-agent, Chrome DevTools MCP, Figma MCP
 
-#### 7. parallel-orchestration (Phases 4-9)
-- **Purpose:** Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting the dependency graph and resource constraints defined in `pipeline.config.json`.
-- **Triggers:** Invoked by pipeline commands after Phase 3 (TDD gate)
+#### 7. parallel-orchestration (Phases 4.5-9)
+- **Purpose:** Concurrent phase runner that dispatches independent pipeline phases in parallel, respecting the dependency graph and resource constraints defined in `pipeline.config.json`. Runs Phases 4.5-9 after the `component-lanes` workflow (`.claude/workflows/component-lanes.js`) has built the components and run the visual-diff rounds, or all of Phases 4-9 when workflows are unavailable.
+- **Triggers:** Invoked by the pipeline skills after Phase 3 (TDD gate); not a slash command (`user-invocable: false`)
 - **Works with:** all build/QA phases; falls back to sequential execution when disabled
 
 ### Canva & Screenshot Pipeline Skills
@@ -154,6 +154,44 @@ These skills provide patterns and best practices. They trigger on relevant keywo
 - **Triggers:** Phase 4.5 of `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` (after component build), "generate Storybook stories", "auto-generate stories", "add MDX docs"
 - **Output:** `src/components/**/*.stories.tsx` and `src/components/**/*.mdx`
 
+### Pipeline Entry Skills
+
+The four autonomous pipelines. Each is user-invoked only (`disable-model-invocation: true`), tracks its run in `.claude/plans/pipeline-state.json` (the SessionStart hook reports a run in flight), and runs Phases 4-5 through the `component-lanes` workflow.
+
+#### 25. build-from-figma
+- **Purpose:** Figma URL to a working, tested app: intake, token lockfile, failing tests first, per-component build lanes, pixel-diff visual QA, E2E, cross-browser, quality gate and report. Defines the state-file shape the other pipelines share.
+- **Invocation:** `/build-from-figma <figma-url>`
+
+#### 26. build-from-canva
+- **Purpose:** The same pipeline from a Canva design, with AI token inference that the user confirms, and the Canva exports as visual references.
+- **Invocation:** `/build-from-canva <canva-design-url>`
+
+#### 27. build-from-screenshot
+- **Purpose:** The same pipeline from a live URL or image files, for React, Vue, Svelte or React Native targets.
+- **Invocation:** `/build-from-screenshot <url | image-path...>`
+
+#### 28. build-from-conversation
+- **Purpose:** Interview, design brief and a generated Figma file, then the `/build-from-figma` pipeline. No design file needed.
+- **Invocation:** `/build-from-conversation [app description]`
+
+### Quality Skills
+
+#### 29. verify-all
+- **Purpose:** Runs every local quality check through `./scripts/verify-all.sh` and prints a summary table. User-invoked only.
+- **Invocation:** `/verify-all [--skip a,b] [--include a,b] [--list]`
+
+#### 30. ci
+- **Purpose:** The same checks in CI mode: JSON output and an exit code for automation. User-invoked only.
+- **Invocation:** `/ci [--skip a,b] [--include a,b]`
+
+#### 31. lint
+- **Purpose:** ESLint and Prettier with auto-fix (or `--check`), plus a type check.
+- **Invocation:** `/lint [--check]`, or "lint this", "format the code"
+
+#### 32. test
+- **Purpose:** Vitest for the whole suite, one file, a name pattern, or with coverage.
+- **Invocation:** `/test [file | -t pattern] [--coverage]`, or "run the tests"
+
 ---
 
 ## Pipeline Flow
@@ -185,14 +223,15 @@ Figma Design                    Canva Design
         +-- react-accessibility (WCAG compliance)
                     |
                     v
-    [Phase 4] figma-to-react-workflow (Figma)
-              OR canva-react-converter (Canva)
-              → components pass tests (GREEN)
+    [Phases 4-5] component-lanes workflow
+              → one converter lane per component, tier by tier (GREEN)
+              → bounded visual-diff rounds, one fixer per component
+              (figma-react-converter or canva-react-converter; visual-qa-agent diffs)
                     |
         +-- [Phase 4.5] storybook-story-generation → stories + MDX (non-blocking)
                     |
                     v
-    [Phase 5] visual-qa-verification → pixel-diff loop (max 5 iterations)
+    [Phases 4.5-9] parallel-orchestration → dark mode, E2E, cross-browser, quality gate, report
                     |
                     v
     [Phase 6] e2e-test-generator → Playwright E2E tests
@@ -215,16 +254,21 @@ Supporting skills (used throughout):
 
 | Type | Purpose | Invocation |
 |------|---------|------------|
-| **Skills** | Systematic workflows and best practices | Automatic keyword detection |
-| **Agents** | Specialized task execution | Task tool (auto or explicit) |
-| **Plugins** | Tool integrations and commands | Manual `/` commands |
+| **Skills** | Workflows, pipelines and best practices | Matched by `description`, or `/<name>` |
+| **Agents** | Specialized task execution in a subagent | Agent tool (auto or explicit) |
+| **Workflows** | Deterministic multi-agent orchestration (`.claude/workflows/`) | The Workflow tool, by name |
+| **Plugins** | A package of agents, skills, hooks and workflows for other repos | `claude plugin install` |
 
 ## Skill File Structure
 
 ```yaml
 ---
-name: skill-name
+name: skill-name                 # matches the directory name; the slash command is /skill-name
 description: Use when [triggers]. Keywords: term1, term2
+argument-hint: "<required> [optional]"   # when the skill takes $ARGUMENTS
+disable-model-invocation: true   # long pipelines and anything with side effects: user-only
+user-invocable: false            # pipeline-internal: hidden from the / menu
+allowed-tools: Bash(./scripts/my-check.sh *), Read   # pre-approved during the skill's turn
 ---
 
 # Skill Name

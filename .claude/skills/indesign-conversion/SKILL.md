@@ -1,6 +1,7 @@
 ---
 name: indesign-conversion
 description: Convert an exported Adobe InDesign IDML package or PDF into typed React components, design tokens, and Storybook stories via the @aurelius/pipeline InDesign pipeline. Use when a designer hands you an .idml or .pdf and you need a starting React component set. Keywords: InDesign to React, IDML, PDF to React, indesign pipeline, design tokens from InDesign, brochure to React, print to web, aurelius pipeline indesign
+argument-hint: "<file.idml | file.pdf> [--output dir]"
 ---
 
 # InDesign Conversion
