@@ -1,6 +1,7 @@
 ---
 name: e2e-test-generator
 description: Generates Playwright E2E tests from build-spec.json with app-type-aware templates for web apps, Chrome extensions, and PWAs. Reads e2e flows from the build spec and produces runnable test files. Keywords: E2E tests, Playwright, end-to-end testing, chrome extension testing, PWA testing, integration tests, browser testing
+allowed-tools: Bash(pnpm exec playwright test *)
 ---
 
 # E2E Test Generator — App-Type-Aware Playwright Tests

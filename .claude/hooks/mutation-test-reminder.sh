@@ -1,34 +1,32 @@
 #!/usr/bin/env bash
-# mutation-test-reminder.sh — PostToolUse hook
-# Suggests running Stryker mutation tests after a fully-passing vitest run,
-# but only when pipeline.config.json -> mutationTesting.reminder is true.
+# mutation-test-reminder.sh — PostToolUse hook (matcher: Bash, if: "Bash(*vitest*)").
 #
-# Args:
-#   $1  TOOL_INPUT
-#   $2  TOOL_OUTPUT
+# After a vitest run where every test passed, in an Aurelius project whose
+# pipeline.config.json sets mutationTesting.reminder to true, suggest a Stryker
+# run to check that the tests catch real faults.
 #
-# Exit: always 0.
-
+# Input: the hook event as JSON on stdin. Output: JSON on stdout, or nothing.
+# Always exits 0.
 set -u
-TOOL_INPUT="${1:-}"
-TOOL_OUTPUT="${2:-}"
 trap 'exit 0' ERR
 
-if ! echo "$TOOL_INPUT" | grep -q "vitest"; then
-  exit 0
-fi
-if ! echo "$TOOL_OUTPUT" | grep -qE "Tests\s+[0-9]+ passed"; then
-  exit 0
-fi
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/hook-io.sh
+source "$HOOK_DIR/lib/hook-io.sh"
+# shellcheck source=lib/pipeline-helpers.sh
+source "$HOOK_DIR/lib/pipeline-helpers.sh"
 
-if [ ! -f .claude/pipeline.config.json ] || ! command -v node >/dev/null 2>&1; then
-  exit 0
-fi
+hook_read_input
+hook_read_context
 
-REMINDER="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.mutationTesting?.reminder ?? false);' 2>/dev/null)" || REMINDER="false"
+[ "$TOOL_NAME" = "Bash" ] || exit 0
+case "$TOOL_COMMAND" in *vitest*) ;; *) exit 0 ;; esac
+OUTPUT="$(pipeline_bash_output)"
+printf '%s' "$OUTPUT" | grep -Eq 'Tests[[:space:]]+[0-9]+ passed' || exit 0
+printf '%s' "$OUTPUT" | grep -Eq '[0-9]+ failed' && exit 0
+CONFIG="$(pipeline_config_file "$(pipeline_app_dir "$TOOL_COMMAND")")"
+[ -n "$CONFIG" ] || exit 0
+[ "$(pipeline_config_get "$CONFIG" mutationTesting.reminder false)" = "true" ] || exit 0
 
-if [ "$REMINDER" = "true" ]; then
-  echo "[mutation-test] All tests passed. Consider running mutation tests to validate test quality: npx stryker run"
-fi
-
+hook_additional_context PostToolUse "[mutation-test] All tests passed. Consider a mutation run to check the tests catch real faults: ./scripts/run-mutation-tests.sh (threshold: pipeline.config.json → mutationTesting.scoreThreshold)."
 exit 0

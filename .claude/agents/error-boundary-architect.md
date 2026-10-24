@@ -4,7 +4,7 @@ description: Use this agent when designing error handling strategy, building Rea
 tools:
   - Write
   - Read
-  - MultiEdit
+  - Edit
   - Bash
   - Grep
   - Glob

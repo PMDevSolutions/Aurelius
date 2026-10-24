@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "aurelius",
+  "description": "Aurelius, the PMDS multi-framework app development framework for Claude Code.",
+  "owner": {
+    "name": "Paul Mulligan",
+    "url": "https://pmds.info"
+  },
+  "plugins": [
+    {
+      "name": "aurelius",
+      "source": "./",
+      "description": "Specialist agents, design-to-code pipelines with enforced TDD, a token lockfile and pixel-diff visual QA, and a deploy guard.",
+      "category": "development",
+      "tags": ["react", "design-to-code", "tdd", "visual-qa", "tailwind"]
+    }
+  ]
+}

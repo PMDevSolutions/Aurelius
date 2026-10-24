@@ -4,7 +4,7 @@ description: Use this agent when upgrading React versions, migrating between fra
 tools:
   - Write
   - Read
-  - MultiEdit
+  - Edit
   - Bash
   - Grep
   - Glob

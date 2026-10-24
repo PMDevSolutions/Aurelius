@@ -1,6 +1,8 @@
 ---
 name: visual-qa-verification
 description: "Automated visual QA with pixel-level diff comparison, iterative fix loop, and cross-browser verification. Uses pixelmatch for programmatic screenshot comparison with region-based analysis. Covers responsive checks, Lighthouse audits, and accessibility validation. Keywords: verify app, visual QA, compare to Figma, check screenshots, responsive test, pixel-perfect check, cross-browser testing, visual diff, pixelmatch"
+argument-hint: "[app-url]"
+allowed-tools: Bash(node scripts/visual-diff.js *), Bash(./scripts/check-dark-mode.sh *), Bash(./scripts/check-responsive.sh *), Bash(./scripts/cross-browser-baseline.sh *), Bash(./scripts/regression-test.sh *)
 ---
 
 # Visual QA Verification

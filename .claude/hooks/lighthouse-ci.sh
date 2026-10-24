@@ -1,37 +1,32 @@
 #!/usr/bin/env bash
-# lighthouse-ci.sh — PostToolUse hook
-# Suggests a Lighthouse audit after a successful pnpm build, including the
-# performance and accessibility thresholds from pipeline.config.json.
+# lighthouse-ci.sh — PostToolUse hook (matcher: Bash, if: "Bash(pnpm *build*)").
 #
-# Args:
-#   $1  TOOL_INPUT
-#   $2  TOOL_OUTPUT
+# After a successful `pnpm build` in an Aurelius project, remind Claude to run
+# a Lighthouse audit against the thresholds in pipeline.config.json →
+# qualityGate.lighthouseThresholds.
 #
-# Exit: always 0.
-
+# Input: the hook event as JSON on stdin. Output: JSON on stdout, or nothing.
+# Always exits 0.
 set -u
-TOOL_INPUT="${1:-}"
-TOOL_OUTPUT="${2:-}"
 trap 'exit 0' ERR
 
-if ! echo "$TOOL_INPUT" | grep -q "pnpm build"; then
-  exit 0
-fi
-if ! echo "$TOOL_OUTPUT" | grep -q "built in"; then
-  exit 0
-fi
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/hook-io.sh
+source "$HOOK_DIR/lib/hook-io.sh"
+# shellcheck source=lib/pipeline-helpers.sh
+source "$HOOK_DIR/lib/pipeline-helpers.sh"
 
-CONFIG=".claude/pipeline.config.json"
-PERF=80
-A11Y=90
+hook_read_input
+hook_read_context
 
-if [ -f "$CONFIG" ] && command -v node >/dev/null 2>&1; then
-  P="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.qualityGate?.lighthouseThresholds?.performance ?? 80);' 2>/dev/null)" || P=""
-  A="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.qualityGate?.lighthouseThresholds?.accessibility ?? 90);' 2>/dev/null)" || A=""
-  [ -n "$P" ] && PERF="$P"
-  [ -n "$A" ] && A11Y="$A"
-fi
+[ "$TOOL_NAME" = "Bash" ] || exit 0
+pipeline_is_build_command "$TOOL_COMMAND" || exit 0
+CONFIG="$(pipeline_config_file "$(pipeline_app_dir "$TOOL_COMMAND")")"
+[ -n "$CONFIG" ] || exit 0
+pipeline_build_succeeded "$(pipeline_bash_output)" || exit 0
 
-echo "[lighthouse-ci] Build done. Run Lighthouse audit — thresholds: performance=${PERF}, accessibility=${A11Y}. Use: npx lighthouse <url> --output=json"
+PERF="$(pipeline_config_get "$CONFIG" qualityGate.lighthouseThresholds.performance 80)"
+A11Y="$(pipeline_config_get "$CONFIG" qualityGate.lighthouseThresholds.accessibility 90)"
 
+hook_additional_context PostToolUse "[lighthouse-ci] Build done. Run a Lighthouse audit against pipeline.config.json → qualityGate.lighthouseThresholds: performance=${PERF}, accessibility=${A11Y}. Use the Chrome DevTools MCP lighthouse_audit, or npx lighthouse <url> --output=json."
 exit 0

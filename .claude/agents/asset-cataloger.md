@@ -1,7 +1,7 @@
 ---
 name: asset-cataloger
 description: Catalogs and semantically maps project image assets. Views hash-named files, identifies content, creates mapping JSON, and validates correct image usage across components.
-tools: Read, Write, Bash, Grep, Glob, TodoWrite, TaskOutput, AskUserQuestion
+tools: Read, Write, Bash, Grep, Glob
 model: opus
 permissionMode: bypassPermissions
 ---

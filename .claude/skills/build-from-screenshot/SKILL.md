@@ -1,5 +1,9 @@
 ---
-allowed-tools: Skill, Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__evaluate_script, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_resize, mcp__playwright__browser_snapshot, AskUserQuestion
+name: build-from-screenshot
+description: Autonomous screenshot- or URL-to-working-app pipeline for React, Vue, Svelte or React Native. Captures or reads the screenshots, infers tokens with user confirmation, writes failing tests first, builds components in per-component lanes, and verifies against the source with pixel diffs, E2E and the quality gate. Use when the user gives a live URL or image files and wants a working app. Keywords: build from screenshot, clone this site, URL to code, image to code
+argument-hint: "<url | image-path...>"
+disable-model-invocation: true
+allowed-tools: Skill, Agent, Workflow, Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, mcp__chrome-devtools__*, mcp__playwright__*
 ---
 
 # /build-from-screenshot — Autonomous Screenshot/URL-to-Working-App Pipeline
@@ -44,23 +48,9 @@ Load `.claude/pipeline.config.json` at the start. This provides:
 
 ## Progress Tracking
 
-Use `TodoWrite` to create a master checklist. Update each item as phases complete. This enables interrupted sessions to resume.
+Track the run in `.claude/plans/pipeline-state.json`, in the shape `/build-from-figma` defines (`.claude/skills/build-from-figma/SKILL.md` → Progress Tracking), with `"pipeline": "screenshot"` and the URL or file list as `source`. Rewrite it at every phase boundary and after each component and page result; the SessionStart hook reads it to report where an interrupted run stopped. Phases the renderer excludes are recorded as `skipped`.
 
-```
-[ ] Phase 0: Token Sync — sync-tokens.sh → check for drift (if lockfile exists)
-[ ] Phase 1: Intake — screenshot-intake skill → build-spec.json (with outputTarget)
-[ ] Phase 2: Token Inference — canva-token-inference skill → lockfile + config (requires user confirmation)
-[ ] Phase 3: TDD Scaffold — tdd-from-figma skill → failing tests (RED)
-[ ] Phase 4: Component Build — converter agent (per resolved renderer manifest) → tests pass (GREEN)
-[ ] Phase 4.5: Storybook — generate-stories.sh → auto-generated stories
-[ ] Phase 5: Visual Verification — pixel-diff loop (max N iterations, against source screenshots)
-[ ] Phase 5.5: Dark Mode — check-dark-mode.sh → dark mode visual verification
-[ ] Phase 6: E2E Tests — e2e-test-generator skill → Playwright tests
-[ ] Phase 7: Cross-Browser — screenshots in Firefox/WebKit (non-blocking)
-[ ] Phase 8: Quality Gate — coverage, types, build, tokens, Lighthouse
-[ ] Phase 8.5: Responsive — check-responsive.sh → screenshots at 5 breakpoints
-[ ] Phase 9: Report — build-report.md
-```
+Phases: 0 token-sync, 1 intake (screenshot-intake), 2 token-inference (canva-token-inference, needs user confirmation), 3 tdd-scaffold, 4 component-build, 4.5 storybook, 5 visual-diff (against the source screenshots), 5.5 dark-mode, 6 e2e-tests, 7 cross-browser, 8 quality-gate, 8.5 responsive, 9 report.
 ## Phase 0: Token Drift Check (Conditional)
 
 Identical to `/build-from-figma`. Only runs when `tokenSync.autoCheck` is `true` AND a lockfile exists.
@@ -112,42 +102,14 @@ Invoke the `tdd-from-figma` skill. (This skill reads `build-spec.json` and works
 
 Identical to `/build-from-figma` Phase 3.
 
-## Phases 4-9: Parallel Execution
+## Phases 4-9: Component Lanes, then Parallel Phases
 
-After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
+After Phase 3 confirms RED, resolve the renderer manifest (`node scripts/renderer-registry.js resolve <renderer> --json`) and run Phases 4-9 exactly as `/build-from-figma` describes (`.claude/skills/build-from-figma/SKILL.md` → Phases 4-9): the `component-lanes` workflow for Phases 4-5 when the Workflow tool is available, then `parallel-orchestration` for Phases 4.5-9. The screenshot differences:
 
-**Read `renderer` from `build-spec.json` and resolve its manifest before dispatching:**
+- **Workflow args:** `"source": "screenshot"`; `converter` is `manifest.converter` (`figma-react-converter`, the generic React builder, for React renderers; `react-native-converter` for expo); `testCommand` is `manifest.commands.test`. The page `references` are the source captures in `.claude/visual-qa/screenshots/source/`, keyed by the width they were captured at. Set `skipVisual` when the manifest excludes `visual-diff` (expo).
+- **parallel-orchestration:** drop every phase in `manifest.phases.exclude` (expo excludes `visual-diff`, `dark-mode`, `cross-browser` and `responsive`), and also `cross-browser` for `appType: "chrome-extension"`. Context: pipeline source `"screenshot"`, test files `src/components/**/*.test.*`, reference screenshots `.claude/visual-qa/screenshots/source/`. `e2e-tests` follows `component-build` when `visual-diff` is excluded.
 
-```bash
-node scripts/renderer-registry.js resolve <renderer> --json
-```
-
-The manifest drives both converter dispatch (`manifest.converter`) and phase exclusion (`manifest.phases.exclude`).
-
-**Invoke the `parallel-orchestration` skill with:**
-- Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
-  - Drop any phase listed in `manifest.phases.exclude` (e.g. expo excludes `visual-diff`, `dark-mode`, `cross-browser`, `responsive`)
-  - For `chrome-extension` appType: also exclude `cross-browser`
-- Context:
-  - Build spec: `.claude/plans/build-spec.json`
-  - Lockfile: `src/styles/design-tokens.lock.json`
-  - Test files: `src/components/**/*.test.*`
-  - Pipeline source: `"screenshot"`
-  - Renderer manifest: from `renderer-registry.js resolve <renderer> --json`
-  - Reference screenshots: `.claude/visual-qa/screenshots/source/`
-- Config: `.claude/pipeline.config.json` → `orchestration` section
-
-The parallel orchestration skill will:
-1. Start `component-build` first (dispatches the converter named in the resolved manifest, see Phase 4)
-2. After build completes, fan out independent phases in parallel (max 3 concurrent)
-3. Run `e2e-tests` after `visual-diff` completes (or after `component-build` if visual-diff excluded)
-4. Run `report` after both `quality-gate` and `e2e-tests` complete
-5. Stream results as each phase completes
-6. Produce a batch summary with speedup metrics
-
-**Fallback:** If `orchestration.enabled` is `false` in pipeline.config.json, execute phases 4-9 sequentially as documented below.
-
-The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
+Without the Workflow tool, invoke `parallel-orchestration` with all of `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]` minus those exclusions. If `orchestration.enabled` is `false`, run the phases sequentially as documented below.
 
 ## Phase 4: Component Build (Renderer-Driven)
 
@@ -218,7 +180,7 @@ For each page:
 5. Stop dev server
 ```
 
-**Note:** When the resolved renderer excludes `visual-diff` (e.g. expo, which has no browser rendering), this phase is skipped. Mark as N/A in the checklist.
+**Note:** When the resolved renderer excludes `visual-diff` (e.g. expo, which has no browser rendering), this phase is skipped. Record it as `skipped` in `pipeline-state.json`.
 
 ## Phases 5.5 through 9
 
@@ -247,7 +209,7 @@ The build report should note:
 - **Dev server will not start:** Check for port conflicts, missing dependencies. Run `pnpm install` if needed.
 - **Tests will not pass after 3 attempts:** Mark component as needing manual intervention, continue with remaining.
 - **Build fails:** Check TypeScript errors first, then dependency issues. Report blockers.
-- **Session interrupted:** On resume, check TodoWrite progress. Skip completed phases, resume from first incomplete.
+- **Session interrupted:** On resume, read `.claude/plans/pipeline-state.json`. Skip completed phases whose artifacts still exist and resume from the first incomplete one.
 
 ## Completion
 

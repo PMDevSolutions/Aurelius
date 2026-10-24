@@ -1,6 +1,9 @@
 ---
 name: export-design-system
 description: Exports generated components + design-tokens.lock.json as a publishable pnpm workspace. Generates a framework-agnostic tokens package and a framework-specific component library (React/Vue/Svelte via Vite library mode, React Native via tsc). Includes Tailwind preset, ThemeProvider, Changesets versioning, and a properly configured exports map. Keywords: design system export, component library, npm package, vite lib mode, tailwind preset, changesets, monorepo, publishable
+argument-hint: "[--scope @org] [--output dir] [--framework react|vue|svelte|react-native] [--dry-run] [--force] [--json]"
+disable-model-invocation: true
+allowed-tools: Bash(./scripts/export-design-system.sh *), Bash(node scripts/export-design-system.js *), Read, Glob
 ---
 
 # Export Design System — Publishable Component Library Generator
@@ -21,6 +24,17 @@ The tokens package is the bridge — every component package depends on it via `
 - When migrating from a single-app codebase to a shared component package.
 
 This skill is **not** part of the autonomous build pipeline — it is invoked on demand via `/export-design-system`.
+
+## Running /export-design-system
+
+`$ARGUMENTS` holds optional flags for the export script; with none, the framework comes from `build-spec.json`, the scope from `package.json`, and the output goes to `dist/design-system/`.
+
+1. **Check the preconditions** before anything else: a lockfile at `src/styles/design-tokens.lock.json` or `design-tokens.lock.json`, at least one component under `src/components/` (or `--components-dir`), and a discoverable framework (`build-spec.json` → `outputTarget`, `package.json` dependencies, or `--framework`). If one is missing, stop and say which and how to fix it (run a `/build-from-*` pipeline, pass a flag); never repair the project automatically.
+2. **Confirm scope and output once**, only when `$ARGUMENTS` sets neither: ask for the npm scope (default from `package.json`, else `@my-app`) and the output directory (default `dist/design-system`) in one question.
+3. **Run** `./scripts/export-design-system.sh` with the resolved flags, forwarding `--dry-run` and `--json` as given.
+4. **Report** the framework and scope, the package names (`<scope>/design-tokens` and `<scope>/<framework>-components`), the component count and the output path, then the next steps (`cd <output> && pnpm install && pnpm build`) and any framework caveat (React Native builds with `tsc`, not Vite). On a non-zero exit, show the exit code and stderr verbatim and confirm with the user before trying a remedy.
+
+The export only writes files. It does not install, build or publish; publishing is `pnpm release` inside the generated workspace (`changeset publish`), which the deploy guard stops for a human.
 
 ## Inputs
 

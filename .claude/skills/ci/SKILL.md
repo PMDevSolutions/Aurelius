@@ -1,5 +1,9 @@
 ---
-allowed-tools: Bash, Read
+name: ci
+description: Run the same checks as /verify-all non-interactively, with JSON output and an exit code that reflects overall pass or fail, for CI pipelines, pre-merge gates and automation. Keywords: ci, json, pre-merge, automation, verify
+argument-hint: "[--skip a,b] [--include a,b]"
+disable-model-invocation: true
+allowed-tools: Bash(./scripts/verify-all.sh *), Read
 ---
 
 # /ci — CI-Optimized Verification
@@ -18,13 +22,13 @@ The slash command wraps `./scripts/verify-all.sh --ci`. The `--ci` flag implies 
 
 ## What runs
 
-Same eight checks as `/verify-all`, in the same order:
+Same eleven checks as `/verify-all`, in the same order:
 
 ```
-lint-and-format → types → tests → accessibility → tokens → dead-code → security → bundle-size
+lint-and-format → types → tests → accessibility → tokens → dead-code → security → bundle-size → agent-plugins → renderers → claude-code
 ```
 
-`bundle-size` is automatically skipped when no build artifact (`dist/`, `.next/`, `build/`, `out/`) is present. No other check requires a dev server, so all of them run in CI without extra setup.
+`bundle-size` is automatically skipped when no build artifact (`dist/`, `.next/`, `build/`, `out/`) is present, and `agent-plugins` when `.claude/agent-plugins/` has none. No check requires a dev server, so all of them run in CI without extra setup.
 
 ## Output
 
@@ -33,7 +37,7 @@ JSON written to stdout:
 ```json
 {
   "ok": false,
-  "summary": { "pass": 6, "fail": 1, "skip": 1, "total": 8 },
+  "summary": { "pass": 8, "fail": 1, "skip": 2, "total": 11 },
   "checks": [
     { "name": "lint-and-format", "status": "pass", "exitCode": 0, "durationMs": 2618, "reason": "" },
     { "name": "types",           "status": "fail", "exitCode": 1, "durationMs": 1843, "reason": "exit 1" },
@@ -66,7 +70,7 @@ JSON written to stdout:
 Parse the JSON and report the summary in plain text:
 
 ```
-6 passed, 1 failed, 1 skipped
+8 passed, 1 failed, 2 skipped
 Failing: types (exit 1, 1843ms)
 ```
 

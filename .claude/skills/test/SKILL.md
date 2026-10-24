@@ -1,3 +1,10 @@
+---
+name: test
+description: Run the Vitest suite (React Testing Library for components): everything, one file, a name pattern, or with coverage, and report failures clearly. Use when asked to run tests or check coverage. Keywords: test, vitest, coverage, run tests
+argument-hint: "[file | -t pattern] [--coverage]"
+allowed-tools: Bash(pnpm vitest *), Bash(./scripts/run-tests.sh *)
+---
+
 # Test Runner
 
 Run Vitest tests with coverage reporting.
@@ -9,8 +16,12 @@ This command runs the project's test suite using Vitest and React Testing Librar
 ## Usage
 
 ```
-/test
+/test                                   # whole suite
+/test src/components/Button.test.tsx    # one file
+/test -t "should render" --coverage     # by name, with coverage
 ```
+
+With arguments, run `pnpm vitest run $ARGUMENTS`; without, run the whole suite.
 
 ## What this command does
 

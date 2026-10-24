@@ -1,6 +1,6 @@
 # Scripts Reference
 
-**Last Updated:** 2026-03-30
+**Last Updated:** 2026-10-24
 
 All scripts live in `scripts/` and are designed to run from the project root.
 
@@ -158,6 +158,14 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Purpose**: Initialize a new React project with standard tooling from `templates/`
 - **Usage**: `./scripts/setup-project.sh my-app --next` or `--vite`
 - **What it does**: Copies template configs, installs dependencies, sets up testing
+
+## Claude Code Configuration
+
+### Claude Code Conformance (`claude-code-conformance.js`)
+- **Purpose**: Check `.claude/` against the current Claude Code spec (`scripts/lib/claude-code-spec.json`, verified against 2.1.310): retired or subagent-unavailable tools on agents, unknown or invalid frontmatter on agents, skills and rules, legacy `.claude/commands/` files, hooks still on the `$TOOL_INPUT` contract or pointing at missing scripts, the plugin manifest's paths and agents list, and live docs that name retired tools
+- **Usage**: `node scripts/claude-code-conformance.js [--root <dir>] [--json] [--strict]`
+- **Exit codes**: `0` clean (warnings allowed; `--strict` fails on them), `1` errors found, `2` usage error
+- **Runs in**: `./scripts/verify-all.sh` (`claude-code`) and CI. The script and spec are shared verbatim with Maecenas; update them by copying, which is why `.prettierignore` lists them
 
 ## Agent Plugin System
 

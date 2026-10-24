@@ -204,6 +204,9 @@ jobs:
       - name: Validate pipeline.config.json against schema
         run: node scripts/validate-pipeline-config.js
 
+      - name: Check Claude Code configuration against the current spec
+        run: node scripts/claude-code-conformance.js
+
       - name: Run script tests
         run: pnpm vitest run --config scripts/__tests__/vitest.config.js scripts/__tests__/ --reporter=verbose
 

@@ -1,54 +1,55 @@
 #!/usr/bin/env bash
-# bundle-size-guard.sh — PostToolUse hook
-# Warns when the existing build artifacts exceed bundleSize.maxSizeKb from
-# pipeline.config.json. Fires when the agent runs `git commit` so the warning
-# arrives at the natural review point.
+# bundle-size-guard.sh — PreToolUse hook (matcher: Bash, if: "Bash(git commit *)").
 #
-# Args:
-#   $1  TOOL_INPUT
-#   $2  TOOL_OUTPUT (unused)
+# Before a `git commit` in an Aurelius project whose app has a build in .next/,
+# dist/, build/ or out/, add up the build's JavaScript and CSS (the same files
+# check-bundle-size.sh counts). Above pipeline.config.json →
+# bundleSize.maxSizeKb, return a reminder to Claude. The commit proceeds: the
+# build on disk may be stale, and ./scripts/check-bundle-size.sh is the real
+# check.
 #
-# Exit: always 0.
-
+# Input: the hook event as JSON on stdin. Output: JSON on stdout, or nothing.
+# Always exits 0.
 set -u
-TOOL_INPUT="${1:-}"
 trap 'exit 0' ERR
 
-if ! echo "$TOOL_INPUT" | grep -q "git commit"; then
-  exit 0
-fi
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/hook-io.sh
+source "$HOOK_DIR/lib/hook-io.sh"
+# shellcheck source=lib/pipeline-helpers.sh
+source "$HOOK_DIR/lib/pipeline-helpers.sh"
 
-# Pick the first build directory that exists.
+hook_read_input
+hook_read_context
+
+[ "$TOOL_NAME" = "Bash" ] || exit 0
+case "$TOOL_COMMAND" in
+  *"git commit"*|*"git -C "*" commit"*) ;;
+  *) exit 0 ;;
+esac
+
+APP_DIR="$(pipeline_app_dir "$TOOL_COMMAND")"
+CONFIG="$(pipeline_config_file "$APP_DIR")"
+[ -n "$CONFIG" ] || exit 0
+[ "$(pipeline_config_get "$CONFIG" bundleSize.enabled true)" = "false" ] && exit 0
+
 BUILD_DIR=""
 for d in .next dist build out; do
-  if [ -d "$d" ]; then
-    BUILD_DIR="$d"
-    break
-  fi
+  if [ -d "$APP_DIR/$d" ]; then BUILD_DIR="$d"; break; fi
 done
-if [ -z "$BUILD_DIR" ]; then
-  exit 0
-fi
+[ -n "$BUILD_DIR" ] || exit 0
 
-if ! command -v du >/dev/null 2>&1; then
-  exit 0
-fi
-SIZE_KB="$(du -sk "$BUILD_DIR" 2>/dev/null | cut -f1)"
-if [ -z "$SIZE_KB" ]; then
-  exit 0
-fi
+SCAN="$APP_DIR/$BUILD_DIR"
+# Next.js keeps server output and a build cache beside the client bundle.
+[ "$BUILD_DIR" = ".next" ] && [ -d "$SCAN/static" ] && SCAN="$SCAN/static"
+BYTES="$(find "$SCAN" -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.css' \) -not -path '*/cache/*' -exec cat {} + 2>/dev/null | wc -c | tr -d ' ')"
+case "$BYTES" in ''|*[!0-9]*) exit 0 ;; esac
+SIZE_KB=$((BYTES / 1024))
 
-# Default max = 200 KB. Overridden by pipeline.config.json -> bundleSize.maxSizeKb.
-MAX_KB=200
-if [ -f .claude/pipeline.config.json ] && command -v node >/dev/null 2>&1; then
-  PARSED="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.bundleSize?.maxSizeKb ?? 200);' 2>/dev/null)" || PARSED=""
-  if [ -n "$PARSED" ]; then
-    MAX_KB="$PARSED"
-  fi
-fi
+MAX_KB="$(pipeline_config_get "$CONFIG" bundleSize.maxSizeKb 200)"
+case "$MAX_KB" in ''|*[!0-9]*) MAX_KB=200 ;; esac
 
 if [ "$SIZE_KB" -gt "$MAX_KB" ]; then
-  echo "[bundle-guard] $BUILD_DIR is ${SIZE_KB}KB, above the ${MAX_KB}KB limit. Run: ./scripts/check-bundle-size.sh"
+  hook_additional_context PreToolUse "[bundle-guard] $BUILD_DIR/ holds ${SIZE_KB}KB of JavaScript and CSS, above the ${MAX_KB}KB limit (pipeline.config.json → bundleSize.maxSizeKb). The commit proceeds; if that build is current, run ./scripts/check-bundle-size.sh and split or trim before shipping."
 fi
-
 exit 0

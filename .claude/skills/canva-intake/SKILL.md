@@ -1,6 +1,7 @@
 ---
 name: canva-intake
 description: Structured discovery for Canva designs. Uses Canva AI Connector MCP to export screenshots, Claude vision to analyze page structure and components, and targeted user questions to produce a build-spec.json. Entry point for /build-from-canva pipeline. Keywords: Canva intake, build spec, Canva discovery, Canva interview, Canva design
+argument-hint: "<canva-design-url>"
 ---
 
 # Canva Intake — Structured Discovery

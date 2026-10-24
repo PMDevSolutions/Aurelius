@@ -113,8 +113,11 @@ common_track_tmpfile() {
 
 # Milliseconds since epoch. GNU date supports %N; macOS does not.
 common_now_ms() {
-  if date +%s%3N >/dev/null 2>&1; then
-    date +%s%3N
+  local ms
+  ms="$(date +%s%3N 2>/dev/null)"
+  # BSD date (macOS) has no %N: it exits 0 and prints "…3N", so check for digits.
+  if [[ "$ms" =~ ^[0-9]+$ ]]; then
+    echo "$ms"
   elif have_cmd python3; then
     python3 -c 'import time; print(int(time.time()*1000))'
   else

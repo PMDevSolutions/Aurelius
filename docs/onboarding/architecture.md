@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document explains how Aurelius is structured and how its components work together: agents, skills, pipelines, scripts, templates, plugins, hooks, and MCP servers.
+This document explains how Aurelius is structured and how its components work together: agents, skills, pipelines, the component-lanes workflow, scripts, templates, hooks, rules, MCP servers, and the plugin packaging.
 
 ---
 
@@ -15,10 +15,10 @@ This document explains how Aurelius is structured and how its components work to
              ┌────────────────────┼─────────────────────┐
              │                    │                      │
      ┌───────▼──────┐   ┌────────▼────────┐   ┌────────▼────────┐
-     │   56 Agents   │   │    24 Skills    │   │    4 Plugins    │
-     │ (specialized  │   │  (workflow      │   │ (extensions:    │
-     │  task workers) │   │   automation)  │   │  memory, git,   │
-     └───────┬──────┘   └────────┬────────┘   │  superpowers)   │
+     │   56 Agents   │   │    32 Skills    │   │ Hooks + Rules   │
+     │ (specialized  │   │  (workflow      │   │ (deploy guard,  │
+     │  task workers) │   │   automation)  │   │  token guard,   │
+     └───────┬──────┘   └────────┬────────┘   │  standards)     │
              │                    │            └────────┬────────┘
              │           ┌────────▼────────┐            │
              │           │  4 Pipelines    │            │
@@ -30,7 +30,7 @@ This document explains how Aurelius is structured and how its components work to
      ┌───────▼────────────────────▼──────────────────────▼───────┐
      │                    Infrastructure                          │
      │  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌──────────┐ │
-     │  │ 30+      │  │ 8         │  │ 6 MCP    │  │ Templates│ │
+     │  │ 57       │  │ 11        │  │ 6 MCP    │  │ Templates│ │
      │  │ Scripts   │  │ Hooks     │  │ Servers  │  │ (8 sets) │ │
      │  └──────────┘  └───────────┘  └──────────┘  └──────────┘ │
      └───────────────────────────────────────────────────────────┘
@@ -48,7 +48,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 |-------|---------|-----------|
 | `frontend-developer` | Build React/Vue/Angular components, handle state management, optimize frontend performance | Write, Read, Bash, Grep, Glob |
 | `backend-architect` | Design APIs, implement databases, architect scalable backend services | Write, Read, Bash, Grep |
-| `rapid-prototyper` | Scaffold projects, build MVPs and proof-of-concepts quickly | Write, Bash, Read, Glob, Task |
+| `rapid-prototyper` | Scaffold projects, build MVPs and proof-of-concepts quickly | Write, Edit, Bash, Read, Glob, Agent |
 | `test-writer-fixer` | Write tests, run suites, analyze failures, fix broken tests | All tools |
 | `error-boundary-architect` | Design error handling, React error boundaries, Sentry integration | Write, Read, Bash, Grep, Glob |
 | `migration-specialist` | Upgrade React versions, migrate frameworks (CRA to Vite), run codemods | Write, Read, Bash, Grep, Glob, WebSearch |
@@ -144,7 +144,7 @@ Agents are specialized Claude Code sub-processes that handle complex, multi-step
 
 ---
 
-## Skills (24 Total)
+## Skills (32 Total)
 
 Skills are automated workflows triggered by slash commands or keyword detection. Unlike agents (which are general-purpose workers), skills encode specific multi-step processes.
 
@@ -338,35 +338,50 @@ Located in `templates/`. Starter configurations applied by `setup-project.sh` an
 
 ---
 
-## Plugins (4 + gh CLI)
+## Plugin Packaging
 
-Plugins extend Claude Code with persistent capabilities.
-
-| Plugin | Purpose | Key Commands |
-|--------|---------|-------------|
-| `episodic-memory` | Persistent memory across conversations | Search past conversations, recall decisions |
-| `commit-commands` | Git workflow automation | `/commit`, `/commit-push-pr`, `/clean_gone` |
-| `superpowers` | Advanced development workflows | TDD, planning, debugging, code review, brainstorming |
-| `ai-taskmaster` (local) | Task management and development planning | Task creation and tracking |
+Aurelius needs no plugin: everything it runs lives in `.claude/`. The repo is itself a plugin. `.claude-plugin/plugin.json` points at the live agent files, `.claude/skills`, `.claude/hooks/hooks.json` and `.claude/workflows`, so another repo can install the agents, the knowledge skills and the deploy guard (`/plugin install aurelius --marketplace PMDevSolutions/Aurelius`) instead of copying them. The pipeline skills call `./scripts/…` and run only in an Aurelius checkout. Optional official plugins and the MCP servers the agents expect are in `.claude/PLUGINS-REFERENCE.md`.
 
 GitHub integration is via the `gh` CLI (not a plugin): `gh pr create`, `gh issue create`, etc.
 
 ---
 
-## Hooks (8 Automated)
+## Rules (path-scoped)
 
-Configured in `.claude/settings.json` as `PostToolUse` hooks on the `Bash` matcher. Each hook is a stand-alone script under `.claude/hooks/` that receives `$TOOL_INPUT` and `$TOOL_OUTPUT` as positional args and decides whether to print a reminder. See the [Hook System guide](../guides/hooks.md) for the full anatomy, execution order, error-handling pattern, and how to add custom hooks.
+Standards live in `.claude/rules/` and load only when Claude touches matching files, which keeps CLAUDE.md short:
 
-| Script | Triggers On | Action |
-|--------|-------------|--------|
-| `post-build-qa.sh` | `pnpm build` succeeds | Suggests running quality gate checks |
-| `pre-commit-token-guard.sh` | `git commit` detected | Runs `verify-tokens.sh`, warns on violations |
-| `dark-mode-reminder.sh` | `visual-diff.js` passes | Suggests running dark mode verification |
-| `coverage-check.sh` | `vitest` with coverage output | Reminds to check coverage threshold |
-| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit with config thresholds |
-| `bundle-size-guard.sh` | `git commit` detected | Warns if build exceeds `maxSizeKb` |
-| `mutation-test-reminder.sh` | All vitest tests pass | Suggests running Stryker for test quality |
-| `regression-reminder.sh` | `pnpm build` succeeds | Suggests regression test if baselines exist |
+| Rule | Loads for |
+|------|-----------|
+| `react-standards.md` | `src/`, `app/`, `templates/`, component files (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`) |
+| `pipeline-artifacts.md` | The build spec, the lockfile, `.claude/plans/`, the pipeline config, visual baselines |
+| `scripts-and-hooks.md` | `scripts/`, `.claude/hooks/`, `.husky/` |
+| `claude-code-conventions.md` | `.claude/**`, `.claude-plugin/`, `evals/` |
+
+---
+
+## Component Lanes Workflow
+
+`.claude/workflows/component-lanes.js` runs Phases 4-5 of the build pipelines through Claude Code's Workflow tool: one converter lane per component, tier by tier, with a separate agent rerunning each component's tests and hashing its test file; then bounded visual-diff rounds in which every page is diffed in parallel and each component has one fixer per round. The bounds and the "tests are never modified" rule are enforced in its code. `parallel-orchestration` runs Phases 4.5-9 afterwards, or all of 4-9 when workflows are unavailable.
+
+---
+
+## Hooks (11 Automated)
+
+Each hook is a stand-alone script under `.claude/hooks/` on Claude Code's hook contract: the event arrives as JSON on stdin and the hook answers with JSON on stdout. They are registered in `.claude/settings.json` (and mirrored in `.claude/hooks/hooks.json` for the plugin). See the [Hook System guide](../guides/hooks.md) for the contract, the deploy guard's tiers, and how to add a hook.
+
+| Script | Event | Action |
+|--------|-------|--------|
+| `deploy-guard.sh` | Before every Bash call (fail-closed) | Asks a human before production deploys, publishes, releases, merges, dispatches and pushes to the default branch; denies them inside subagents |
+| `agent-no-deploy.sh` | Before Bash, in agent frontmatter | The deploy guard in subagent mode, for deploy- and release-facing agents |
+| `pre-commit-token-guard.sh` | Before `git commit` | Denies the commit when a file it carries has a hardcoded value |
+| `bundle-size-guard.sh` | Before `git commit` | Reminds when the build exceeds `bundleSize.maxSizeKb` |
+| `post-build-qa.sh` | After a successful `pnpm build` | Reminds to run the quality gate |
+| `lighthouse-ci.sh` | After a successful `pnpm build` | Names the Lighthouse thresholds from config |
+| `regression-reminder.sh` | After a successful `pnpm build` | Suggests a regression run when baselines exist |
+| `coverage-check.sh` | After a vitest run with coverage | Speaks when coverage is below the threshold |
+| `mutation-test-reminder.sh` | After a fully passing vitest run | Suggests Stryker when the reminder is on |
+| `dark-mode-reminder.sh` | After a passing visual diff | Suggests the dark-mode check |
+| `session-context.sh` | Session start | Status block: a pipeline run in flight and where it resumes, lockfiles, baselines, branch |
 
 ---
 
@@ -394,6 +409,7 @@ These files are generated and consumed by the pipeline:
 | `build-spec.json` | Intake skills | All pipeline phases | Machine-readable build plan (app type, components, output target, E2E flows) |
 | `design-brief.json` | conversation-intake (via conversation-designer agent) | design-brief-to-figma | Style direction, color/typography/layout decisions, and component descriptions that drive Figma generation |
 | `design-tokens.lock.json` | Token lock / inference skills | Component build, token verification | Single source of truth for all design values |
+| `pipeline-state.json` | Every pipeline phase | The next session, resumed runs | Progress of a run (phases, components with test checksums, pages); `.claude/plans/`, gitignored |
 | `build-report.md` | Report phase | Developer review | Final pipeline report with screenshots and metrics |
 | `pipeline.config.json` | Manual configuration | All pipeline phases | Thresholds, app types, orchestration settings |
 

@@ -14,9 +14,9 @@ Deep-dive documentation for Aurelius framework systems. These guides go beyond t
 
 | Guide | What You Will Learn |
 |-------|-------------------|
-| [Hook System](hooks.md) | How hooks fire, execution order, creating custom hooks |
+| [Hook System](hooks.md) | The stdin JSON hook contract, the deploy guard, commit guards and reminders, creating custom hooks |
 | [Error Recovery](error-recovery.md) | What to do when a pipeline phase fails, how to resume, common failure modes |
-| [Agent Creation](agent-creation.md) | How to create a custom agent, required YAML frontmatter, tool declarations |
+| [Agent Creation](agent-creation.md) | How to create a custom agent: frontmatter, current tool names, agent memory, skill preloads, agent-scoped hooks |
 
 ## Framework-Specific Guides (P2)
 

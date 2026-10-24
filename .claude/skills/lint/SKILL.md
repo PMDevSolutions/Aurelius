@@ -1,3 +1,10 @@
+---
+name: lint
+description: Run ESLint and Prettier across the project, auto-fix what they can, type-check, and report what is left. Use when asked to lint, format or clean up code style. Keywords: lint, format, eslint, prettier, code style
+argument-hint: "[--check]"
+allowed-tools: Bash(./scripts/lint-and-format.sh *), Bash(pnpm eslint *), Bash(pnpm prettier *), Bash(pnpm tsc *)
+---
+
 # Lint & Format
 
 Run ESLint and Prettier across the project.
@@ -9,7 +16,8 @@ This command checks and fixes code quality and formatting issues using ESLint an
 ## Usage
 
 ```
-/lint
+/lint            # fix what can be fixed, report the rest
+/lint --check    # report only, change nothing
 ```
 
 ## What this command does
@@ -44,8 +52,10 @@ pnpm tsc --noEmit
 ## Or use the project script
 
 ```bash
-./scripts/lint-and-format.sh
+./scripts/lint-and-format.sh $ARGUMENTS
 ```
+
+With `--check` the script reports without changing files, as CI runs it.
 
 ## Common Issues
 

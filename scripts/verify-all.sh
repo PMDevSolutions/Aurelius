@@ -15,7 +15,9 @@
 #
 # Check names:
 #   lint-and-format, types, tests, accessibility, tokens, dead-code, security,
-#   bundle-size, agent-plugins
+#   bundle-size, agent-plugins, renderers, claude-code
+#
+# A check script ending in .js runs with node; every other check runs with bash.
 #
 # Exit codes:
 #   0 — every check passed (or was skipped intentionally)
@@ -70,6 +72,7 @@ ALL_CHECKS=(
   "bundle-size|./scripts/check-bundle-size.sh|"
   "agent-plugins|./scripts/verify-agent-plugins.sh|"
   "renderers|./scripts/verify-renderers.sh|"
+  "claude-code|./scripts/claude-code-conformance.js|"
 )
 
 if [[ "$LIST_ONLY" == "true" ]]; then
@@ -152,10 +155,12 @@ run_check() {
   local start
   start="$(common_now_ms)"
   local exit_code=0
+  local runner="bash"
+  [[ "$script" == *.js ]] && runner="node"
   if [[ -n "$args" ]]; then
-    bash "$script" $args >/dev/null 2>&1 || exit_code=$?
+    "$runner" "$script" $args >/dev/null 2>&1 || exit_code=$?
   else
-    bash "$script" >/dev/null 2>&1 || exit_code=$?
+    "$runner" "$script" >/dev/null 2>&1 || exit_code=$?
   fi
   local end
   end="$(common_now_ms)"

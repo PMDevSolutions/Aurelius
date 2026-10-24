@@ -1,5 +1,9 @@
 ---
-allowed-tools: Skill, Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion, mcp__figma__whoami, mcp__figma__create_new_file, mcp__figma__generate_figma_design, mcp__figma__get_metadata, mcp__figma__get_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_screenshot, mcp__playwright__browser_navigate
+name: build-from-conversation
+description: Talk-to-build pipeline with no design file. A bounded interview produces a build spec and design brief, a real Figma file is generated from HTML mockups, and the run hands off to /build-from-figma. Use when the user describes an app in words and has no Figma, Canva or screenshot to start from. Keywords: build from conversation, describe an app, no design file, generate Figma design
+argument-hint: "[app description]"
+disable-model-invocation: true
+allowed-tools: Skill, Agent, Workflow, Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, mcp__figma__*, mcp__chrome-devtools__*, mcp__playwright__*
 ---
 
 # /build-from-conversation — Conversational App Creation via Figma Generation
@@ -39,13 +43,7 @@ All downstream settings (visual diff thresholds, TDD enforcement, quality gates)
 
 ## Progress Tracking
 
-Use `TodoWrite` to create a master checklist. The handoff phases are tracked by `/build-from-figma` itself.
-
-```
-[ ] Phase C0: Conversation Intake — conversation-intake skill → build-spec.json + design-brief.json
-[ ] Phase C1: Figma Design Generation — design-brief-to-figma skill → Figma URL + node IDs
-[ ] Handoff: /build-from-figma <generated URL> → phases 0-9
-```
+Track the run in `.claude/plans/pipeline-state.json`, in the shape `/build-from-figma` defines (`.claude/skills/build-from-figma/SKILL.md` → Progress Tracking), with `"pipeline": "conversation"` and phases `C0` (conversation-intake → build-spec.json + design-brief.json) and `C1` (design-brief-to-figma → Figma URL + node IDs). At the handoff, set `"pipeline": "figma"`, put the generated Figma URL in `source`, and keep `C0` and `C1` in `phases`; `/build-from-figma` adds phases 0-9 to the same file.
 
 ## Phase C0: Conversation Intake
 
@@ -83,11 +81,13 @@ This phase:
 
 ## Handoff: /build-from-figma
 
-Invoke the `build-from-figma` command with the generated Figma URL as its arguments — exactly as if the user had run:
+Continue with the `/build-from-figma` pipeline in this session, with the generated Figma URL as its input, exactly as if the user had run:
 
 ```
 /build-from-figma https://figma.com/design/<fileKey>/<appName>
 ```
+
+`/build-from-figma` sets `disable-model-invocation`, so Claude never starts that pipeline unprompted and cannot call it through the Skill tool. Read `.claude/skills/build-from-figma/SKILL.md` and follow it, with the generated URL in place of `$ARGUMENTS`; this run is the user's request for it.
 
 The standard pipeline runs unchanged. What to expect on a conversation-sourced run:
 
@@ -102,7 +102,7 @@ The standard pipeline runs unchanged. What to expect on a conversation-sourced r
 - **Capture failures (timeout, rate limit, connection lost):** Apply `conversation.retry` exponential backoff with a fresh capture per attempt. If a page exhausts retries, continue with the remaining pages and list the failed ones for manual re-capture before the handoff.
 - **User rejects the generated design repeatedly:** After `maxRegenerationAttempts` loops, stop and summarize the disagreement — offer to hand-edit the Figma file (it's a real file in their account) and resume with `/build-from-figma <url>` directly.
 - **Multiple Figma plans:** Never guess which team/org to create the file in — ask.
-- **Session interrupted:** On resume, check TodoWrite progress and the resume checks above. The artifacts (`build-spec.json`, `design-brief.json`, mockups, the Figma file itself) make every phase resumable.
+- **Session interrupted:** On resume, read `.claude/plans/pipeline-state.json` and apply the resume checks above. The artifacts (`build-spec.json`, `design-brief.json`, mockups, the Figma file itself) make every phase resumable.
 
 ## Completion
 

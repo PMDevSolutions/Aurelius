@@ -1,7 +1,7 @@
 ---
 name: command-expert
 description: Use this agent when creating CLI commands with proper argument parsing and task automatio
-tools: AskUserQuestion, Bash, TaskOutput, Edits, Glob, Grep, KillShell, Read, Skill, Task, TodoWrite, WebFetch, WebSearch, Write
+tools: Bash, Edit, Glob, Grep, TaskStop, Read, Skill, Agent, WebFetch, WebSearch, Write
 model: opus
 permissionMode: bypassPermissions
 ---

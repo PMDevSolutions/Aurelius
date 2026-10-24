@@ -90,16 +90,18 @@ COMBINED+='|total +(agents|skills)[^0-9]{0,8}[0-9]+'
 # grep -rIno output is "path:lineno:matched-text". Process each match with
 # pure bash (no per-match subprocess): the matched substring contains exactly
 # one number in every form, so stripping non-digits yields the claimed count.
+# nocasematch makes the noun test case-insensitive; it is bash 3.2-safe, unlike
+# ${var,,}, so the check also runs on the macOS system bash (pre-commit hook).
+shopt -s nocasematch
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   file="${match%%:*}"; rest="${match#*:}"
   lineno="${rest%%:*}"; text="${rest#*:}"
-  lc="${text,,}"
   num="${text//[!0-9]/}"
   [[ -z "$num" ]] && continue
-  if [[ "$lc" == *agent* ]]; then
+  if [[ "$text" == *agent* ]]; then
     noun="agents"; expected="$agent_count"
-  elif [[ "$lc" == *skill* ]]; then
+  elif [[ "$text" == *skill* ]]; then
     noun="skills"; expected="$skill_count"
   else
     continue
@@ -117,10 +119,13 @@ done < <(grep -riInoE "$COMBINED" \
   --exclude-dir='node_modules' \
   --exclude-dir='plans' \
   . 2>/dev/null || true)
+shopt -u nocasematch
 
 # A single claim can match more than one form; de-duplicate before counting.
 if ((${#DRIFT_LINES[@]})); then
-  mapfile -t DRIFT_LINES < <(printf '%s\n' "${DRIFT_LINES[@]}" | sort -u)
+  DEDUPED=()
+  while IFS= read -r line; do DEDUPED+=("$line"); done < <(printf '%s\n' "${DRIFT_LINES[@]}" | sort -u)
+  DRIFT_LINES=("${DEDUPED[@]}")
 fi
 DRIFT=${#DRIFT_LINES[@]}
 

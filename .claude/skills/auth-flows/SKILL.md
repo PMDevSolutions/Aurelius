@@ -1,19 +1,6 @@
 ---
 name: auth-flows
-description: Authentication patterns for React apps — Auth.js (NextAuth), Clerk, Supabase Auth. Covers session management, protected routes, role-based access, and OAuth flows.
-triggers:
-  - "authentication"
-  - "auth"
-  - "login"
-  - "sign in"
-  - "sign up"
-  - "session"
-  - "protected route"
-  - "authorization"
-  - "OAuth"
-  - "clerk"
-  - "supabase auth"
-  - "nextauth"
+description: Authentication patterns for React apps — Auth.js (NextAuth), Clerk, Supabase Auth. Covers session management, protected routes, role-based access, and OAuth flows. Keywords: authentication, auth, login, sign in, sign up, session, protected route, authorization, OAuth, clerk, supabase auth, nextauth
 ---
 
 # Authentication Flows

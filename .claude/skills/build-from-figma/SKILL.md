@@ -1,5 +1,9 @@
 ---
-allowed-tools: Skill, Agent, Bash, Read, Write, Edit, Glob, Grep, TodoWrite, mcp__figma__get_metadata, mcp__figma__get_variable_defs, mcp__figma__get_design_context, mcp__figma__get_screenshot, mcp__figma-desktop__get_metadata, mcp__figma-desktop__get_variable_defs, mcp__figma-desktop__get_design_context, mcp__figma-desktop__get_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__evaluate_script, AskUserQuestion
+name: build-from-figma
+description: Autonomous Figma-to-working-app pipeline. Intake, design-token lockfile, failing tests first, per-component build lanes, pixel-diff visual QA, E2E, cross-browser, quality gate and build report, for React, Vue, Svelte or React Native. Use when the user gives a Figma URL and wants a working, tested app. Keywords: build from Figma, Figma to React, Figma URL, design to code, pixel-perfect
+argument-hint: "<figma-url>"
+disable-model-invocation: true
+allowed-tools: Skill, Agent, Workflow, Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, mcp__figma__*, mcp__figma-desktop__*, mcp__chrome-devtools__*, mcp__playwright__*
 ---
 
 # /build-from-figma — Autonomous Figma-to-Working-App Pipeline
@@ -8,6 +12,7 @@ You are the master orchestrator for converting a Figma design into a fully worki
 
 **Key enforcement rules:**
 - **TDD is mandatory** — Phase 3 (TDD) MUST complete before Phase 4 (Build). No exceptions.
+- **The tests are the specification** — Phases 4 and 5 never edit a test file; the `component-lanes` workflow checks every test file's checksum after each change.
 - **Visual QA uses pixel diff** — Phase 5 uses `scripts/visual-diff.js` for programmatic comparison, not manual eyeballing.
 - **E2E tests are generated** — Phase 6 generates and runs Playwright E2E tests appropriate to the app type.
 - **App-type aware** — Chrome extensions, PWAs, and web apps each get tailored test strategies.
@@ -32,24 +37,43 @@ Load `.claude/pipeline.config.json` at the start. This provides:
 
 ## Progress Tracking
 
-Use `TodoWrite` to create a master checklist. Update each item as phases complete. This enables interrupted sessions to resume.
+Track the run in **`.claude/plans/pipeline-state.json`** (gitignored, beside `build-spec.json`). Todo tools are not offered on current models, and a file survives an interrupted session: the SessionStart hook reads it and tells the next session where the run stopped. `/build-from-canva`, `/build-from-screenshot` and `/build-from-conversation` use the same file and shape.
 
-```
-[ ] Phase 0: Token Sync — sync-tokens.sh → check for drift (if lockfile exists)
-[ ] Phase 1: Intake — figma-intake skill → build-spec.json
-[ ] Phase 2: Token Lock — design-token-lock skill → lockfile + tailwind config
-[ ] Phase 3: TDD Scaffold — tdd-from-figma skill → failing tests (RED)
-[ ] Phase 4: Component Build — figma-to-react-workflow → tests pass (GREEN)
-[ ] Phase 4.5: Storybook — generate-stories.sh → auto-generated stories
-[ ] Phase 5: Visual Verification — pixel-diff loop (max N iterations)
-[ ] Phase 5.5: Dark Mode — check-dark-mode.sh → dark mode visual verification
-[ ] Phase 6: E2E Tests — e2e-test-generator skill → Playwright tests
-[ ] Phase 7: Cross-Browser — screenshots in Firefox/WebKit (non-blocking)
-[ ] Phase 8: Quality Gate — coverage, types, build, tokens, Lighthouse
-[ ] Phase 9: Report — build-report.md
+Create it when the run starts, and rewrite it at every phase boundary and after each component and page result:
+
+```json
+{
+  "pipeline": "figma",
+  "source": "https://www.figma.com/design/abc123/My-App",
+  "renderer": "vite",
+  "appType": "web-app",
+  "startedAt": "2026-10-24T15:00:00Z",
+  "updatedAt": "2026-10-24T15:42:00Z",
+  "phase": "5",
+  "phases": {
+    "0": { "name": "token-sync", "status": "skipped" },
+    "1": { "name": "intake", "status": "done", "artifact": ".claude/plans/build-spec.json" },
+    "2": { "name": "token-lock", "status": "done", "artifact": "src/styles/design-tokens.lock.json" },
+    "3": { "name": "tdd-scaffold", "status": "done" },
+    "4": { "name": "component-build", "status": "done" },
+    "4.5": { "name": "storybook", "status": "pending" },
+    "5": { "name": "visual-diff", "status": "running" },
+    "5.5": { "name": "dark-mode", "status": "pending" },
+    "6": { "name": "e2e-tests", "status": "pending" },
+    "7": { "name": "cross-browser", "status": "pending" },
+    "8": { "name": "quality-gate", "status": "pending" },
+    "8.5": { "name": "responsive", "status": "pending" },
+    "9": { "name": "report", "status": "pending" }
+  },
+  "components": { "Button": { "test": "src/components/Button/Button.test.tsx", "testSha256": "…", "build": "green", "attempts": 1 } },
+  "pages": { "home": { "visual": "pass", "worstMismatchPct": 0.012, "rounds": 2 } },
+  "notes": ["Hero: needs review, 768px layout still 4.1% off after 5 rounds"]
+}
 ```
 
-For each component, track: `[ ] ComponentName: test-written → implemented → visual-verified`
+- Phase `status`: `pending`, `running`, `done`, `failed`, `skipped` or `needs-review`. Component `build`: `pending`, `green`, `needs-review`, `failed`. Page `visual`: `pending`, `pass`, `needs-review`, `skipped`.
+- Timestamps come from `date -u +%Y-%m-%dT%H:%M:%SZ`. Set `"phase": "done"` when Phase 9 finishes.
+- **Resume:** when the file exists for the same source and is not `done`, skip every phase marked `done` or `skipped` whose artifact still exists, and continue from the first other phase. A different source starts a new run: rename the old file to `pipeline-state.<startedAt>.json` first.
 
 ## Phase 0: Token Drift Check (Conditional)
 
@@ -111,20 +135,54 @@ This phase:
 
 Process components in dependency order: UI primitives → Layout → Sections → Pages
 
-## Phases 4-9: Parallel Execution
+## Phases 4-9: Component Lanes, then Parallel Phases
 
-After Phase 3 completes (TDD scaffold with failing tests confirmed), hand off remaining phases to the parallel orchestration skill.
-
-**Read `renderer` from `build-spec.json` and resolve its manifest before dispatching:**
+After Phase 3 confirms RED, read `renderer` from `build-spec.json` and resolve its manifest:
 
 ```bash
 node scripts/renderer-registry.js resolve <renderer> --json
 ```
 
-The manifest drives both converter dispatch (`manifest.converter`) and phase exclusion (`manifest.phases.exclude`).
+The manifest drives converter dispatch (`manifest.converter`), the test command (`manifest.commands.test`) and phase exclusion (`manifest.phases.exclude`).
+
+### Phases 4-5: the `component-lanes` workflow
+
+Building components and fixing visual differences are per-item work, so they run as a workflow (`.claude/workflows/component-lanes.js`) whenever the Workflow tool is available. The loop bounds and the "never modify the tests" rule are enforced in its code, not left to prose.
+
+1. **Prepare, in this session:**
+   - Record each test file's checksum (`shasum -a 256 <test file>`) in `pipeline-state.json` → `components`.
+   - Start the dev server in the background with `manifest.commands.dev` (for `appType: "chrome-extension"`, run `pnpm build` and point the pages at the built output). Wait until it answers.
+   - Capture the Figma reference screenshots once into `.claude/visual-qa/screenshots/figma/<page>-<width>.png` (Figma MCP `get_screenshot`), one per page and per `visualDiff.requiredBreakpoints` width the design has a frame for.
+2. **Run the workflow:** call the Workflow tool with `name: "component-lanes"` and these args, passed as JSON values:
+   ```json
+   {
+     "source": "figma",
+     "converter": "figma-react-converter",
+     "testCommand": "pnpm vitest run",
+     "lockfile": "src/styles/design-tokens.lock.json",
+     "buildSpec": ".claude/plans/build-spec.json",
+     "components": [
+       { "name": "Button", "tier": 0, "dir": "src/components/Button", "testFile": "src/components/Button/Button.test.tsx", "testSha256": "…" }
+     ],
+     "pages": [
+       { "name": "home", "url": "http://localhost:5173/", "references": { "1440": ".claude/visual-qa/screenshots/figma/home-1440.png" } }
+     ],
+     "maxBuildAttempts": 3,
+     "maxVisualIterations": 5,
+     "diffPassThreshold": 0.02,
+     "skipVisual": false
+   }
+   ```
+   `tier` follows the component's `category` in the build spec: `ui` 0, `layout` 1, `sections` 2, `pages` 3. `maxVisualIterations` and `diffPassThreshold` come from `pipeline.config.json → iterationLoop`. Set `skipVisual` when the manifest excludes `visual-diff`.
+3. **What it does:** each tier's components build in parallel lanes (the converter writes only inside its own directory; shared files such as barrels are applied once per tier), and a separate check reruns each component's tests and compares its test file's checksum. Then up to `maxVisualIterations` rounds: every page is diffed in parallel, the pass decision is made from the numbers, fixes are grouped so each component has one fixer per round, and every round re-checks every page.
+4. **Record the result** in `pipeline-state.json`: phases 4 and 5, each component's status, each page's status and worst mismatch. A `TEST_TAMPERED` component changed its test file: restore that file from the Phase 3 output (`git checkout -- <test>` when it is committed) and mark the component `needs-review`. Leave the dev server running for the phases below.
+
+If the Workflow tool is not available (workflows turned off, or a plan without them), run all of Phases 4-9 through `parallel-orchestration` instead.
+
+### Phases 4.5-9: `parallel-orchestration`
 
 **Invoke the `parallel-orchestration` skill with:**
-- Phases to run: `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]`
+- Phases to run: `["storybook", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]` after the workflow, or `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]` without it
   - Drop any phase listed in `manifest.phases.exclude`
 - Context:
   - Build spec: `.claude/plans/build-spec.json`
@@ -133,19 +191,22 @@ The manifest drives both converter dispatch (`manifest.converter`) and phase exc
   - Pipeline source: `"figma"`
   - Renderer manifest: from `renderer-registry.js resolve <renderer> --json`
   - Figma screenshots: `.claude/visual-qa/screenshots/figma/`
+  - Lane results: the `component-lanes` return value, when the workflow ran
 - Config: `.claude/pipeline.config.json` → `orchestration` section
 
 The parallel orchestration skill will:
-1. Start `component-build` first (dispatches the converter named in the resolved manifest, see Phase 4 — all other phases depend on it)
-2. After build completes, fan out independent phases in parallel (max 3 concurrent)
-3. Run `e2e-tests` after `visual-diff` completes
+1. Treat `component-build` and `visual-diff` as already complete when the workflow ran; otherwise start `component-build` first (dispatching the converter named in the resolved manifest, see Phase 4)
+2. Fan out the independent phases in parallel (max 3 concurrent)
+3. Run `e2e-tests` after `visual-diff`
 4. Run `report` after both `quality-gate` and `e2e-tests` complete
-5. Stream results as each phase completes
+5. Stream results as each phase completes, and update `pipeline-state.json` as each one finishes
 6. Produce a batch summary with speedup metrics
 
-**Fallback:** If `orchestration.enabled` is `false` in pipeline.config.json, execute phases 4-9 sequentially as documented below.
+Stop the dev server when the last phase that needs it has finished.
 
-The individual phase descriptions below serve as reference for what each phase does. The parallel orchestration skill dispatches the same agents, skills, and scripts — it only changes the execution order.
+**Fallback:** If `orchestration.enabled` is `false` in pipeline.config.json, execute the phases sequentially as documented below.
+
+The individual phase descriptions below serve as reference for what each phase does. The workflow and the parallel orchestration skill dispatch the same agents, skills and scripts; they only change the execution order.
 
 ## Phase 4: Component Build (Renderer-Driven)
 
@@ -355,7 +416,7 @@ Present the report summary to the user when complete.
 - **Dev server won't start:** Check for port conflicts, missing dependencies. Run `pnpm install` if needed.
 - **Tests won't pass after 3 attempts:** Mark component as needing manual intervention, continue with remaining components.
 - **Build fails:** Check TypeScript errors first, then dependency issues. Report blockers to user.
-- **Session interrupted:** On resume, check TodoWrite progress. Skip completed phases, resume from first incomplete item.
+- **Session interrupted:** On resume, read `.claude/plans/pipeline-state.json` (the SessionStart status block names the phase). Skip completed phases whose artifacts still exist and resume from the first incomplete one. An interrupted `component-lanes` run can be relaunched in the same session (or one resumed with `claude --resume`), and its finished agents return their saved results; a fresh session starts the workflow over, so prefer re-running only the components the state file does not mark green.
 
 ## Completion
 

@@ -1,5 +1,9 @@
 ---
-allowed-tools: Bash, Read
+name: verify-all
+description: Run every local quality check (lint and format, types, tests, accessibility, design tokens, dead code, security, bundle size, agent plugins, renderers, Claude Code conformance) through ./scripts/verify-all.sh and report a pass/fail summary. Use before opening a pull request or calling work done. Keywords: verify all, quality gate, run all checks
+argument-hint: "[--skip a,b] [--include a,b] [--list]"
+disable-model-invocation: true
+allowed-tools: Bash(./scripts/verify-all.sh *), Read
 ---
 
 # /verify-all — Run All Local Quality Checks
@@ -35,6 +39,9 @@ The orchestrator runs these checks in order. Each is independent — a failure i
 | 6 | `dead-code` | `check-dead-code.sh` | Knip: unused exports/files/deps |
 | 7 | `security` | `check-security.sh` | Dependency audit + anti-pattern scan |
 | 8 | `bundle-size` | `check-bundle-size.sh` | Bundle analysis (skipped if no build artifact) |
+| 9 | `agent-plugins` | `verify-agent-plugins.sh` | Validates and tests agent plugins (skipped when `.claude/agent-plugins/` is empty) |
+| 10 | `renderers` | `verify-renderers.sh` | Validates every renderer manifest |
+| 11 | `claude-code` | `claude-code-conformance.js` | `.claude/` agents, skills, hooks and plugin manifest against the current Claude Code spec |
 
 ## Steps
 
@@ -58,8 +65,11 @@ tokens             pass   320ms
 dead-code          pass   2980ms
 security           pass   4111ms
 bundle-size        skip   0ms        no build artifact (dist/.next/build/out)
+agent-plugins      skip   0ms        no plugins under .claude/agent-plugins
+renderers          pass   410ms
+claude-code        pass   180ms
 
-Totals: 7 passed, 0 failed, 1 skipped
+Totals: 9 passed, 0 failed, 2 skipped
 
 ✓ All checks passed.
 ```

@@ -1,15 +1,6 @@
 ---
 name: state-management
-description: State management patterns for React apps — Zustand, TanStack Query, Context, URL state. Guides architecture decisions for local, global, server, and URL state.
-triggers:
-  - "state management"
-  - "zustand"
-  - "tanstack query"
-  - "react query"
-  - "global state"
-  - "server state"
-  - "data fetching"
-  - "caching"
+description: State management patterns for React apps — Zustand, TanStack Query, Context, URL state. Guides architecture decisions for local, global, server, and URL state. Keywords: state management, zustand, tanstack query, react query, global state, server state, data fetching, caching
 ---
 
 # State Management Patterns

@@ -363,6 +363,6 @@ npx lighthouse http://localhost:3000 --output html --output-path ./lighthouse-re
 ## Still Stuck?
 
 1. **Check existing docs:** The [Architecture Overview](architecture.md) and [Pipeline Configuration](pipeline-configuration.md) may have the answer
-2. **Search past conversations:** Use the `episodic-memory` plugin to search previous Claude Code sessions for similar issues
+2. **Pick up an earlier session:** `claude --resume` reopens a past Claude Code session; for a pipeline run, the session status block and `.claude/plans/pipeline-state.json` show where it stopped
 3. **Open an issue:** [GitHub Issues](https://github.com/PMDevSolutions/Aurelius/issues) for bugs and feature requests
 4. **Start a discussion:** [GitHub Discussions](https://github.com/PMDevSolutions/Aurelius/discussions) for questions and ideas

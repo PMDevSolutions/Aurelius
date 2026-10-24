@@ -122,6 +122,6 @@ Every decision carries a `notes` field — the designer's reasoning survives int
 - [Figma-to-React Pipeline](../figma-to-react/README.md) — the pipeline this one hands off to
 - [Pipeline Configuration Guide](../onboarding/pipeline-configuration.md) — every `conversation.*` setting
 - [Architecture Overview](../onboarding/architecture.md) — how the four pipelines fit together
-- `.claude/commands/build-from-conversation.md` — the orchestrator command
+- `.claude/skills/build-from-conversation/SKILL.md` — the orchestrator skill (`/build-from-conversation`)
 - `.claude/skills/conversation-intake/SKILL.md`, `.claude/skills/design-brief-to-figma/SKILL.md` — phase skills
 - `.claude/agents/conversation-designer.md` — the designing agent

@@ -19,7 +19,7 @@ The `svelte-converter` agent (defined in `.claude/agents/svelte-converter.md`) i
 - **`design-tokens.lock.json`** -- the single source of truth for all design values
 - **Screenshots** -- used for layout decisions only; token values always come from the lockfile
 
-The agent generates components in dependency order (leaf components first, then composites), runs `pnpm vitest run` after each batch, and tracks progress via TodoWrite. It operates autonomously with no user prompts during the build phase.
+The agent generates components in dependency order (leaf components first, then composites), runs `pnpm vitest run` after each batch, and reports each component's status for the pipeline's state file (`.claude/plans/pipeline-state.json`). It operates autonomously with no user prompts during the build phase.
 
 ## Component Patterns Generated
 
