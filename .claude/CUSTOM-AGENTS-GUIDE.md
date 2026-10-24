@@ -120,7 +120,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 
 ## How Agents Work
 
-Agents are invoked through Claude Code's Task tool. They are automatically selected based on task context:
+Agents are invoked through Claude Code's Agent tool. They are automatically selected based on task context:
 
 ```
 User: "Help me optimize this component's rendering"

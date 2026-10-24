@@ -1,7 +1,7 @@
 ---
 name: agent-expert
 description: Use this agent when creating or designing specialized Claude Code agents with proper structure and domain expertise
-tools: AskUserQuestion, Bash, TaskOutput, Edits, Glob, Grep, KillShell, Read, Skill, Task, TodoWrite, WebFetch, WebSearch, Write
+tools: Bash, Edit, Glob, Grep, TaskStop, Read, Skill, Agent, WebFetch, WebSearch, Write
 model: opus
 permissionMode: bypassPermissions
 ---

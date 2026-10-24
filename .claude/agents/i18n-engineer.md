@@ -4,7 +4,7 @@ description: Use this agent when adding internationalization (i18n) to a React, 
 tools:
   - Write
   - Read
-  - MultiEdit
+  - Edit
   - Bash
   - Grep
   - Glob

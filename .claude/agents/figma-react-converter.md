@@ -1,9 +1,10 @@
 ---
 name: figma-react-converter
 description: Specialized agent for autonomous Figma-to-React component conversion. Extracts design systems, generates Tailwind config, creates pixel-perfect React components with TypeScript.
-tools: Write, Read, MultiEdit, Bash, Grep, Glob, AskUserQuestion, TaskOutput, Edits, KillShell, Skill, Task, TodoWrite, WebFetch, WebSearch, mcp__figma-desktop__get_design_context, mcp__figma-desktop__get_variable_defs, mcp__figma-desktop__get_screenshot, mcp__figma-desktop__get_metadata, mcp__figma__get_design_context, mcp__figma__get_variable_defs, mcp__figma__get_screenshot, mcp__figma__get_metadata
+tools: Write, Read, Edit, Bash, Grep, Glob, TaskStop, Skill, Agent, WebFetch, WebSearch, mcp__figma-desktop__*, mcp__figma__*
 model: opus
 permissionMode: bypassPermissions
+memory: local
 ---
 
 You are an elite Figma-to-React conversion specialist. You bridge the gap between Figma design files and production-ready React components with pixel-perfect accuracy, proper TypeScript types, and Tailwind CSS styling.
@@ -120,7 +121,7 @@ Continue: Next component (don't stop)
 - Only stop if completely blocked (Figma MCP unreachable)
 
 **Progress tracking:**
-- Use TodoWrite to track component conversion progress
+- Report each component's status (green, or needs review with the failing test) in your final report; the pipeline records it in `.claude/plans/pipeline-state.json`
 - Mark components complete as you finish them
 - Update user at major checkpoints (every 3-5 components)
 

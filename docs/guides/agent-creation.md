@@ -16,18 +16,23 @@ The filename should be kebab-case and match the `name` field in the YAML frontma
 
 ## YAML Frontmatter
 
-Every agent file starts with a YAML frontmatter block delimited by `---`. Three fields are required; the rest are optional.
+Every agent file starts with a YAML frontmatter block delimited by `---`. Two fields are required; the rest are optional ([sub-agents reference](https://code.claude.com/docs/en/sub-agents)).
 
 ```yaml
 ---
 name: my-agent              # Required: kebab-case identifier, must match filename
 description: ...            # Required: tells Claude Code WHEN to select this agent
-tools: Read, Write, Bash    # Required: comma-separated list of allowed tools
-color: blue                 # Optional: agent color shown in the UI
-model: sonnet               # Optional: model override (sonnet, opus, haiku)
+tools: Read, Write, Edit, Bash   # Optional: allowed tools; omitted means every tool a subagent can have
+color: blue                 # Optional: red, blue, green, yellow, purple, orange, pink or cyan
+model: sonnet               # Optional: sonnet, opus, haiku, fable, a full model id, or inherit
 permissionMode: bypassPermissions  # Optional: skip confirmation prompts
+memory: local               # Optional: user, project or local agent memory (see below)
+skills:                     # Optional: skills whose full text is loaded at startup
+  - react-testing-workflows
 ---
 ```
+
+Other supported fields: `disallowedTools`, `effort` (`low` to `max`), `maxTurns`, `hooks` (see [Agent-scoped hooks](#agent-scoped-hooks)), `mcpServers`, `background`, `isolation: worktree`, `omitClaudeMd`, `initialPrompt` and `autoCompactWindow`. Claude Code ignores unknown fields without an error, so a misspelled field fails silently; `node scripts/claude-code-conformance.js` catches it.
 
 ### The `name` Field
 
@@ -51,7 +56,7 @@ The good description names specific activities (building UIs, implementing compo
 
 ### The `tools` Field
 
-A comma-separated list of tools the agent is allowed to use. Only declare tools the agent actually needs -- this follows the principle of least privilege and keeps agents focused.
+A comma-separated list (or YAML list) of tools the agent is allowed to use. Only declare tools the agent actually needs -- this follows the principle of least privilege and keeps agents focused. Omit the field to give the agent every tool a subagent can have.
 
 **File operations:**
 
@@ -60,7 +65,7 @@ A comma-separated list of tools the agent is allowed to use. Only declare tools 
 | `Read` | Read file contents |
 | `Write` | Create or overwrite files |
 | `Edit` | Replace strings in existing files |
-| `MultiEdit` | Multiple edits in a single operation |
+| `NotebookEdit` | Edit Jupyter notebook cells |
 
 **Search:**
 
@@ -68,27 +73,21 @@ A comma-separated list of tools the agent is allowed to use. Only declare tools 
 |------|---------|
 | `Grep` | Search file contents by pattern |
 | `Glob` | Find files by name pattern |
+| `LSP` | Code intelligence (definitions, references) when a language server is configured |
 
 **Shell:**
 
 | Tool | Purpose |
 |------|---------|
-| `Bash` | Execute shell commands |
-| `KillShell` | Terminate a running shell process |
+| `Bash` | Execute shell commands, including background ones |
+| `Monitor` | Watch a background process's output |
+| `TaskStop` | Stop a background shell or task |
 
-**Interaction:**
-
-| Tool | Purpose |
-|------|---------|
-| `AskUserQuestion` | Prompt the user for input |
-| `TaskOutput` | Return structured output from a sub-task |
-
-**Task management:**
+**Delegation and skills:**
 
 | Tool | Purpose |
 |------|---------|
-| `TodoWrite` | Track progress with a todo list |
-| `Task` | Spawn sub-agent tasks |
+| `Agent` | Spawn a subagent (`Agent(name, name)` restricts which types) |
 | `Skill` | Invoke a registered skill |
 
 **Web:**
@@ -98,15 +97,17 @@ A comma-separated list of tools the agent is allowed to use. Only declare tools 
 | `WebFetch` | Fetch content from a URL |
 | `WebSearch` | Search the web |
 
+**Retired names.** `MultiEdit` and `Edits` are `Edit`, `Task` is `Agent`, `KillShell` is `TaskStop`, and `SlashCommand` is `Skill`. `TaskOutput` and `BashOutput` are gone: read a background task's output file instead. `TodoWrite` is not offered on current models (Opus 4.8+, Sonnet 5+, Fable), so pipelines track progress in a state file (`.claude/plans/pipeline-state.json`). `AskUserQuestion` is never available inside a subagent: an agent returns its open questions in its final report, and the main session asks them.
+
 **MCP tools:**
 
-MCP tools follow the pattern `mcp__<server>__<action>`. Examples:
+A `tools` list excludes every MCP tool it does not name. Give an agent a whole server with a pattern, which also picks up tools the server adds later (the Figma server's `create_session`, for example):
 
-- `mcp__figma__get_design_context` -- read a Figma design
-- `mcp__playwright__browser_navigate` -- navigate a browser
-- `mcp__chrome-devtools__take_screenshot` -- capture a screenshot
+- `mcp__figma__*`, `mcp__figma-desktop__*` -- read a Figma design
+- `mcp__playwright__*` -- drive a browser
+- `mcp__chrome-devtools__*` -- screenshots, Lighthouse, DOM inspection
 
-Only include MCP tools if the agent's workflow requires them.
+Only include MCP servers the agent's workflow requires.
 
 ## Choosing a Model
 
@@ -127,7 +128,39 @@ The `permissionMode` field controls whether the agent asks for confirmation befo
 - **Omitted (default):** The agent follows normal permission rules and prompts the user before destructive operations.
 - **`bypassPermissions`:** The agent runs without confirmation prompts. Use this only for autonomous pipeline agents that execute without human oversight (e.g., the `figma-react-converter` agent inside the build pipeline).
 
-Use `bypassPermissions` sparingly. Most agents should operate under normal permission rules.
+Use `bypassPermissions` sparingly. Most agents should operate under normal permission rules. Whatever the mode, the deploy guard (`.claude/hooks/deploy-guard.sh`) denies deploys, publishes, releases, merges and pushes inside every subagent.
+
+## Agent Memory
+
+`memory` gives an agent a directory it reads at startup (the first 200 lines of its `MEMORY.md`) and curates as it works; Read, Write and Edit are enabled for it automatically.
+
+| Scope | Directory | Use |
+|-------|-----------|-----|
+| `local` | `.claude/agent-memory-local/<agent>/` (gitignored) | **This repo's default.** Aurelius is public, so what an agent learns about the apps built in a checkout stays in that checkout |
+| `project` | `.claude/agent-memory/<agent>/` (committed) | Only for knowledge that is safe to publish with the framework |
+| `user` | `~/.claude/agent-memory/<agent>/` | Knowledge that follows you across projects |
+
+Give memory only to agents whose knowledge compounds across builds: the converters, `indesign-to-react`, `visual-qa-agent`, `test-writer-fixer`, `accessibility-auditor` and `performance-benchmarker` use `memory: local`.
+
+## Preloading Skills
+
+`skills` loads the full text of each listed skill into the agent at startup, so the agent follows its playbook without having to find it. Each preload costs that many tokens on every invocation, so pair an agent only with the skill that is its core playbook (`visual-qa-agent` → `visual-qa-verification`, `test-writer-fixer` → `react-testing-workflows`). Agents that run many times in one pipeline, such as the converters in per-component lanes, load their workflow skill on demand instead. A skill with `disable-model-invocation: true` cannot be preloaded.
+
+## Agent-Scoped Hooks
+
+`hooks` in frontmatter use the same shape as `settings.json` and run only while the agent is active. Agents whose domain touches deploys, releases or publishing and that have `Bash` carry the deploy guard in subagent mode:
+
+```yaml
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/agent-no-deploy.sh
+          statusMessage: Checking for deploys and releases
+```
+
+Keep it when you create another agent of that kind (`devops-automator`, `infrastructure-maintainer`, `mobile-app-builder`, `docusaurus-expert` and `rapid-prototyper` have it). Plugin installs ignore frontmatter `hooks`, `mcpServers` and `permissionMode`; the settings-level deploy guard covers plugin agents, and the frontmatter hook keeps the rule attached when an agent file is copied into another repo.
 
 ## Agent Body
 
@@ -259,7 +292,8 @@ After creating and testing your agent, register it in two places so the rest of 
 ## Best Practices
 
 - **Keep scope focused.** One clear responsibility per agent. A "frontend-developer" agent and a "test-writer-fixer" agent are better than a single "frontend-developer-and-tester" agent.
-- **Declare minimal tools.** Only include tools the agent actually needs. An agent that writes documentation does not need `KillShell` or MCP browser tools.
+- **Declare minimal tools.** Only include tools the agent actually needs. An agent that writes documentation does not need `TaskStop` or MCP browser tools.
+- **Return questions, don't ask them.** A subagent cannot prompt the user; end with an "Open questions" list for the main session.
 - **Write actionable descriptions.** Start with "Use this agent when..." and list concrete scenarios. The description is what determines whether the agent gets selected.
 - **Include examples in the body.** Show the agent what good output looks like. If you want a specific format, demonstrate it.
 - **Use `permissionMode: bypassPermissions` sparingly.** Reserve it for autonomous pipeline agents that run end-to-end without human oversight.
