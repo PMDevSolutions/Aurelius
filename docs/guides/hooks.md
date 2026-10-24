@@ -1,33 +1,49 @@
 # Hook System
 
-Hooks are shell scripts that run automatically after Claude Code tool-use events. They provide automated reminders, guards, and quality checks without requiring manual intervention. Each hook lives in its own file under `.claude/hooks/` and is wired into `.claude/settings.json`.
+Hooks are shell scripts that Claude Code runs at fixed points in a session: before and after a tool call, and when a session starts. Aurelius uses them for one hard gate (deploys and releases), one commit gate (the design-token lockfile), a status block at session start, and short reminders that keep the quality gate in view. Each hook lives in its own file under `.claude/hooks/`, is registered in `.claude/settings.json`, and has tests in `scripts/__tests__/hooks.test.js`.
 
 ## How Hooks Fire
 
-The `PostToolUse` event fires every time the Bash tool completes inside Claude Code. The runtime iterates through every hook with `"matcher": "Bash"` and executes each one with two positional arguments:
+Claude Code passes each event to the hook as **JSON on stdin** and reads **JSON on stdout** (see the [hooks reference](https://code.claude.com/docs/en/hooks)). A `PreToolUse` event for a Bash call looks like this:
 
-| Argument | Contents |
-|----------|----------|
-| `$1` (`TOOL_INPUT`) | The command that was run, e.g. `pnpm build` or `git commit -m "feat: add hero"` |
-| `$2` (`TOOL_OUTPUT`) | The stdout/stderr returned by that command |
+```json
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": { "command": "vercel --prod" },
+  "cwd": "/Users/you/Repos/Aurelius",
+  "permission_mode": "default",
+  "agent_id": "only present inside a subagent"
+}
+```
 
-Each hook pattern-matches these inputs to decide whether to print a reminder. Output on stdout is shown to the user; no output means the hook stayed silent.
+`PostToolUse` adds `tool_response`, which for Bash is an object with `stdout`, `stderr`, `interrupted` and `isImage`. There is no exit code, so the reminders read the output to decide whether a build or test run succeeded.
+
+A hook answers with one of three shapes, or prints nothing:
+
+| Reply | Shape | Effect |
+|-------|-------|--------|
+| Decision (`PreToolUse` only) | `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"…"}}` | `ask` prompts the human, `deny` blocks the call and shows Claude the reason |
+| Context for Claude | `{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"…"}}` | The text reaches Claude beside the tool result |
+| Plain text (`SessionStart` only) | Any text | Added to the session's context |
+
+Plain stdout from a `PreToolUse` or `PostToolUse` hook goes to the debug log, not to Claude. Before the move to this contract, the hooks read `$TOOL_INPUT` and `$TOOL_OUTPUT` as positional arguments. Claude Code never sets those, so every hook received empty strings and none of them ever fired.
 
 ## Hook Configuration Format
-
-Hooks live in `hooks.PostToolUse[].hooks[]` in `.claude/settings.json`:
 
 ```json
 {
   "hooks": {
-    "PostToolUse": [
+    "PreToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/<hook-name>.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Human-readable summary"
+            "if": "Bash(git commit *)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-token-guard.sh",
+            "timeout": 30,
+            "statusMessage": "Checking the commit against the token lockfile"
           }
         ]
       }
@@ -38,193 +54,118 @@ Hooks live in `hooks.PostToolUse[].hooks[]` in `.claude/settings.json`:
 
 | Field | Purpose |
 |-------|---------|
-| `type` | Always `"command"` |
-| `command` | Invokes the hook script, passing the two tool variables as positional args |
-| `description` | Shown to users in Claude Code; describe what the hook does in plain English |
+| `matcher` | Tool name (or `startup\|resume\|clear\|compact` for `SessionStart`) |
+| `if` | One permission rule that filters the call before the script starts. Compound commands match when any subcommand does, so `Bash(git commit *)` fires on `git add -A && git commit -m x`. It is a cheap pre-filter, and each script still checks the command itself |
+| `command` | Always `bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/<name>.sh`, quoted, so it works from worktrees and cloud sessions |
+| `timeout` | Seconds before Claude Code cancels the hook |
+| `onFailure` | `"block"` on the deploy guard: if it cannot start, times out or prints invalid output, the call is blocked rather than let through. Other hooks keep the default `"continue"`, so a broken reminder never stops work |
+| `statusMessage` | Spinner text while the hook runs |
 
-Old inline shell snippets (`bash -c '...'`) are no longer used. Every hook is a file under `.claude/hooks/` so it can be edited, reviewed, and tested in isolation.
-
-## Execution Order
-
-Hooks run **sequentially** in the order they appear in the `hooks` array. The first entry runs first, the second runs second, and so on. The current order is:
-
-1. `post-build-qa.sh`
-2. `pre-commit-token-guard.sh`
-3. `dark-mode-reminder.sh`
-4. `coverage-check.sh`
-5. `lighthouse-ci.sh`
-6. `bundle-size-guard.sh`
-7. `mutation-test-reminder.sh`
-8. `regression-reminder.sh`
-
-Each hook is independent — one hook's output does not influence the next. Reordering the array changes only the visual order of reminders in the terminal.
-
-Hooks must complete quickly (target: under 2 seconds each). They run after every matching Bash tool use, so a slow hook becomes a tax on the whole session.
+`.claude/hooks/hooks.json` holds the same registrations with `${CLAUDE_PLUGIN_ROOT}` paths for installs of Aurelius as a plugin. Keep the two in sync; a test fails when they differ.
 
 ## Built-In Hooks
 
-| Hook script | Triggers when | Action |
-|-------------|---------------|--------|
-| `post-build-qa.sh` | `pnpm build` succeeds (`built in` in output) | Reminds to run quality gate (vitest, tsc, verify-tokens) |
-| `pre-commit-token-guard.sh` | `git commit` detected in input | Runs `verify-tokens.sh`, surfaces violations |
-| `dark-mode-reminder.sh` | `visual-diff.js` + `PASS` in output | Suggests `check-dark-mode.sh` |
-| `coverage-check.sh` | `vitest` + `Coverage` in output | Reminds to verify against `tdd.coverageThreshold` |
-| `lighthouse-ci.sh` | `pnpm build` succeeds | Suggests Lighthouse audit using thresholds from config |
-| `bundle-size-guard.sh` | `git commit` and a build dir exists | Warns if build dir exceeds `bundleSize.maxSizeKb` |
-| `mutation-test-reminder.sh` | `vitest` + passing-tests line | Suggests Stryker when `mutationTesting.reminder` is `true` |
-| `regression-reminder.sh` | `pnpm build` succeeds | Suggests regression test if baselines exist |
+| Hook | Event (filter) | Action |
+|------|----------------|--------|
+| `deploy-guard.sh` | `PreToolUse` Bash, every call, fail-closed | `ask` before production deploys, publishes, releases, store submissions, PR merges, workflow dispatches, force pushes and pushes to the default branch or a tag; a reminder on preview deploys; in a subagent, `deny` for all of these and for any push |
+| `agent-no-deploy.sh` | `PreToolUse` Bash, in agent frontmatter | Runs the deploy guard in subagent mode for agents whose work touches deploys, releases or publishing |
+| `pre-commit-token-guard.sh` | `PreToolUse` Bash (`git commit *`) | Runs `verify-tokens.sh` and `deny`s the commit when a file it carries has a hardcoded color, pixel value or inline style |
+| `bundle-size-guard.sh` | `PreToolUse` Bash (`git commit *`) | Reminds Claude when the build's JavaScript and CSS exceed `bundleSize.maxSizeKb`; the commit proceeds |
+| `post-build-qa.sh` | `PostToolUse` Bash (`pnpm *build*`) | After a successful build, reminds Claude to run the quality gate |
+| `lighthouse-ci.sh` | `PostToolUse` Bash (`pnpm *build*`) | After a successful build, names the Lighthouse thresholds from the config |
+| `regression-reminder.sh` | `PostToolUse` Bash (`pnpm *build*`) | After a successful build, suggests `regression-test.sh` when baselines exist |
+| `coverage-check.sh` | `PostToolUse` Bash (`*vitest*`) | Compares statement coverage with `tdd.coverageThreshold` and speaks only when it is below, or when the table is unreadable |
+| `mutation-test-reminder.sh` | `PostToolUse` Bash (`*vitest*`) | After a fully passing run, suggests Stryker when `mutationTesting.reminder` is `true` |
+| `dark-mode-reminder.sh` | `PostToolUse` Bash (`*visual-diff*`) | After a passing visual diff, suggests `check-dark-mode.sh` |
+| `session-context.sh` | `SessionStart` | Adds a status block: a pipeline run in flight and where it resumes (`.claude/plans/pipeline-state.json`), the build spec, token lockfiles, visual baselines, and uncommitted work on `main` |
 
-Most hooks match on **both** `$TOOL_INPUT` (what command ran) and `$TOOL_OUTPUT` (what it returned) to keep false triggers down.
+Every hook except the deploy guard is silent outside an Aurelius project, meaning a directory with no `.claude/pipeline.config.json`. That keeps them quiet in other repos that install Aurelius as a plugin. Apps can live at the project root or in a folder beside the framework (`./scripts/setup-project.sh my-app`). The hooks resolve the folder a command acts on from a leading `cd <dir> &&` or a `git -C <dir>`, then fall back to the event's `cwd`.
+
+### The deploy guard
+
+The guard is the runtime half of a rule: nothing reaches users, a registry or `main` without a human deciding it. `lib/deploy-classify.mjs` splits the command the way the shell does, so a commit message that mentions `vercel --prod` is text, not a deploy. It then sorts what actually runs into three tiers:
+
+| Tier | Examples | Main session | Subagent |
+|------|----------|--------------|----------|
+| gate | `vercel --prod`, `netlify deploy --prod`, `wrangler deploy`, `firebase deploy`, `eas submit`, `npm publish`, `changeset publish`, `pnpm release`, `gh release create`, `gh pr merge`, `gh workflow run`, `git push --force`, `git push origin main`, tag pushes, `docker push`, `aws s3 sync … s3://` | `ask` | `deny` |
+| preview | `vercel`, `netlify deploy`, `wrangler pages deploy --branch feat-x`, `eas update --branch preview` | reminder | `deny` |
+| outward | `git push` of a feature branch, `gh pr create`, `gh issue comment` | silent | `deny` |
+
+Any command with `--dry-run` passes. In `bypassPermissions` and `dontAsk`, where a hook cannot prompt, an `ask` becomes a `deny` that says to run the command from a session in default or auto mode. In `claude -p`, nobody can answer the prompt, so the call is refused. Plugin agents ignore hooks in their frontmatter, so the settings-level guard reads `agent_id` from the event and denies in every subagent on its own.
 
 ## Hook Script Anatomy
 
-Every hook follows the same skeleton:
-
 ```bash
 #!/usr/bin/env bash
-# my-hook.sh — short description of what this hook does
+# my-hook.sh — PostToolUse hook (matcher: Bash, if: "Bash(pnpm test*)").
+# What it reacts to and what it returns.
 #
-# Args:
-#   $1  TOOL_INPUT
-#   $2  TOOL_OUTPUT
-#
-# Exit: always 0.
-
+# Input: the hook event as JSON on stdin. Output: JSON on stdout, or nothing.
+# Always exits 0.
 set -u
-TOOL_INPUT="${1:-}"
-TOOL_OUTPUT="${2:-}"
 trap 'exit 0' ERR
 
-# Decide whether to fire.
-if echo "$TOOL_INPUT" | grep -q "<trigger>"; then
-  echo "[my-hook] reminder text"
-fi
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/hook-io.sh
+source "$HOOK_DIR/lib/hook-io.sh"
+# shellcheck source=lib/pipeline-helpers.sh
+source "$HOOK_DIR/lib/pipeline-helpers.sh"
 
+hook_read_input      # HOOK_JSON, TOOL_NAME, TOOL_COMMAND, TOOL_FILE_PATH, TOOL_RESPONSE
+hook_read_context    # HOOK_PERMISSION_MODE, HOOK_AGENT_ID, HOOK_AGENT_TYPE, HOOK_CWD
+
+[ "$TOOL_NAME" = "Bash" ] || exit 0
+case "$TOOL_COMMAND" in *"pnpm test"*) ;; *) exit 0 ;; esac
+CONFIG="$(pipeline_config_file "$(pipeline_app_dir "$TOOL_COMMAND")")"
+[ -n "$CONFIG" ] || exit 0
+
+hook_additional_context PostToolUse "[my-hook] reminder text for Claude"
 exit 0
 ```
 
-The defensive bits matter:
+| Piece | Why |
+|-------|-----|
+| `set -u`, `trap 'exit 0' ERR`, final `exit 0` | A hook bug must never break a session |
+| `lib/hook-io.sh` | The stdin/stdout contract, shared with Maecenas: `hook_read_input`, `hook_read_context`, `hook_json_get`, and the emitters `hook_pretooluse_decision`, `hook_gate_decision`, `hook_additional_context`, `hook_system_message` |
+| `lib/pipeline-helpers.sh` | Aurelius helpers: `pipeline_app_dir`, `pipeline_config_file`, `pipeline_config_get` (`false` and `0` count as values), `pipeline_bash_output`, `pipeline_is_build_command`, `pipeline_build_succeeded` |
+| `[hook-name]` prefix | Makes it clear which hook produced a reminder |
 
-| Pattern | Why |
-|---------|-----|
-| `set -u` | Catches typos / unset variables early, preventing silent skips |
-| `${1:-}` defaults | Tolerates being called with no args (e.g. from a test) |
-| `trap 'exit 0' ERR` | Any unexpected runtime error exits silently rather than crashing |
-| Final `exit 0` | Hooks are informational and must never block the workflow |
-| `[hook-name]` prefix | Makes it easy to identify which hook produced a message in the terminal |
-
-Reading thresholds from `pipeline.config.json` follows the same defensive pattern: try Node, fall back to a hard-coded default if `node` is unavailable or the field is missing.
-
-```bash
-THRESHOLD=80
-if [ -f .claude/pipeline.config.json ] && command -v node >/dev/null 2>&1; then
-  PARSED="$(node -e 'const c=require("./.claude/pipeline.config.json"); console.log(c.tdd?.coverageThreshold ?? 80);' 2>/dev/null)" || PARSED=""
-  [ -n "$PARSED" ] && THRESHOLD="$PARSED"
-fi
-```
+The scripts run on the macOS system bash (3.2) as well as Linux bash 5, so avoid `${var,,}`, `mapfile` and associative arrays.
 
 ## Creating a Custom Hook
 
-### 1. Write the script
-
-Create `.claude/hooks/my-hook.sh`. Use the skeleton above and `chmod +x` it:
-
-```bash
-chmod +x .claude/hooks/my-hook.sh
-```
-
-### 2. Register it in settings.json
-
-Append a new entry to `hooks.PostToolUse[0].hooks`:
-
-```json
-{
-  "type": "command",
-  "command": "bash .claude/hooks/my-hook.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-  "description": "What the hook does (shown to users)"
-}
-```
-
-### 3. Test in isolation
-
-Hooks accept tool input and output as plain args, so you can run them directly:
+1. Write `.claude/hooks/my-hook.sh` from the skeleton above and `chmod +x` it.
+2. Register it in `.claude/settings.json` with a narrow `if` filter, and add the same entry, with a `${CLAUDE_PLUGIN_ROOT}` path, to `.claude/hooks/hooks.json`.
+3. Test it by piping an event in:
 
 ```bash
 # Trigger case
-bash .claude/hooks/my-hook.sh "pnpm test" "Tests  42 passed"
-# → expected: prints reminder, exit 0
-
-# No-trigger case
-bash .claude/hooks/my-hook.sh "ls" "file.txt"
-# → expected: prints nothing, exit 0
+echo '{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"pnpm test"},"tool_response":{"stdout":"ok","stderr":""}}' \
+  | CLAUDE_PROJECT_DIR=$PWD bash .claude/hooks/my-hook.sh
+# → {"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"[my-hook] …"}}
 
 # Robustness
-bash .claude/hooks/my-hook.sh
-# → expected: prints nothing, exit 0 (no crash on missing args)
+printf '' | bash .claude/hooks/my-hook.sh; echo "exit $?"      # → exit 0, no output
+printf '{bad' | bash .claude/hooks/my-hook.sh; echo "exit $?"  # → exit 0, no output
 ```
 
-For automated coverage, add a vitest spec under `scripts/__tests__/hooks.test.js`. The existing file is a good template — it spins up a temp project, invokes each hook with controlled inputs, and asserts on stdout + exit code.
-
-### Example — changelog reminder after git tag
-
-`.claude/hooks/changelog-reminder.sh`:
-
-```bash
-#!/usr/bin/env bash
-set -u
-TOOL_INPUT="${1:-}"
-trap 'exit 0' ERR
-
-if echo "$TOOL_INPUT" | grep -q "git tag"; then
-  echo "[changelog-reminder] New tag created. Update CHANGELOG.md if you haven't."
-fi
-exit 0
-```
-
-`.claude/settings.json` addition:
-
-```json
-{
-  "type": "command",
-  "command": "bash .claude/hooks/changelog-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-  "description": "Remind to update changelog after creating git tags"
-}
-```
+4. Add cases to `scripts/__tests__/hooks.test.js`. Add the script to `HOOKS` there; the contract tests then check exit codes, empty input and malformed input for it.
+5. Run `node scripts/claude-code-conformance.js`, which fails on hooks that still use the positional-argument contract, unknown events and missing scripts.
 
 ## Best Practices
 
-- **Keep hooks fast** — under 2 seconds each. They run on every matching Bash tool use.
-- **Always `exit 0`** — hooks are informational, never blocking. A non-zero exit may interrupt Claude Code's flow.
-- **Match on both input and output** when possible — single-side matching causes false triggers.
-- **Prefix output with `[hook-name]`** — makes terminal messages skimmable.
-- **Read thresholds from config** — never hard-code. Fall back to a default if the config or `node` is unavailable.
-- **Use `set -u` and `trap 'exit 0' ERR`** — catches typos and absorbs unexpected errors.
-- **Tolerate missing tooling** — guard each external command with `command -v` and `[ -f ... ]` checks.
+- **Gate with `PreToolUse`, remind with `PostToolUse`.** A `PostToolUse` hook fires after the command ran, so it can only inform. Anything that protects something (a deploy, the lockfile) belongs before the call, as `ask` or `deny`.
+- **Filter with `if`.** Every unfiltered Bash hook starts a process on every Bash call.
+- **Return context, not plain text.** Reminders go to Claude through `additionalContext`; plain stdout never reaches it.
+- **Read thresholds from `pipeline.config.json`** with `pipeline_config_get` and a default.
+- **Stay silent outside Aurelius projects**, so the plugin build does not talk in other repos.
 
 ## Troubleshooting
 
-**Hook not firing**
-Test the trigger pattern manually:
-```bash
-echo "pnpm build --production" | grep -q "pnpm build" && echo "match"
-```
-If the script is the issue, run it directly with sample inputs (`bash .claude/hooks/foo.sh "..." "..."`).
+**Hook not firing.** Run `/hooks` in Claude Code to see what is registered, then pipe a sample event into the script (above). `claude --debug` logs each hook run with its output. A hook registered in `settings.json` after the session started may need `/hooks` or a new session to load.
 
-**Hook firing too often**
-Tighten the pattern — match on both input and output instead of one:
-```bash
-# Too broad — fires on any vitest run
-if echo "$TOOL_INPUT" | grep -q "vitest"; then ...
+**Reminder not reaching Claude.** The hook printed plain text. Use `hook_additional_context`.
 
-# Better — only fires when coverage output is present
-if echo "$TOOL_INPUT" | grep -q "vitest" && echo "$TOOL_OUTPUT" | grep -q "Coverage"; then ...
-```
+**Deploy guard asking on something harmless.** Check what the classifier sees: `printf '%s' '<command>' | node .claude/hooks/lib/deploy-classify.mjs --cwd .` prints the tier and reason. Fix the rule in `lib/deploy-classify.mjs` and add the case to the classifier tests.
 
-**Hook blocking workflow**
-Confirm the script ends with `exit 0` and uses `trap 'exit 0' ERR`. Avoid `set -e` — it makes the hook exit non-zero on any failed command.
-
-**Hook output not visible**
-The hook must echo to stdout, not stderr. Run the script directly in a terminal to confirm it produces output. Also double-check the settings.json command quoting — escaped quotes around `$TOOL_INPUT` are required so the shell expands the variable but treats it as one argument.
-
-**Hook script not executable**
-Run `chmod +x .claude/hooks/<name>.sh`. The `bash <path>` invocation in settings.json also works without the executable bit, but committing the bit avoids confusion when running the script directly.
+**Hook script not executable.** Run `chmod +x .claude/hooks/<name>.sh`. The `bash <path>` invocation works without the bit, but the contract test checks it.

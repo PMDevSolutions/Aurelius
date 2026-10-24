@@ -1,48 +1,86 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-context.sh",
+            "timeout": 15,
+            "statusMessage": "Loading Aurelius status"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deploy-guard.sh",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking the deploy guard"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-token-guard.sh",
+            "timeout": 30,
+            "statusMessage": "Checking the commit against the token lockfile"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/bundle-size-guard.sh",
+            "timeout": 15,
+            "statusMessage": "Checking the bundle size"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-build-qa.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run quality gate after successful builds during the pipeline"
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-build-qa.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-commit-token-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Check for token violations before git commits"
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/lighthouse-ci.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/dark-mode-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run dark mode verification after visual diff passes"
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/regression-reminder.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/coverage-check.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to check coverage threshold after test runs with coverage"
+            "if": "Bash(*vitest*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/coverage-check.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/lighthouse-ci.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Suggest Lighthouse audit after successful builds with threshold targets"
+            "if": "Bash(*vitest*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/mutation-test-reminder.sh",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/bundle-size-guard.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Warn if bundle size exceeds configured limit before commits"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/mutation-test-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Suggest mutation testing after all tests pass"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/regression-reminder.sh \"$TOOL_INPUT\" \"$TOOL_OUTPUT\"",
-            "description": "Remind to run visual regression tests after successful builds"
+            "if": "Bash(*visual-diff*)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/dark-mode-reminder.sh",
+            "timeout": 10
           }
         ]
       }

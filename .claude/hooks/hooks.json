@@ -1,0 +1,89 @@
+{
+  "description": "Aurelius hooks when installed as a plugin. Mirrors .claude/settings.json → hooks with ${CLAUDE_PLUGIN_ROOT} paths; keep the two in sync (scripts/__tests__/hooks.test.js checks).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/session-context.sh\"",
+            "timeout": 15,
+            "statusMessage": "Loading Aurelius status"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/deploy-guard.sh\"",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking the deploy guard"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/pre-commit-token-guard.sh\"",
+            "timeout": 30,
+            "statusMessage": "Checking the commit against the token lockfile"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/bundle-size-guard.sh\"",
+            "timeout": 15,
+            "statusMessage": "Checking the bundle size"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/post-build-qa.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/lighthouse-ci.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpm *build*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/regression-reminder.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*vitest*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/coverage-check.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*vitest*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/mutation-test-reminder.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Bash(*visual-diff*)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/dark-mode-reminder.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
