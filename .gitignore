@@ -3,6 +3,8 @@
 !.claude/agents/
 !.claude/skills/
 !.claude/hooks/
+!.claude/rules/
+!.claude/workflows/
 !.claude/*.md
 !.claude/settings.json
 !.claude/pipeline.config.json
@@ -125,3 +127,6 @@ RELEASE_NOTES.md
 # Stryker mutation testing
 .stryker-tmp/
 reports/mutation/
+
+# claude plugin eval output (evals/README.md)
+evals/results/

@@ -54,6 +54,10 @@
     {
       "filename": "packages/gui/package.json",
       "type": "json"
+    },
+    {
+      "filename": ".claude-plugin/plugin.json",
+      "type": "json"
     }
   ],
   "scripts": {
