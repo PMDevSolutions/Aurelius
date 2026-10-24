@@ -133,7 +133,7 @@ All other settings (visual diff threshold, TDD enforcement, coverage threshold, 
 - **Wrong framework detected:** Explicitly pass `--outputTarget` to override auto-detection, or set `outputTarget` in the intake interview.
 - **Visual diff threshold too strict:** Adjust `visualDiff.threshold` in `pipeline.config.json`. Screenshot-sourced designs may have rendering differences -- consider using 3% threshold.
 - **Tests won't pass after 3 attempts:** Pipeline marks the component for manual intervention and continues with remaining components.
-- **Session interrupted:** The pipeline tracks progress with TodoWrite. On resume, completed phases are skipped.
+- **Session interrupted:** The pipeline tracks its run in `.claude/plans/pipeline-state.json`, and the next session's status block says where it stopped. Re-run `/build-from-screenshot`: completed phases are skipped and the run resumes at the first incomplete one.
 
 ## Related Documentation
 

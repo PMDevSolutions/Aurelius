@@ -19,7 +19,7 @@ The `react-native-converter` agent (defined in `.claude/agents/react-native-conv
 - **`design-tokens.lock.json`** -- the single source of truth for all design values
 - **Screenshots** -- used for layout decisions only; token values always come from the lockfile
 
-The agent maps web design patterns to native equivalents. Grid layouts become flex-based `View` hierarchies, HTML elements become native primitives, and CSS properties translate to React Native style props or NativeWind classes. It generates components in dependency order (leaf components first, then composites), runs tests after each batch, and tracks progress via TodoWrite.
+The agent maps web design patterns to native equivalents. Grid layouts become flex-based `View` hierarchies, HTML elements become native primitives, and CSS properties translate to React Native style props or NativeWind classes. It generates components in dependency order (leaf components first, then composites), runs tests after each batch, and reports each component's status for the pipeline's state file (`.claude/plans/pipeline-state.json`).
 
 ## NativeWind Setup
 

@@ -134,7 +134,7 @@ Identical to the Figma pipeline:
 - **Font identification wrong:** Canva uses licensed fonts that may not match system fonts. The pipeline will suggest the closest Google Font or system font. Confirm or override during the token confirmation step.
 - **Visual diff threshold too strict:** Adjust `visualDiff.threshold` in `pipeline.config.json`. Canva designs may have subtle rendering differences -- consider using 3% threshold instead of the default 2%.
 - **Tests won't pass after 3 attempts:** Pipeline marks the component for manual intervention and continues with remaining components.
-- **Session interrupted:** The pipeline tracks progress with TodoWrite. On resume, completed phases are skipped.
+- **Session interrupted:** The pipeline tracks its run in `.claude/plans/pipeline-state.json`, and the next session's status block says where it stopped. Re-run `/build-from-canva`: completed phases are skipped and the run resumes at the first incomplete one.
 
 ## Related Documentation
 

@@ -4,7 +4,7 @@ Pipeline phases can fail for many reasons: network timeouts, missing dependencie
 
 ## How the Pipeline Tracks Progress
 
-The pipeline uses TodoWrite tasks to track each phase. As phases complete they are marked done. Failed phases remain in-progress or pending. When you re-run the pipeline command, completed phases are checked against the cache. If their inputs have not changed the phase is skipped (cache hit). This means re-running the pipeline is always safe and efficient — you will never redo work that already succeeded.
+The pipeline records each phase in `.claude/plans/pipeline-state.json` (shape: `.claude/skills/build-from-figma/SKILL.md` → Progress Tracking). As phases complete they are marked `done`; failed phases stay `running`, `failed` or `needs-review`, and the next session's status block names the phase where the run stopped. When you re-run the pipeline command, completed phases are checked against the cache. If their inputs have not changed the phase is skipped (cache hit). This means re-running the pipeline is always safe and efficient — you will never redo work that already succeeded.
 
 Check current cache state at any time:
 

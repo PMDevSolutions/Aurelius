@@ -188,14 +188,17 @@ The pipeline auto-detects the framework from `package.json` if `outputTarget` is
 Aurelius/
 ├── .claude/
 │   ├── agents/              # 56 specialized agents
-│   ├── skills/              # 32 development skills
-│   ├── commands/            # Slash commands (/build-from-figma, /lint, /test)
-│   ├── hooks/               # Hook scripts (8 automated hooks)
+│   ├── skills/              # 32 skills, each also a slash command (/build-from-figma, /lint, /test)
+│   ├── hooks/               # 11 hooks: deploy guard, commit guards, reminders, session status
+│   ├── rules/               # Path-scoped standards
+│   ├── workflows/           # component-lanes.js (Phases 4-5)
 │   ├── pipeline.config.json # All pipeline thresholds and behavior
 │   ├── CUSTOM-AGENTS-GUIDE.md
 │   ├── PLUGINS-REFERENCE.md
 │   └── settings.json        # Claude Code settings and hook config
-├── scripts/                 # 30+ automation scripts
+├── .claude-plugin/          # Packages the repo as the `aurelius` plugin
+├── evals/                   # claude plugin eval cases
+├── scripts/                 # 57 automation scripts
 ├── templates/               # Starter configs (Next.js, Vite, Vue, Svelte, Expo)
 ├── docs/                    # Documentation
 │   ├── onboarding/          # You are here

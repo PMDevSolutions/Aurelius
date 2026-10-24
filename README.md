@@ -12,6 +12,8 @@ A Claude Code-integrated multi-framework app development framework with TypeScri
 - **App-Type Awareness** -- Tailored build and test strategies for web apps, Chrome extensions, and PWAs
 - **Testing Stack** -- Vitest, React Testing Library, Playwright (cross-browser), Storybook, and pixel-diff visual QA
 - **Code Quality Scripts** -- Linting, formatting, type checking, bundle analysis, accessibility scanning, and design token verification
+- **Guard Rails** -- Claude Code hooks that stop deploys, publishes and releases for a human, deny commits that hardcode design values, and report a pipeline run in flight at session start
+- **Installable as a Plugin** -- other repos get the agents, knowledge skills and deploy guard with `/plugin install aurelius --marketplace PMDevSolutions/Aurelius`
 
 ## Quick Start
 
@@ -91,11 +93,15 @@ project-root/
 │   └── react-development/       # Development standards
 ├── .claude/              # Claude Code configuration
 │   ├── agents/                  # 56 custom agents
-│   ├── skills/                  # 32 development skills
-│   ├── commands/                # Slash commands (/build-from-figma, /lint, /test)
+│   ├── skills/                  # 32 skills; each is also a slash command (/build-from-figma, /lint, /test)
+│   ├── hooks/                   # Deploy guard, token guard, reminders, session status (stdin JSON hooks)
+│   ├── rules/                   # Path-scoped standards (app code, pipeline artifacts, scripts, Claude Code)
+│   ├── workflows/               # component-lanes.js: build and visual-diff lanes per component
 │   ├── pipeline.config.json     # Pipeline thresholds and app-type definitions
 │   ├── CUSTOM-AGENTS-GUIDE.md   # Agent catalog
 │   └── PLUGINS-REFERENCE.md     # Plugin reference
+├── .claude-plugin/       # Packages the repo as the `aurelius` Claude Code plugin
+├── evals/                # claude plugin eval cases for the framework's hard rules
 ├── CLAUDE.md             # Claude Code project instructions
 └── README.md             # This file
 ```
@@ -242,6 +248,19 @@ Full catalog: `.claude/CUSTOM-AGENTS-GUIDE.md`
 |---|-------|---------|
 | 24 | storybook-story-generation | Auto-generate Storybook stories + MDX docs from built components (Phase 4.5, non-blocking) |
 
+### Pipeline and Quality Skills (slash commands)
+
+| # | Skill | Purpose |
+|---|-------|---------|
+| 25 | build-from-figma | `/build-from-figma <url>`: the full Figma-to-app pipeline |
+| 26 | build-from-canva | `/build-from-canva <url>`: the same pipeline from a Canva design |
+| 27 | build-from-screenshot | `/build-from-screenshot <url \| paths>`: from a live URL or images, any output target |
+| 28 | build-from-conversation | `/build-from-conversation [description]`: interview, generated Figma file, then the Figma pipeline |
+| 29 | verify-all | `/verify-all`: every local quality check with a summary |
+| 30 | ci | `/ci`: the same checks, JSON output, non-zero exit on failure |
+| 31 | lint | `/lint [--check]`: ESLint + Prettier |
+| 32 | test | `/test [file \| -t pattern] [--coverage]`: Vitest |
+
 Full catalog: `.claude/skills/README.md`
 
 ## Scripts
@@ -325,20 +344,17 @@ The framework uses four MCP (Model Context Protocol) servers for Figma access, b
 | **Canva AI Connector** | Search, export, interact with Canva designs | Phases 1-2 (Canva) |
 | **Playwright MCP** | Cross-browser testing (Chromium, Firefox, WebKit) | Phases 6-7 |
 
-MCP servers are configured in `.claude/settings.json`. Figma Desktop MCP requires the Figma desktop app running locally.
+MCP servers are configured in `.mcp.json` (Chrome DevTools MCP at user scope; see `.claude/PLUGINS-REFERENCE.md`). Figma Desktop MCP requires the Figma desktop app running locally.
 
-## Claude Code Plugins
+## Claude Code Plugin
+
+Aurelius needs no plugin to run, and it is one: `.claude-plugin/plugin.json` packages the agents, skills, hooks and workflow. To use the agents and knowledge skills in another repo:
 
 ```
-episodic-memory    # Persistent memory across sessions
-commit-commands    # Git workflow automation (/commit, /commit-push-pr)
-superpowers        # Advanced development workflows (TDD, planning, debugging)
-ai-taskmaster      # Task management (local)
+/plugin install aurelius --marketplace PMDevSolutions/Aurelius
 ```
 
-GitHub integration via `gh` CLI (not a plugin).
-
-Details: `.claude/PLUGINS-REFERENCE.md`
+The pipeline skills call this repo's `scripts/`, so they run only in an Aurelius checkout. Optional official plugins that fit (`typescript-lsp`, `commit-commands` for `/commit`) and the MCP servers the agents expect: `.claude/PLUGINS-REFERENCE.md`. GitHub integration is the `gh` CLI (not a plugin).
 
 ## Documentation Index
 
@@ -359,7 +375,9 @@ Details: `.claude/PLUGINS-REFERENCE.md`
 | Desktop GUI | `docs/GUI.md` | The experimental Electron GUI: screens, commands, packaging |
 | Agent catalog | `.claude/CUSTOM-AGENTS-GUIDE.md` | All 56 agents with use cases |
 | Skills catalog | `.claude/skills/README.md` | All 32 skills with triggers |
-| Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Plugin configuration and commands |
+| Plugin reference | `.claude/PLUGINS-REFERENCE.md` | Aurelius as a plugin, optional plugins, expected MCP servers |
+| Hook system | `docs/guides/hooks.md` | The deploy guard, commit guards and reminders, and how to write a hook |
+| Evals | `evals/README.md` | `claude plugin eval` cases for the framework's hard rules |
 | Scripts reference | `scripts/README.md` | All scripts with usage examples |
 | Templates reference | `templates/README.md` | Starter configs and how to use them |
 | Pipeline config | `.claude/pipeline.config.json` | Thresholds, app types, quality gates |

@@ -1081,6 +1081,8 @@ Conversation pipeline configuration: structured-interview limits and Figma desig
 
 Parallel phase-execution graph. Phase keys are arbitrary; each phase's `depends[]` entries must reference other keys in the same `phases` map.
 
+When the Workflow tool is available, the pipelines run `component-build` and `visual-diff` through the `component-lanes` workflow first, which reads `iterationLoop.maxVisualIterations` and `iterationLoop.diffPassThreshold`, and this graph then schedules the remaining phases (their dependencies on those two count as satisfied).
+
 | Field                  | Type           | Default     | Description                                                        |
 | ---------------------- | -------------- | ----------- | ------------------------------------------------------------------ |
 | `enabled`              | `boolean`      | `true`      | Enable parallel orchestration. When `false`, phases run sequentially.|

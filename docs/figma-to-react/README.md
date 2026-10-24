@@ -10,10 +10,10 @@ The `/build-from-figma` command runs a 12-phase autonomous pipeline:
 [0] Token Sync  → sync-tokens.sh → drift check (conditional)
 [1] Intake      → figma-intake skill → build-spec.json
 [2] Token Lock  → design-token-lock skill → lockfile + Tailwind config
-[3] TDD (Gate)  → tdd-from-figma skill → failing tests (RED)
-[4] Build       → figma-to-react-workflow skill → components pass tests (GREEN)
+[3] TDD (Gate)  → tdd-from-figma skill → failing tests (RED), test checksums recorded
+[4] Build       → component-lanes workflow → one converter lane per component (GREEN)
 [4.5] Storybook → generate-stories.sh → auto-generated stories
-[5] Visual Diff → visual-qa-verification skill → pixel-diff loop
+[5] Visual Diff → component-lanes workflow → bounded pixel-diff rounds, one fixer per component
 [5.5] Dark Mode → check-dark-mode.sh → dark mode verification
 [6] E2E Tests   → e2e-test-generator skill → Playwright tests
 [7] Cross-Browser→ Firefox/WebKit screenshots (non-blocking)
@@ -22,11 +22,13 @@ The `/build-from-figma` command runs a 12-phase autonomous pipeline:
 [9] Report      → .claude/visual-qa/build-report.md + docs/components/
 ```
 
+Phases 4 and 5 run through the `component-lanes` workflow (`.claude/workflows/component-lanes.js`) when the Workflow tool is available: the attempt bound, the check that no test file changed, the visual iteration bound and the pass decision are enforced in its code. `parallel-orchestration` then runs Phases 4.5-9, or all of 4-9 without workflows. The run's progress lives in `.claude/plans/pipeline-state.json`, so an interrupted session resumes where it stopped.
+
 ## Prerequisites
 
-- **Claude Code** with the framework's agents, skills, and plugins installed
+- **Claude Code** in an Aurelius checkout (the agents, skills, hooks and workflow load from `.claude/`)
 - **Figma MCP** configured (Figma Desktop app running locally, or remote MCP fallback)
-- **Chrome DevTools MCP** for screenshots and Lighthouse audits
+- **Chrome DevTools MCP** for screenshots and Lighthouse audits (not in `.mcp.json`; add it at user scope, see `.claude/PLUGINS-REFERENCE.md`)
 - **Playwright MCP** for cross-browser testing
 - **Node.js 18+** and **pnpm** installed
 - **Figma file URL** with designs ready for development
@@ -199,7 +201,7 @@ See the full config file for all options.
 - **Visual diff threshold too strict:** Adjust `visualDiff.threshold` in `pipeline.config.json`. Anti-aliasing differences are common -- enable `antialiasing: true`.
 - **Chrome extension E2E fails:** Ensure `pnpm build` succeeds first. Check that `dist/manifest.json` exists. Extension tests require non-headless Chromium.
 - **Tests won't pass after 3 attempts:** Pipeline marks the component for manual intervention and continues with remaining components.
-- **Session interrupted:** The pipeline tracks progress with TodoWrite. On resume, completed phases are skipped.
+- **Session interrupted:** The pipeline tracks its run in `.claude/plans/pipeline-state.json`, and the next session's status block says where it stopped. Re-run `/build-from-figma`: completed phases are skipped and the run resumes at the first incomplete one.
 
 ## Related Documentation
 
