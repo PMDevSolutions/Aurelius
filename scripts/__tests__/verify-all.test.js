@@ -30,6 +30,7 @@ const ALL_CHECKS = [
   ["bundle-size", "check-bundle-size.sh"],
   ["agent-plugins", "verify-agent-plugins.sh"],
   ["renderers", "verify-renderers.sh"],
+  ["claude-code", "claude-code-conformance.js"],
 ];
 
 function tmpProject({ failing = [], hasBuild = false } = {}) {
@@ -40,7 +41,11 @@ function tmpProject({ failing = [], hasBuild = false } = {}) {
   for (const [name, file] of ALL_CHECKS) {
     const exit = failing.includes(name) ? 1 : 0;
     const path = join(dir, "scripts", file);
-    writeFileSync(path, `#!/usr/bin/env bash\necho "$0 ran"\nexit ${exit}\n`);
+    // A .js stub is plain JavaScript, which only passes when verify-all runs it with node.
+    const body = file.endsWith(".js")
+      ? `const ran = "node";\nconsole.log(ran);\nprocess.exit(${exit});\n`
+      : `#!/usr/bin/env bash\necho "$0 ran"\nexit ${exit}\n`;
+    writeFileSync(path, body);
     chmodSync(path, 0o755);
   }
 
@@ -110,8 +115,8 @@ describe("all checks pass", () => {
     const json = JSON.parse(r.stdout);
     expect(json.ok).toBe(true);
     expect(json.summary.fail).toBe(0);
-    expect(json.summary.total).toBe(10);
-    expect(json.checks).toHaveLength(10);
+    expect(json.summary.total).toBe(11);
+    expect(json.checks).toHaveLength(11);
     for (const check of json.checks) {
       expect(["pass", "skip"]).toContain(check.status);
     }
@@ -155,9 +160,9 @@ describe("--skip and --include", () => {
     const json = JSON.parse(r.stdout);
     const passed = json.checks.filter((c) => c.status === "pass").map((c) => c.name);
     expect(passed.sort()).toEqual(["tokens", "types"]);
-    // The other eight should all be skipped.
+    // The other nine should all be skipped.
     expect(json.summary.pass).toBe(2);
-    expect(json.summary.skip).toBe(8);
+    expect(json.summary.skip).toBe(9);
   });
 
   it("failure inside --include still triggers exit 1", () => {
@@ -169,6 +174,20 @@ describe("--skip and --include", () => {
     expect(r.exitCode).toBe(1);
     const json = JSON.parse(r.stdout);
     expect(json.ok).toBe(false);
+  });
+});
+
+describe("node checks", () => {
+  it("runs a .js check with node and reports its exit code", () => {
+    const ok = JSON.parse(run(tmpProject({ hasBuild: true }), ["--ci"]).stdout);
+    expect(ok.checks.find((c) => c.name === "claude-code").status).toBe("pass");
+    const failing = JSON.parse(
+      run(tmpProject({ failing: ["claude-code"], hasBuild: true }), ["--ci"]).stdout,
+    );
+    expect(failing.checks.find((c) => c.name === "claude-code")).toMatchObject({
+      status: "fail",
+      exitCode: 1,
+    });
   });
 });
 

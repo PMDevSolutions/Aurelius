@@ -9,3 +9,7 @@ docs/
 app/
 *.md
 *.idml
+
+# Shared verbatim with Maecenas (PMDevSolutions/Maecenas); sync by copying, do not reformat
+scripts/claude-code-conformance.js
+scripts/lib/claude-code-spec.json

@@ -12,13 +12,7 @@
       "source": "./",
       "description": "Specialist agents, design-to-code pipelines with enforced TDD, a token lockfile and pixel-diff visual QA, and a deploy guard.",
       "category": "development",
-      "tags": [
-        "react",
-        "design-to-code",
-        "tdd",
-        "visual-qa",
-        "tailwind"
-      ]
+      "tags": ["react", "design-to-code", "tdd", "visual-qa", "tailwind"]
     }
   ]
 }

@@ -22,10 +22,10 @@ The slash command wraps `./scripts/verify-all.sh --ci`. The `--ci` flag implies 
 
 ## What runs
 
-Same ten checks as `/verify-all`, in the same order:
+Same eleven checks as `/verify-all`, in the same order:
 
 ```
-lint-and-format → types → tests → accessibility → tokens → dead-code → security → bundle-size → agent-plugins → renderers
+lint-and-format → types → tests → accessibility → tokens → dead-code → security → bundle-size → agent-plugins → renderers → claude-code
 ```
 
 `bundle-size` is automatically skipped when no build artifact (`dist/`, `.next/`, `build/`, `out/`) is present, and `agent-plugins` when `.claude/agent-plugins/` has none. No check requires a dev server, so all of them run in CI without extra setup.
@@ -37,7 +37,7 @@ JSON written to stdout:
 ```json
 {
   "ok": false,
-  "summary": { "pass": 7, "fail": 1, "skip": 2, "total": 10 },
+  "summary": { "pass": 8, "fail": 1, "skip": 2, "total": 11 },
   "checks": [
     { "name": "lint-and-format", "status": "pass", "exitCode": 0, "durationMs": 2618, "reason": "" },
     { "name": "types",           "status": "fail", "exitCode": 1, "durationMs": 1843, "reason": "exit 1" },
@@ -70,7 +70,7 @@ JSON written to stdout:
 Parse the JSON and report the summary in plain text:
 
 ```
-7 passed, 1 failed, 2 skipped
+8 passed, 1 failed, 2 skipped
 Failing: types (exit 1, 1843ms)
 ```
 
