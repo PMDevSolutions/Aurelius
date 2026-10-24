@@ -8,7 +8,6 @@ const ROOT = join(__dirname, "..", "..");
 const FIXTURES = join(ROOT, ".claude", "test-fixtures");
 const AGENTS = join(ROOT, ".claude", "agents");
 const SKILLS = join(ROOT, ".claude", "skills");
-const COMMANDS = join(ROOT, ".claude", "commands");
 const CONFIG_PATH = join(ROOT, ".claude", "pipeline.config.json");
 
 function loadBuildSpec(name) {
@@ -201,8 +200,8 @@ describe("canva-react-converter agent definition", () => {
   });
 });
 
-describe("build-from-canva command definition", () => {
-  const content = loadMarkdown(join(COMMANDS, "build-from-canva.md"));
+describe("build-from-canva skill definition", () => {
+  const content = loadMarkdown(join(SKILLS, "build-from-canva", "SKILL.md"));
 
   it("includes retry protocol", () => {
     expect(content).toContain("Retry Protocol");

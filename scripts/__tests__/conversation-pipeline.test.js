@@ -8,7 +8,6 @@ const ROOT = join(__dirname, "..", "..");
 const FIXTURES = join(ROOT, ".claude", "test-fixtures");
 const AGENTS = join(ROOT, ".claude", "agents");
 const SKILLS = join(ROOT, ".claude", "skills");
-const COMMANDS = join(ROOT, ".claude", "commands");
 const CONFIG_PATH = join(ROOT, ".claude", "pipeline.config.json");
 const SCHEMA_PATH = join(ROOT, ".claude", "pipeline.config.schema.json");
 
@@ -265,8 +264,8 @@ describe("conversation-designer agent definition", () => {
   });
 });
 
-describe("build-from-conversation command definition", () => {
-  const content = loadMarkdown(join(COMMANDS, "build-from-conversation.md"));
+describe("build-from-conversation skill definition", () => {
+  const content = loadMarkdown(join(SKILLS, "build-from-conversation", "SKILL.md"));
 
   it("orchestrates both new skills", () => {
     expect(content).toContain("conversation-intake");
