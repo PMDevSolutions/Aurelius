@@ -1,0 +1,140 @@
+name: GUI Release Build
+
+# Builds the desktop GUI installers (macOS DMG, Windows NSIS, Linux AppImage) and
+# attaches them to a GitHub Release. The app version is whatever the Release
+# workflow wrote into packages/gui/package.json (a bumpFiles entry in
+# .versionrc.json), never hand-bumped.
+#
+# How it runs:
+#
+#   workflow_call      → the normal path. release.yml calls this from the run that
+#                        just tagged the release and passes the tag. It cannot be
+#                        an `on: release` trigger: the Release is published with
+#                        GITHUB_TOKEN, and GitHub never starts a workflow for an
+#                        event that GITHUB_TOKEN created. (Flavian's and
+#                        Vespasian's gui-release.yml rely on that trigger and have
+#                        never run once.)
+#   workflow_dispatch  → manual. With a tag: build and attach to that Release,
+#                        e.g. to retry one platform or back-fill an older release.
+#                        Without a tag: a dry run that builds everything and keeps
+#                        the installers as workflow artifacts only.
+#   release: published → a Release published by hand, outside release.yml, still
+#                        gets its installers.
+#
+# Builds are unsigned (packages/gui/electron-builder.yml, docs/GUI.md).
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to attach the installers to (e.g. v2.1.0)"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the installers to (e.g. v2.1.0). Leave empty to build only and keep the installers as workflow artifacts."
+        required: false
+        default: ""
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Installer (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifacts: packages/gui/dist/*.dmg
+            # One DMG per architecture: Apple silicon and Intel.
+            builder_args: --x64 --arm64
+          - os: windows-latest
+            artifacts: packages/gui/dist/*.exe
+            builder_args: ""
+          - os: ubuntu-latest
+            artifacts: packages/gui/dist/*.AppImage
+            builder_args: ""
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      # Empty on a dispatch without a tag: build only, nothing is uploaded to a release.
+      RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Build exactly the tagged commit; a dry run builds the dispatched ref.
+          ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        # Version comes from package.json "packageManager" (pnpm 10), as in ci.yml.
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        # side-effects-cache off so a postinstall recorded by a skip-binary install
+        # (gui.yml's lint job) can never be replayed here without Electron's binary.
+        run: pnpm install --frozen-lockfile --config.side-effects-cache=false
+
+      - name: Ensure Electron binary present
+        working-directory: packages/gui
+        run: |
+          ELECTRON_DIR="$(node -e "console.log(require('path').dirname(require.resolve('electron/package.json')))")"
+          if [ ! -f "$ELECTRON_DIR/path.txt" ] || [ ! -e "$ELECTRON_DIR/dist" ]; then
+            echo "Electron binary missing, running its install script"
+            (cd "$ELECTRON_DIR" && node install.js)
+          fi
+
+      - name: Install Electron runtime libraries + Xvfb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          pnpm --filter @aurelius/gui exec playwright install-deps chromium
+
+      - name: Build GUI
+        run: pnpm --filter @aurelius/gui build
+
+      - name: Smoke test (app launches and reaches the setup view)
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run --auto-servernum pnpm --filter @aurelius/gui smoke
+          else
+            pnpm --filter @aurelius/gui smoke
+          fi
+
+      - name: Package installer
+        # --publish never: the upload below is the only publishing step. No signing
+        # identity is looked up (no certificates in CI; see electron-builder.yml).
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: pnpm --filter @aurelius/gui exec electron-builder --publish never ${{ matrix.builder_args }}
+
+      - name: List installers
+        run: ls -la packages/gui/dist
+
+      - name: Keep installers as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aurelius-gui-${{ runner.os }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+      - name: Attach installers to the GitHub Release
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # --clobber so a re-run replaces assets from a previous attempt.
+        run: gh release upload "$RELEASE_TAG" ${{ matrix.artifacts }} --clobber

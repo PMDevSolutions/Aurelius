@@ -98,8 +98,9 @@ pnpm gui:package   # electron-vite build && electron-builder
 ```
 
 Config: `packages/gui/electron-builder.yml` (targets: NSIS on Windows, DMG on macOS,
-AppImage on Linux; output to `packages/gui/dist/`). Windows produces
-`dist/Aurelius Setup <version>.exe` (installer) plus a runnable `dist/win-unpacked/`.
+AppImage on Linux; output to `packages/gui/dist/`). Installers are named
+`Aurelius-<version>-<os>-<arch>.<ext>`, for example `dist/Aurelius-2.1.0-win-x64.exe`;
+Windows also leaves a runnable `dist/win-unpacked/`.
 
 Builds are **unsigned** (`signAndEditExecutable: false`) so `gui:package` works on a stock
 Windows without elevated privileges. electron-builder's code-signing toolchain
@@ -110,8 +111,18 @@ an elevated shell, so it 404s the build — disabling signing sidesteps it entir
 
 **Versioning.** `packages/gui/package.json` is a `bumpFiles` entry in `.versionrc.json`, so
 the Release workflow (commit-and-tag-version) bumps the GUI together with the repo — it is
-**never hand-bumped**. Building installers on each GitHub Release (a `gui-release.yml`
-like the siblings') is a follow-up.
+**never hand-bumped**.
+
+**Installers on every release.** `.github/workflows/gui-release.yml` builds the installers
+on macOS (Apple silicon and Intel), Windows and Linux runners, smoke-tests each build, and
+attaches the files to the GitHub Release. The Release workflow calls it from the same run
+that tags the release. It cannot run `on: release`: the Release is published with
+`GITHUB_TOKEN`, and GitHub never starts a workflow for an event that token created. It can
+also be run by hand from the Actions tab: give it a tag to attach installers to an existing
+release (for example to retry one platform), or leave the tag empty for a dry run that
+keeps the installers as workflow artifacts only. The builds are unsigned, so macOS blocks
+the first launch until you allow the app under **System Settings, Privacy & Security**
+(**Open Anyway**), and Windows SmartScreen shows **More info**, then **Run anyway**.
 
 The GUI **operates on an Aurelius checkout on disk** — it scaffolds apps next to
 `scripts/`, runs the pipeline there, and writes QA artifacts under `.claude/visual-qa/`, so
@@ -123,7 +134,9 @@ remembered between launches.
 
 ## First run & walkthrough
 
-1. **Install & launch** — run the installer for your OS (or `pnpm gui:dev` from a checkout).
+1. **Install & launch** — run the installer for your OS from the
+   [GitHub Releases page](https://github.com/PMDevSolutions/Aurelius/releases) (or
+   `pnpm gui:dev` from a checkout).
 2. **Open a project** — on first launch, click **Choose folder…** and pick your Aurelius
    checkout (the folder with `scripts/setup-project.sh`). It's remembered next time.
 3. **Prerequisites** — confirm Git, Node, pnpm and Claude Code are detected; install the

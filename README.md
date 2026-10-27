@@ -142,7 +142,7 @@ Storybook stories — driven by the `indesign-to-react` agent or the
 
 ## Desktop GUI (experimental)
 
-Prefer not to use a terminal? A cross-platform **desktop GUI** wraps the workflow behind four screens: **Prerequisites**, **Setup wizard**, **Build from Figma**, and **Visual QA**. It's a thin orchestration layer over the existing scripts and Claude Code — the same pattern as Flavian's and Vespasian's GUIs. Run it from source with `pnpm gui:dev` (or build an installer with `pnpm gui:package`). See **[docs/GUI.md](docs/GUI.md)**.
+Prefer not to use a terminal? A cross-platform **desktop GUI** wraps the workflow behind four screens: **Prerequisites**, **Setup wizard**, **Build from Figma**, and **Visual QA**. It's a thin orchestration layer over the existing scripts and Claude Code — the same pattern as Flavian's and Vespasian's GUIs. Download an installer for macOS, Windows or Linux from the [Releases page](https://github.com/PMDevSolutions/Aurelius/releases) (v2.1.0 onward), run it from source with `pnpm gui:dev`, or build an installer yourself with `pnpm gui:package`. See **[docs/GUI.md](docs/GUI.md)**.
 
 ## The Figma-to-React Pipeline
 
