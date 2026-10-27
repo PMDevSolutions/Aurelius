@@ -12,6 +12,11 @@ productName: Aurelius
 # electron-builder derives the binary name from the package name ("@aurelius/gui"
 # → "@aureliusgui"), which it then rejects as unsafe for paths; name it explicitly.
 executableName: aurelius
+# One naming scheme for every asset on a GitHub Release (gui-release.yml builds
+# macOS for both architectures): Aurelius-2.1.0-mac-arm64.dmg,
+# Aurelius-2.1.0-mac-x64.dmg, Aurelius-2.1.0-win-x64.exe and
+# Aurelius-2.1.0-linux-x86_64.AppImage (AppImage spells the arch x86_64).
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 directories:
   output: dist
   buildResources: build
