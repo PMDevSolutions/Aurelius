@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "aurelius",
   "displayName": "Aurelius",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Multi-framework app development for Claude Code: specialist agents, design-to-code pipelines from Figma, Canva, screenshots or a conversation with enforced TDD, a design-token lockfile and pixel-diff visual QA, and a deploy guard that stops releases for a human. The pipeline skills need an Aurelius checkout; the agents, knowledge skills and hooks work in any repo.",
   "author": {
     "name": "Paul Mulligan",

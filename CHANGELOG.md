@@ -4,6 +4,35 @@ All notable changes to the Aurelius framework will be documented in this file.
 
 This changelog is automatically generated from [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [2.1.0](https://github.com/PMDevSolutions/Aurelius/compare/v2.0.0...v2.1.0) (2026-10-27)
+
+
+### Features
+
+* **claude-code:** rules, plugin packaging, component-lanes workflow, evals ([f585c34](https://github.com/PMDevSolutions/Aurelius/commit/f585c342a79968c840ff5fbd39ec39e8b18ae8b6)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
+* **gui:** Aurelius product manifest and shared vocabulary ([eaa00af](https://github.com/PMDevSolutions/Aurelius/commit/eaa00af79bd8330b863854c5c0b85604215fb28a))
+* **gui:** Aurelius screens: prerequisites, setup wizard, Figma build, visual QA ([92cfcd1](https://github.com/PMDevSolutions/Aurelius/commit/92cfcd191a10ccf46e93250c1a6e0f707c66e8dd))
+* **gui:** fork the Vespasian desktop GUI engine as @aurelius/gui ([1db693c](https://github.com/PMDevSolutions/Aurelius/commit/1db693cc687ca9f61df4bba836429b3f5c7d8875))
+* **gui:** generic runStep IPC and script-backed setup wizard ([a76f324](https://github.com/PMDevSolutions/Aurelius/commit/a76f324f12b41a931d923639fea48cf341eaeafa))
+* **gui:** retarget the orchestration core to Aurelius scripts ([a355965](https://github.com/PMDevSolutions/Aurelius/commit/a35596556c258665a4bae04fa5eff840a9fd3392))
+* **scripts:** add check-prerequisites.sh (GUI-compatible report format) ([ccfea3e](https://github.com/PMDevSolutions/Aurelius/commit/ccfea3ea23c279464c66577c619fff3f717034b3))
+* **scripts:** add the Claude Code conformance check to verify-all and CI ([8e12e84](https://github.com/PMDevSolutions/Aurelius/commit/8e12e84c3e0e4c000e17e6756ea21f5b37cd4310)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
+
+
+### Bug Fixes
+
+* **ci:** make the Release workflow ship again via a release PR ([1a752a4](https://github.com/PMDevSolutions/Aurelius/commit/1a752a4d8ab12c61a11e6a739bcbda1fb7c0da26)), closes [#121](https://github.com/PMDevSolutions/Aurelius/issues/121)
+* **gui:** explicit executableName so electron-builder 26 can package @aurelius/gui ([9b69ae5](https://github.com/PMDevSolutions/Aurelius/commit/9b69ae53d1d779349f6c554a1dd5a074afdeb9c3))
+* **hooks:** move hooks to the stdin JSON contract and add the deploy guard ([6384948](https://github.com/PMDevSolutions/Aurelius/commit/638494872d1454ab1c58bb760f42e594860c59cc)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
+* **scripts:** mark all shell scripts executable ([9785e80](https://github.com/PMDevSolutions/Aurelius/commit/9785e8088fe674a6fc69f827f12f7682321392df))
+* **scripts:** run check-doc-counts.sh on the macOS system bash ([4a52961](https://github.com/PMDevSolutions/Aurelius/commit/4a529614c6f3fdff4460bcdf2a4540bc042eaf3b))
+
+
+### Refactoring
+
+* **agents:** align all 56 agents with the Claude Code 2.1.310 subagent spec ([39d3245](https://github.com/PMDevSolutions/Aurelius/commit/39d3245c3158f890fb28501f919b6d1ba46bee59)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
+* **skills:** migrate slash commands into skills and track pipeline state in a file ([ce34301](https://github.com/PMDevSolutions/Aurelius/commit/ce34301615f070e357911e390eaf3f911b1e1212)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
+
 ## [2.0.0](https://github.com/PMDevSolutions/Aurelius/compare/v1.1.0...v2.0.0) (2026-08-15)
 
 
