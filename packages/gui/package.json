@@ -1,6 +1,6 @@
 {
   "name": "@aurelius/gui",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Desktop GUI for Aurelius — a thin orchestration shell over the setup wizard, the Figma-to-React pipeline, and the visual-QA scripts. Invokes the existing scripts and Claude Code; does not reimplement them.",
   "license": "MIT",
