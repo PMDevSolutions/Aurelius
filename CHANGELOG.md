@@ -11,7 +11,7 @@ This changelog is automatically generated from [Conventional Commits](https://ww
 
 * **claude-code:** rules, plugin packaging, component-lanes workflow, evals ([f585c34](https://github.com/PMDevSolutions/Aurelius/commit/f585c342a79968c840ff5fbd39ec39e8b18ae8b6)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
 * **gui:** Aurelius product manifest and shared vocabulary ([eaa00af](https://github.com/PMDevSolutions/Aurelius/commit/eaa00af79bd8330b863854c5c0b85604215fb28a))
-* **gui:** Aurelius screens — prerequisites, setup wizard, Figma build, visual QA ([92cfcd1](https://github.com/PMDevSolutions/Aurelius/commit/92cfcd191a10ccf46e93250c1a6e0f707c66e8dd))
+* **gui:** Aurelius screens: prerequisites, setup wizard, Figma build, visual QA ([92cfcd1](https://github.com/PMDevSolutions/Aurelius/commit/92cfcd191a10ccf46e93250c1a6e0f707c66e8dd))
 * **gui:** fork the Vespasian desktop GUI engine as @aurelius/gui ([1db693c](https://github.com/PMDevSolutions/Aurelius/commit/1db693cc687ca9f61df4bba836429b3f5c7d8875))
 * **gui:** generic runStep IPC and script-backed setup wizard ([a76f324](https://github.com/PMDevSolutions/Aurelius/commit/a76f324f12b41a931d923639fea48cf341eaeafa))
 * **gui:** retarget the orchestration core to Aurelius scripts ([a355965](https://github.com/PMDevSolutions/Aurelius/commit/a35596556c258665a4bae04fa5eff840a9fd3392))
@@ -21,7 +21,7 @@ This changelog is automatically generated from [Conventional Commits](https://ww
 
 ### Bug Fixes
 
-* **ci:** make the Release workflow ship again via a release PR ([1a752a4](https://github.com/PMDevSolutions/Aurelius/commit/1a752a4d8ab12c61a11e6a739bcbda1fb7c0da26)), closes [#121](https://github.com/PMDevSolutions/Aurelius/issues/121) [#121](https://github.com/PMDevSolutions/Aurelius/issues/121)
+* **ci:** make the Release workflow ship again via a release PR ([1a752a4](https://github.com/PMDevSolutions/Aurelius/commit/1a752a4d8ab12c61a11e6a739bcbda1fb7c0da26)), closes [#121](https://github.com/PMDevSolutions/Aurelius/issues/121)
 * **gui:** explicit executableName so electron-builder 26 can package @aurelius/gui ([9b69ae5](https://github.com/PMDevSolutions/Aurelius/commit/9b69ae53d1d779349f6c554a1dd5a074afdeb9c3))
 * **hooks:** move hooks to the stdin JSON contract and add the deploy guard ([6384948](https://github.com/PMDevSolutions/Aurelius/commit/638494872d1454ab1c58bb760f42e594860c59cc)), closes [#132](https://github.com/PMDevSolutions/Aurelius/issues/132)
 * **scripts:** mark all shell scripts executable ([9785e80](https://github.com/PMDevSolutions/Aurelius/commit/9785e8088fe674a6fc69f827f12f7682321392df))
