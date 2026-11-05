@@ -165,14 +165,62 @@ echo "Framework: $FRAMEWORK"
 echo "Template: templates/$FRAMEWORK_TEMPLATE"
 echo ""
 
+# Dev dependencies added on top of what the framework's own scaffolder installs
+ADDITIONAL_DEPS=()
+
+case "$FRAMEWORK" in
+    next)
+        # Tailwind included via create-next-app; add testing + formatting
+        ADDITIONAL_DEPS+=(prettier vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @vitest/coverage-v8 @vitejs/plugin-react)
+        ;;
+    vite|react)
+        # The pins keep the shared configs working, whatever create-vite brings:
+        # - eslint 9: eslint-plugin-react and eslint-plugin-jsx-a11y do not accept 10 yet
+        # - typescript 6.0: typescript-eslint requires <6.1, create-vite installs 7
+        # - vitest and its coverage provider must stay on the same version line
+        ADDITIONAL_DEPS+=(
+            tailwindcss @tailwindcss/vite
+            prettier prettier-plugin-tailwindcss
+            eslint@^9 @eslint/js@^9 typescript-eslint
+            eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-jsx-a11y
+            typescript@~6.0.2
+            vitest@^4.1.12 @vitest/coverage-v8@^4.1.12
+            @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+        )
+        ;;
+    vue)
+        ADDITIONAL_DEPS+=(prettier vitest @vue/test-utils @testing-library/vue jsdom @vitest/coverage-v8)
+        ;;
+    svelte)
+        ADDITIONAL_DEPS+=(prettier vitest @testing-library/svelte jsdom @vitest/coverage-v8)
+        ;;
+    astro)
+        # templates/astro already pins all runtime + test deps (React islands,
+        # Tailwind, vitest, testing-library, jsdom); nothing extra to add.
+        ;;
+    expo)
+        ADDITIONAL_DEPS+=(prettier jest jest-expo @testing-library/react-native)
+        ;;
+esac
+
 if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "[dry-run] No project created. Would scaffold '$PROJECT_NAME' using:"
     echo "[dry-run]   renderer:  ${RENDERER:-<none>}"
     echo "[dry-run]   framework: $FRAMEWORK"
     echo "[dry-run]   template:  templates/$FRAMEWORK_TEMPLATE"
     echo "[dry-run]   shared:    templates/shared"
+    echo "[dry-run]   tooling:   ${ADDITIONAL_DEPS[*]:-<none>}"
     exit 0
 fi
+
+# create-vite is pinned to the major these templates were checked against, and
+# told not to prompt or start a dev server when it runs in a terminal. The
+# pnpm-workspace.yaml goes in before the first install, so the app gets its own
+# lockfile and leaves the Aurelius one alone.
+create_vite_react_app() {
+    pnpm create vite@9 "$PROJECT_NAME" --template react-ts --no-interactive --no-immediate
+    cp "$TEMPLATES_DIR/vite/pnpm-workspace.yaml" "$PROJECT_NAME/pnpm-workspace.yaml"
+}
 
 # Create the project
 case "$FRAMEWORK" in
@@ -182,11 +230,11 @@ case "$FRAMEWORK" in
         ;;
     vite)
         echo "Creating Vite + React app..."
-        pnpm create vite "$PROJECT_NAME" --template react-ts
+        create_vite_react_app
         ;;
     react)
         echo "Creating React app (via Vite)..."
-        pnpm create vite "$PROJECT_NAME" --template react-ts
+        create_vite_react_app
         ;;
     vue)
         echo "Creating Vue 3 app..."
@@ -225,31 +273,6 @@ pnpm install
 # Install additional dev dependencies
 echo ""
 echo "Installing additional tooling..."
-
-ADDITIONAL_DEPS=()
-
-case "$FRAMEWORK" in
-    next)
-        # Tailwind included via create-next-app; add testing + formatting
-        ADDITIONAL_DEPS+=(prettier vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @vitest/coverage-v8 @vitejs/plugin-react)
-        ;;
-    vite|react)
-        ADDITIONAL_DEPS+=(tailwindcss @tailwindcss/vite prettier vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom @vitest/coverage-v8)
-        ;;
-    vue)
-        ADDITIONAL_DEPS+=(prettier vitest @vue/test-utils @testing-library/vue jsdom @vitest/coverage-v8)
-        ;;
-    svelte)
-        ADDITIONAL_DEPS+=(prettier vitest @testing-library/svelte jsdom @vitest/coverage-v8)
-        ;;
-    astro)
-        # templates/astro already pins all runtime + test deps (React islands,
-        # Tailwind, vitest, testing-library, jsdom); nothing extra to add.
-        ;;
-    expo)
-        ADDITIONAL_DEPS+=(prettier jest jest-expo @testing-library/react-native)
-        ;;
-esac
 
 if [[ ${#ADDITIONAL_DEPS[@]} -gt 0 ]]; then
     pnpm add -D "${ADDITIONAL_DEPS[@]}"
@@ -328,6 +351,23 @@ if [[ -d "$TEMPLATES_DIR" ]]; then
         done
     fi
 fi
+
+# Finish the Vite + React app: one linter, a first test, and files already formatted
+case "$FRAMEWORK" in
+    vite|react)
+        echo ""
+        echo "Finishing the Vite + React app..."
+        # create-vite brings oxlint; the shared config and the check scripts use ESLint
+        pnpm remove oxlint
+        rm -f .oxlintrc.json
+        pnpm pkg set scripts.lint="eslint ."
+        mkdir -p src/test
+        [[ -f src/test/setup.ts ]] || cp "$TEMPLATES_DIR/vite/src/test/setup.ts" src/test/setup.ts
+        [[ -f src/App.test.tsx ]] || cp "$TEMPLATES_DIR/vite/src/App.test.tsx" src/App.test.tsx
+        grep -qx 'coverage' .gitignore 2>/dev/null || echo 'coverage' >> .gitignore
+        pnpm prettier --write . > /dev/null
+        ;;
+esac
 
 echo ""
 echo "=== Setup Complete ==="

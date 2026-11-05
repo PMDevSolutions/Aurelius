@@ -1,3 +1,4 @@
+/* global crypto, Buffer */
 /**
  * security-headers.config.js — Security headers configuration for React apps
  *

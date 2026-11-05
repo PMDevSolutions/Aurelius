@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(import.meta.dirname, "./src"),
     },
   },
   test: {
@@ -16,9 +16,11 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html", "lcov"],
+      reporter: [["text", { skipFull: false }], "html", "lcov"],
       exclude: [
         "node_modules/",
+        "**/*.css",
+        "src/assets/**",
         "src/test/",
         "**/*.d.ts",
         "**/*.config.*",

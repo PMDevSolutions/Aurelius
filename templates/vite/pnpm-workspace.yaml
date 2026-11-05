@@ -1,0 +1,3 @@
+# Makes this app its own pnpm root. Without it, pnpm walks up to the Aurelius
+# pnpm-workspace.yaml, resolves that workspace instead, and rewrites its lockfile.
+# No `packages` key: this is a single-project workspace.
