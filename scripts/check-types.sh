@@ -42,15 +42,23 @@ if [[ ! -f "node_modules/.bin/tsc" ]] && ! command -v tsc &>/dev/null; then
     exit 1
 fi
 
+# A solution-style tsconfig (create-vite's "files": [] plus "references") has
+# nothing of its own to check, so plain `tsc --noEmit` would pass without looking
+# at any file. Build mode follows the references.
+TSC_ARGS=(--noEmit)
+if grep -q '"references"' tsconfig.json; then
+    TSC_ARGS=(--build --noEmit)
+fi
+
 # Run standard type check
-echo "Running tsc --noEmit..."
+echo "Running tsc ${TSC_ARGS[*]}..."
 echo ""
 
 TSC_OUTPUT_FILE=$(mktemp)
 common_track_tmpfile "$TSC_OUTPUT_FILE"
 EXIT_CODE=0
 
-if $RUNNER tsc --noEmit 2>&1 | tee "$TSC_OUTPUT_FILE"; then
+if $RUNNER tsc "${TSC_ARGS[@]}" 2>&1 | tee "$TSC_OUTPUT_FILE"; then
     echo ""
     echo "No type errors found."
 else
@@ -64,13 +72,13 @@ fi
 if [[ "$STRICT_MODE" == true ]]; then
     echo ""
     echo "---"
-    echo "Running strict mode check (tsc --noEmit --strict)..."
+    echo "Running strict mode check (tsc ${TSC_ARGS[*]} --strict)..."
     echo ""
 
     STRICT_OUTPUT_FILE=$(mktemp)
     common_track_tmpfile "$STRICT_OUTPUT_FILE"
 
-    if $RUNNER tsc --noEmit --strict 2>&1 | tee "$STRICT_OUTPUT_FILE"; then
+    if $RUNNER tsc "${TSC_ARGS[@]}" --strict 2>&1 | tee "$STRICT_OUTPUT_FILE"; then
         echo ""
         echo "No strict mode errors found."
     else
