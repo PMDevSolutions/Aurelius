@@ -90,7 +90,7 @@ if [[ "$HAS_PRETTIER" == true ]]; then
         if $RUNNER prettier --check . 2>&1 | tee "$PRETTIER_OUTPUT_FILE"; then
             echo "  Prettier: All files formatted."
         else
-            UNFORMATTED=$(grep -c 'Forgot to run Prettier\|would reformat\|[Cc]heck.*failed' "$PRETTIER_OUTPUT_FILE" 2>/dev/null || echo "some")
+            UNFORMATTED=$(grep -v 'Code style issues' "$PRETTIER_OUTPUT_FILE" | grep -c '^\[warn\]' || true)
             echo "  Prettier: ${UNFORMATTED} file(s) need formatting."
             EXIT_CODE=1
         fi
