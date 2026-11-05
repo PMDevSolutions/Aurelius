@@ -55,13 +55,13 @@ Run the code quality scripts to confirm everything works:
 
 ```bash
 # From your app directory
-./scripts/lint-and-format.sh       # ESLint + Prettier
-./scripts/check-types.sh           # TypeScript type checking
-./scripts/run-tests.sh             # Vitest with coverage
-./scripts/check-accessibility.sh   # WCAG 2.1 AA linting
+../scripts/lint-and-format.sh       # ESLint + Prettier
+../scripts/check-types.sh           # TypeScript type checking
+../scripts/run-tests.sh             # Vitest with coverage
+../scripts/check-accessibility.sh   # WCAG 2.1 AA linting
 ```
 
-All four should pass on a fresh project.
+All four should pass on a fresh `--vite` project, which ships with one starter test, `src/App.test.tsx`. Delete that test when you replace `App`.
 
 ---
 
