@@ -73,7 +73,7 @@ Copies shared templates plus Next.js-specific config.
 ./scripts/setup-project.sh my-app --vite
 ```
 
-Copies shared templates plus Vite-specific config.
+Copies shared templates plus Vite-specific config, then swaps create-vite's oxlint for the ESLint setup in `shared/`. The app gets its own pnpm root (`pnpm-workspace.yaml`), `src/test/setup.ts` and a starter test, `src/App.test.tsx`, so the quality checks pass on a fresh scaffold.
 
 ## Astro Templates (`astro/`)
 

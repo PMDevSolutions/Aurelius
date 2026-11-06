@@ -33,6 +33,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["dist/", "build/", ".next/", "node_modules/", "storybook-static/"],
+    ignores: ["dist/", "build/", ".next/", "node_modules/", "storybook-static/", "coverage/"],
   }
 );

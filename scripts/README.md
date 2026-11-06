@@ -158,6 +158,7 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Purpose**: Initialize a new React project with standard tooling from `templates/`
 - **Usage**: `./scripts/setup-project.sh my-app --next` or `--vite`
 - **What it does**: Copies template configs, installs dependencies, sets up testing
+- **`--vite` / `--react`**: The app becomes its own pnpm root, so the repo's lockfile stays untouched. ESLint replaces create-vite's oxlint, and a starter test ships so that `lint-and-format.sh`, `check-types.sh`, `run-tests.sh` and `check-accessibility.sh` pass on a fresh scaffold
 
 ## Claude Code Configuration
 

@@ -165,6 +165,8 @@ pnpm vitest run --reporter=verbose
 
 If any test passes unexpectedly, investigate — it may indicate a test that doesn't actually verify anything.
 
+A `--vite` or `--react` scaffold ships a starter test for create-vite's App, `src/App.test.tsx`. It passes before you write anything, so delete it when the build replaces App.
+
 ### Green Phase: Implementation
 
 Hand off to the `figma-react-converter` agent or `figma-to-react-workflow` skill. The implementation must:

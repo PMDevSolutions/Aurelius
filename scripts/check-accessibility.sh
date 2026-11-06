@@ -54,8 +54,8 @@ fi
 echo ""
 
 # Parse and group results by severity
-ERROR_COUNT=$(grep -cE '^\s+[0-9]+:[0-9]+\s+error' "$A11Y_OUTPUT_FILE" 2>/dev/null || echo "0")
-WARNING_COUNT=$(grep -cE '^\s+[0-9]+:[0-9]+\s+warning' "$A11Y_OUTPUT_FILE" 2>/dev/null || echo "0")
+ERROR_COUNT=$(grep -cE '^\s+[0-9]+:[0-9]+\s+error' "$A11Y_OUTPUT_FILE" 2>/dev/null || true)
+WARNING_COUNT=$(grep -cE '^\s+[0-9]+:[0-9]+\s+warning' "$A11Y_OUTPUT_FILE" 2>/dev/null || true)
 
 echo "=== Results ==="
 echo "Errors:   $ERROR_COUNT"
