@@ -32,6 +32,8 @@ cd my-app && pnpm install
 pnpm dev
 ```
 
+**Video walkthrough:** [Aurelius in 4 Minutes: From Clone to a Tested React App](https://youtu.be/_w7YEgAcar4) follows these steps, runs the four quality checks, and builds a page from a screenshot with `/build-from-screenshot`.
+
 ### Build from Figma (Autonomous Pipeline)
 
 ```
