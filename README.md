@@ -32,6 +32,8 @@ cd my-app && pnpm install
 pnpm dev
 ```
 
+**Video walkthrough:** [Aurelius: Clone to a Tested React App with Claude Code](https://youtu.be/Harcm6cYVpo) (3:46) follows these steps, then runs the four quality checks and one `/build-from-screenshot` pipeline.
+
 ### Build from Figma (Autonomous Pipeline)
 
 ```
