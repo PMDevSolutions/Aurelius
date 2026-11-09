@@ -20,11 +20,18 @@ name: Release
 #                       created with GITHUB_TOKEN, and GitHub never fires
 #                       `on: release` for an event that token created.
 #
-# CI on the release PR: pull requests opened with GITHUB_TOKEN do not trigger
-# `pull_request` workflows, so the required checks would never run. Add a
-# RELEASE_TOKEN repository secret (fine-grained PAT with contents + pull
-# requests: write) and the PR is opened as that user, which triggers CI as
-# normal. Without it, close and reopen the PR once to kick off the checks.
+# Opening the release PR (issue #144): with a RELEASE_TOKEN repository secret
+# (fine-grained PAT with contents + pull requests: write) the PR is opened as
+# that user and CI runs on it as normal. Without it the job falls back to
+# GITHUB_TOKEN, which has two limits:
+#   - It may open a PR only while the repository setting "Allow GitHub Actions
+#     to create and approve pull requests" (Settings > Actions > General >
+#     Workflow permissions) is on. With it off, GitHub's default, `gh pr create`
+#     is refused. The branch is pushed by then, so the step does not fail: it
+#     writes the compare link, the PR body and the exact `gh pr create` command
+#     to the step summary and ends with a warning.
+#   - A PR it did open starts no `pull_request` workflow, so the required
+#     checks never run until someone closes and reopens the PR once.
 
 on:
   workflow_dispatch:
@@ -138,6 +145,8 @@ jobs:
           HAS_RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN != '' }}
         run: |
           set -euo pipefail
+          TMP="${RUNNER_TEMP:-/tmp}"
+          TITLE="chore(release): $TAG"
           {
             echo "Release **$TAG** prepared by the Release workflow (\`$RELEASE_TYPE\` bump)."
             echo
@@ -146,18 +155,46 @@ jobs:
             echo "## Release notes"
             echo
             cat RELEASE_NOTES.md
-          } > /tmp/release-pr-body.md
+          } > "$TMP/release-pr-body.md"
 
           EXISTING=$(gh pr list --head "$BRANCH" --base main --state open --json url --jq '.[0].url // empty')
           if [ -n "$EXISTING" ]; then
-            gh pr edit "$EXISTING" --title "chore(release): $TAG" --body-file /tmp/release-pr-body.md
+            gh pr edit "$EXISTING" --title "$TITLE" --body-file "$TMP/release-pr-body.md"
             URL="$EXISTING"
+          elif URL=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file "$TMP/release-pr-body.md" 2>"$TMP/pr-create.err"); then
+            :
           else
-            URL=$(gh pr create \
-              --base main \
-              --head "$BRANCH" \
-              --title "chore(release): $TAG" \
-              --body-file /tmp/release-pr-body.md)
+            # Refused (issue #144). Without RELEASE_TOKEN this runs as GITHUB_TOKEN, which may
+            # open a PR only while "Allow GitHub Actions to create and approve pull requests"
+            # is on. The branch is already pushed, so hand over to a human instead of failing.
+            ERROR=$(tr -d '\r' < "$TMP/pr-create.err")
+            COMPARE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/main...$BRANCH?expand=1&title=chore%28release%29%3A%20$TAG"
+            {
+              echo "## Release PR not opened"
+              echo
+              echo "Branch \`$BRANCH\` is pushed, but \`gh pr create\` failed:"
+              echo
+              echo '```'
+              echo "$ERROR"
+              echo '```'
+              echo
+              case "$ERROR" in
+                *"not permitted to create or approve pull requests"*)
+                  echo "The step ran with \`GITHUB_TOKEN\` and the repository setting **Allow GitHub Actions to create and approve pull requests** (Settings > Actions > General > Workflow permissions) is off. To let the workflow open the PR itself next time, either add a \`RELEASE_TOKEN\` repository secret (fine-grained PAT with Contents and Pull requests: write; the PR is then opened as that user and CI starts on its own) or turn that setting on (the PR then still needs one close and reopen before CI runs)."
+                  echo
+                  ;;
+              esac
+              echo "Open the PR by hand from the [compare view]($COMPARE), pasting the body below, or with the GitHub CLI:"
+              echo
+              echo '```sh'
+              echo "gh pr create --repo $GITHUB_REPOSITORY --base main --head $BRANCH \\"
+              echo "  --title \"$TITLE\" --body-file - <<'PR_BODY'"
+              cat "$TMP/release-pr-body.md"
+              echo "PR_BODY"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Could not open the release PR ($(echo "$ERROR" | head -n 1)). Branch $BRANCH is pushed; the step summary has the compare link and a gh pr create command."
+            exit 0
           fi
           echo "Release PR: $URL" >> "$GITHUB_STEP_SUMMARY"
 
