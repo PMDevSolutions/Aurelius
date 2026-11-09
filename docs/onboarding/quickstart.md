@@ -108,25 +108,25 @@ Captures the page, analyzes it with vision, and builds a working app. Supports a
 
 ## 5. Using Claude Code Agents
 
-When you work with Claude Code in this repository, **56 specialized agents** are available automatically. You do not need to invoke them manually -- Claude Code selects the right agent based on your task.
+When you work with Claude Code in this repository, **56 specialized agents** are available. Claude Code delegates to one when your request matches the agent's description, and it may handle a small task itself instead (a plain "write tests for the Checklist component" is often done in the main session). Naming the agent makes the delegation certain.
 
 ### Examples
 
 ```
 User: "Build a hero component with a CTA button"
-Claude: [Uses frontend-developer agent]
+Claude: [may use the frontend-developer agent]
 
-User: "Write tests for the auth hook"
-Claude: [Uses test-writer-fixer agent]
+User: "Use the test-writer-fixer agent to write tests for the auth hook"
+Claude: [uses the test-writer-fixer agent]
 
 User: "Check this page for accessibility issues"
-Claude: [Uses accessibility-auditor agent]
+Claude: [may use the accessibility-auditor agent]
 
 User: "Optimize the bundle size"
-Claude: [Uses bundle-analyzer agent]
+Claude: [may use the bundle-analyzer agent]
 
 User: "Create a PR for this feature"
-Claude: [Uses commit-commands plugin: /commit-push-pr]
+Claude: [uses the commit-commands plugin: /commit-push-pr]
 ```
 
 See the full [Architecture Overview](architecture.md) for the complete agent catalog.

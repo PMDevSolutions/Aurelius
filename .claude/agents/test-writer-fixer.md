@@ -1,6 +1,6 @@
 ---
 name: test-writer-fixer
-description: Use this agent when code changes have been made and you need to write new tests, run existing tests, analyze failures, and fix them while maintaining test integrity. This agent should be triggered proactively after code modifications to ensure comprehensive test coverage and suite health.
+description: Use this agent for any request to write, add, extend, fix or run tests, including a plain "write tests for the Checklist component", and proactively after code changes to run the affected tests, analyze failures and repair them while keeping the tests honest. Covers unit, integration and E2E tests for components, hooks, modules, pages and flows. MUST BE USED instead of writing tests in the main session.
 color: cyan
 memory: local
 skills:
