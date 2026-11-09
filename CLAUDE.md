@@ -73,7 +73,7 @@ node scripts/claude-code-conformance.js [--json] [--strict]   # .claude/ against
 ./scripts/validate-pipeline-config.sh [--json]               # pipeline.config.json against its schema
 
 # Visual QA
-node scripts/visual-diff.js <actual.png> <expected.png> [--threshold 0.02] [--json]
+node scripts/visual-diff.js <actual.png> <expected.png> [--threshold 0.02] [--json] [--crop x,y,w,h]
 node scripts/visual-diff.js --batch <actual-dir> <expected-dir> [--output-dir diffs/]
 ./scripts/check-dark-mode.sh <url>           # dark-theme capture and diff
 ./scripts/check-responsive.sh [url] [output-dir]             # 5 breakpoints

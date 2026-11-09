@@ -29,6 +29,9 @@
 //   buildSpec: '.claude/plans/build-spec.json',
 //   components: [{ name, tier, dir, testFile, testSha256 }],   // tier: ui 0, layout 1, sections 2, pages 3
 //   pages: [{ name, url, references: { '1440': '.claude/visual-qa/screenshots/figma/home-1440.png' } }],
+//          a reference may also be { path, renderWidth, crop: { x, y, width, height } }: the page is
+//          captured at renderWidth and only that region of the capture is diffed, for a source
+//          screenshot taken at a non-standard width or covering part of the page (issue #145)
 //   maxBuildAttempts: 3,
 //   maxVisualIterations: 5,                        // pipeline.config.json → iterationLoop
 //   diffPassThreshold: 0.02,                       // fraction of pixels, as visual-diff.js reports
@@ -148,12 +151,26 @@ function checkPrompt(c) {
   ].join('\n')
 }
 
+// A reference is a path, or { path, renderWidth, crop } for a source screenshot
+// taken at a non-standard width or covering only part of the page.
+function reference(p, width) {
+  const r = p.references[width]
+  return typeof r === 'string' ? { path: r } : r || {}
+}
+
 function diagnosePrompt(p, round) {
   const widths = Object.keys(p.references || {})
+  const steps = widths.map((w) => {
+    const r = reference(p, w)
+    const viewport = r.renderWidth || w
+    const file = `.claude/visual-qa/screenshots/chromium/${p.name}-${w}.png`
+    const crop = r.crop ? ` --crop ${r.crop.x || 0},${r.crop.y || 0},${r.crop.width},${r.crop.height}` : ''
+    const note = r.crop ? ' The reference covers only that region of the page, so the crop is part of the comparison.' : ''
+    return `- ${w}: capture ${p.url} at viewport width ${viewport} (full page) to ${file}, with Playwright (npx playwright screenshot --viewport-size=${viewport},900 --full-page ${p.url} ${file}) or the Chrome DevTools MCP, then run node scripts/visual-diff.js ${file} ${r.path} --threshold ${threshold} --json${crop}.${note}`
+  })
   return [
     `Visual check of the ${p.name} page, round ${round} of ${maxVisualIterations}. Diagnose only: do not edit any source file in this lane.`,
-    `For each width in ${widths.join(', ')}: capture ${p.url} at that viewport width (full page) to .claude/visual-qa/screenshots/chromium/${p.name}-<width>.png, using Playwright (npx playwright screenshot --viewport-size=<width>,900 --full-page ${p.url} <file>) or the Chrome DevTools MCP.`,
-    `Compare each capture with its reference: ${widths.map((w) => `${w} → ${p.references[w]}`).join('; ')}. Use node scripts/visual-diff.js <capture> <reference> --threshold ${threshold} --json and report mismatchPct as the fraction it prints.`,
+    `For each width, capture and compare as follows, and report mismatchPct as the fraction visual-diff.js prints:\n${steps.join('\n')}`,
     `For every width above ${pct(threshold)}, read the diff regions and name the component whose code causes each difference, with a precise fix that uses a lockfile token from ${lockfile}. Known components: ${components.map((c) => c.name).join(', ')}.`,
   ].join('\n\n')
 }

@@ -3,7 +3,7 @@
  * visual-diff.js — Pixel-level screenshot comparison using pixelmatch
  *
  * Usage:
- *   node scripts/visual-diff.js <actual> <expected> [--output <diff.png>] [--threshold <0.02>] [--json]
+ *   node scripts/visual-diff.js <actual> <expected> [--output <diff.png>] [--threshold <0.02>] [--json] [--crop <x,y,w,h>]
  *   node scripts/visual-diff.js --batch <dir-actual> <dir-expected> [--output-dir <diffs/>] [--threshold <0.02>]
  *
  * Outputs:
@@ -43,6 +43,7 @@ function parseArgs(args) {
     json: false,
     regionGrid: null,
     antialiasing: null,
+    crop: null,
   };
 
   let i = 0;
@@ -70,6 +71,9 @@ function parseArgs(args) {
       case "--antialiasing":
         parsed.antialiasing = args[++i] !== "false";
         break;
+      case "--crop":
+        parsed.crop = args[++i];
+        break;
       default:
         if (!parsed.actual) parsed.actual = arg;
         else if (!parsed.expected) parsed.expected = arg;
@@ -91,6 +95,44 @@ function savePNG(filepath, png) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const buffer = PNG.sync.write(png);
   writeFileSync(filepath, buffer);
+}
+
+/** `--crop x,y,width,height` → { x, y, width, height }, all non-negative integers. */
+function parseCrop(spec) {
+  const parts = String(spec)
+    .split(",")
+    .map((n) => Number(n));
+  const [x, y, width, height] = parts;
+  const ok =
+    parts.length === 4 &&
+    parts.every((n) => Number.isInteger(n) && n >= 0) &&
+    width > 0 &&
+    height > 0;
+  if (!ok) {
+    throw new Error(`--crop expects x,y,width,height as non-negative integers, got "${spec}"`);
+  }
+  return { x, y, width, height };
+}
+
+/**
+ * The region `box` of a PNG, as a new PNG. A reference that covers only part
+ * of the page (a screenshot that starts below the top, or one narrower than
+ * the viewport) is compared against this region of the full-page capture
+ * instead of the whole capture (issue #145).
+ */
+function cropPNG(src, box) {
+  const { x, y, width, height } = box;
+  if (x + width > src.width || y + height > src.height) {
+    throw new Error(
+      `crop ${x},${y},${width},${height} reaches outside the ${src.width}x${src.height} capture`,
+    );
+  }
+  const out = new PNG({ width, height });
+  for (let row = 0; row < height; row++) {
+    const from = ((y + row) * src.width + x) * 4;
+    src.data.copy(out.data, row * width * 4, from, from + width * 4);
+  }
+  return out;
 }
 
 /**
@@ -462,7 +504,9 @@ function compareSingle(actualPath, expectedPath, options) {
   const layoutEnabled = vdConfig.layoutDriftAnalysis !== false;
   const subPixelMaxCluster = vdConfig.subPixelMaxClusterSize ?? 2;
 
-  const actual = loadPNG(actualPath);
+  const captured = loadPNG(actualPath);
+  const crop = options.crop ? parseCrop(options.crop) : null;
+  const actual = crop ? cropPNG(captured, crop) : captured;
   const expected = loadPNG(expectedPath);
 
   // Handle size mismatch by scaling to the larger dimensions
@@ -547,6 +591,7 @@ function compareSingle(actualPath, expectedPath, options) {
       actualSize: `${actual.width}x${actual.height}`,
       expectedSize: `${expected.width}x${expected.height}`,
     },
+    crop: crop ? { ...crop, captureSize: `${captured.width}x${captured.height}` } : null,
     totalPixels,
     diffPixels: numDiffPixels,
     mismatchPct: Math.round(mismatchPct * 10000) / 10000,
@@ -684,6 +729,11 @@ function formatHumanReadable(result) {
     lines.push(`Expected:  ${result.expected}`);
     if (result.diffImage) lines.push(`Diff:      ${result.diffImage}`);
     lines.push("");
+    if (result.crop) {
+      lines.push(
+        `Crop:        ${result.crop.width}x${result.crop.height} at (${result.crop.x}, ${result.crop.y}) of the ${result.crop.captureSize} capture`,
+      );
+    }
     lines.push(`Dimensions:  ${result.dimensions.width}x${result.dimensions.height}`);
     if (result.dimensions.actualSize !== result.dimensions.expectedSize) {
       lines.push(
@@ -785,6 +835,7 @@ if (!args.actual || !args.expected) {
   );
   console.error("  --region-grid <4>     Grid divisions for region analysis (default: 4)");
   console.error("  --antialiasing <bool> Ignore antialiasing differences (default: true)");
+  console.error("  --crop <x,y,w,h>      Compare only this region of the actual capture");
   console.error("  --json                Output JSON instead of human-readable");
   process.exit(2);
 }

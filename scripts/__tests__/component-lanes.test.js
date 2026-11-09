@@ -242,3 +242,44 @@ describe("component-lanes workflow", () => {
     await expect(run({ components: [] }, happy())).rejects.toThrow(/args\.components/);
   });
 });
+
+/**
+ * A reference may be a plain path or `{ path, renderWidth, crop }` (issue #145):
+ * a screenshot taken at a width that is no standard breakpoint, or one that
+ * covers only part of the page, is diffed by capturing at `renderWidth` and
+ * cropping the capture to `crop` before visual-diff.js compares the two.
+ */
+describe("component-lanes workflow — references with a render width and a crop box", () => {
+  it("tells the visual check to capture at the render width and crop the capture before diffing", async () => {
+    const pages = [
+      {
+        name: "home",
+        url: "http://localhost:5173/",
+        references: {
+          1280: {
+            path: "ref/home-1280.png",
+            renderWidth: 1265,
+            crop: { x: 0, y: 180, width: 1265, height: 2400 },
+          },
+        },
+      },
+    ];
+    const { result, calls } = await run({ components: [comp("Hero", 2)], pages }, happy());
+    const diag = calls.find((c) => c.label === "diff:home:r1");
+    expect(diag.prompt).toContain("--viewport-size=1265,");
+    expect(diag.prompt).toContain("--crop 0,180,1265,2400");
+    expect(diag.prompt).toContain("ref/home-1280.png");
+    expect(result.pages.home.status).toBe("PASS");
+  });
+
+  it("keeps a plain path working: capture at the key's width, no crop", async () => {
+    const pages = [
+      { name: "home", url: "http://localhost:5173/", references: { 1440: "ref/home.png" } },
+    ];
+    const { calls } = await run({ components: [comp("Hero", 2)], pages }, happy());
+    const diag = calls.find((c) => c.label === "diff:home:r1");
+    expect(diag.prompt).toContain("--viewport-size=1440,");
+    expect(diag.prompt).toContain("ref/home.png");
+    expect(diag.prompt).not.toContain("--crop");
+  });
+});
