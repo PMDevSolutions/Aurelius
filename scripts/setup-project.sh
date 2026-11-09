@@ -186,6 +186,7 @@ case "$FRAMEWORK" in
             typescript@~6.0.2
             vitest@^4.1.12 @vitest/coverage-v8@^4.1.12
             @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+            @playwright/test
         )
         ;;
     vue)
@@ -220,6 +221,16 @@ fi
 create_vite_react_app() {
     pnpm create vite@9 "$PROJECT_NAME" --template react-ts --no-interactive --no-immediate
     cp "$TEMPLATES_DIR/vite/pnpm-workspace.yaml" "$PROJECT_NAME/pnpm-workspace.yaml"
+}
+
+# The shared Playwright config reads the dev server port from E2E_PORT and
+# falls back to Next.js's 3000. Point that fallback at the framework's port, so
+# `pnpm exec playwright test` starts and reaches this app's own dev server.
+set_dev_server_port() {
+    if [[ -f playwright.config.ts ]]; then
+        sed -i.bak "s/process.env.E2E_PORT) || 3000;/process.env.E2E_PORT) || $1;/" playwright.config.ts \
+            && rm -f playwright.config.ts.bak
+    fi
 }
 
 # Create the project
@@ -365,7 +376,18 @@ case "$FRAMEWORK" in
         [[ -f src/test/setup.ts ]] || cp "$TEMPLATES_DIR/vite/src/test/setup.ts" src/test/setup.ts
         [[ -f src/App.test.tsx ]] || cp "$TEMPLATES_DIR/vite/src/App.test.tsx" src/App.test.tsx
         grep -qx 'coverage' .gitignore 2>/dev/null || echo 'coverage' >> .gitignore
+        # Vite serves on 5173; the shared Playwright config assumes Next.js's 3000
+        set_dev_server_port 5173
+        # Lighthouse's SEO audits want a robots.txt, which no design supplies
+        mkdir -p public
+        [[ -f public/robots.txt ]] || cp "$TEMPLATES_DIR/vite/public/robots.txt" public/robots.txt
         pnpm prettier --write . > /dev/null
+        ;;
+    vue|svelte)
+        set_dev_server_port 5173
+        ;;
+    astro)
+        set_dev_server_port 4321
         ;;
 esac
 
@@ -393,6 +415,12 @@ case "$FRAMEWORK" in
         echo "Tailwind CSS:"
         echo "  Add '@import \"tailwindcss\";' to your main CSS file."
         echo "  Add the @tailwindcss/vite plugin to vite.config.ts."
+        echo ""
+        echo "E2E (playwright.config.ts points at the dev server on 5173):"
+        echo "  pnpm exec playwright install chromium   # one-time browser download"
+        echo ""
+        echo "Storybook (config in .storybook/, not installed by default):"
+        echo "  pnpm add -D storybook@^10 @storybook/react-vite@^10 @storybook/addon-docs@^10 @storybook/addon-a11y@^10"
         ;;
     vue)
         echo "  pnpm dev                  # Start development server (port 5173)"

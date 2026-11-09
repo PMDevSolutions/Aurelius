@@ -138,16 +138,18 @@ function hasResourceConflict(candidatePhase, runningPhases):
 
 ### Step 5: Phase Dispatch Table
 
+When the app is scaffolded beside the framework (`./scripts/setup-project.sh my-app`), run each **Bash** dispatch from the app directory, `cd my-app && ../scripts/<name>.sh …`: `generate-stories.sh` reads that directory's `src/components` and `package.json`, and `check-responsive.sh` installs Playwright there. The artifacts still land under the Aurelius checkout's `.claude/`.
+
 | Phase | Dispatch Method |
 |-------|----------------|
 | `component-build` | **Agent:** dispatch the converter named by the resolved renderer manifest. For React renderers the calling command supplies the source-appropriate converter (figma/screenshot → figma-react-converter via the figma-to-react-workflow skill, canva → canva-react-converter); otherwise dispatch `manifest.converter` (e.g. react-native-converter for expo, future vue-converter / svelte-converter) |
-| `storybook` | **Bash:** `./scripts/generate-stories.sh` |
+| `storybook` | **Bash:** `./scripts/generate-stories.sh` (exits 0 with `status: skipped` when the app's `package.json` lists no Storybook package; record the phase as skipped) |
 | `visual-diff` | **Agent:** invoke visual-qa-verification skill with pixel-diff loop (max iterations from `iterationLoop.maxVisualIterations`) |
 | `dark-mode` | **Bash:** `./scripts/check-dark-mode.sh http://localhost:3000` |
 | `e2e-tests` | **Agent:** invoke e2e-test-generator skill with flows from build-spec.json |
 | `cross-browser` | **Bash:** `./scripts/cross-browser-baseline.sh compare http://localhost:3000 --json` (diffs firefox/webkit against committed baselines with provenance checks — RFC 0002; skips with a capture hint when no baselines exist) |
 | `quality-gate` | **Parallel sub-dispatch:** run all `qualityGateSubtasks` concurrently (see below) |
-| `responsive` | **Bash:** `./scripts/check-responsive.sh http://localhost:3000` |
+| `responsive` | **Bash:** `./scripts/check-responsive.sh http://localhost:3000` (installs Playwright in the directory it runs from when that holds a `package.json`) |
 | `report` | **Agent:** generate `build-report.md` in `.claude/visual-qa/` from all collected phase results, timings, and diff images |
 
 ### Step 6: Quality Gate Sub-Parallelization

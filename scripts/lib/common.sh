@@ -27,6 +27,19 @@ common_project_root() {
   (cd "$lib_dir/../.." && pwd)
 }
 
+# The directory a script acts on. An app scaffolded beside the framework
+# (`./scripts/setup-project.sh my-app`) is its own pnpm root and is worked on
+# as `cd my-app && ../scripts/<name>.sh`, so the current directory wins when it
+# holds a package.json; otherwise the repository root. pipeline.config.json and
+# the .claude/ artifacts stay at common_project_root either way.
+common_app_root() {
+  if [[ -f "$PWD/package.json" ]]; then
+    pwd
+  else
+    common_project_root
+  fi
+}
+
 # --- Output helpers -------------------------------------------------------
 #
 # These mirror the prefixes already in use. Keep them ASCII-safe-prefixed:

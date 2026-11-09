@@ -117,6 +117,12 @@ If both MCPs fail or are unavailable:
    Preserve original filenames where unambiguous; otherwise rename:
    page-1-desktop.png, page-2-desktop.png, ...
 3. Record original paths and dimensions in build-spec.json
+4. When a file's width is none of the configured viewports, or the file does
+   not start at the top of the page, add a `reference` to its page (Step 5):
+   `renderWidth` is the file's pixel width (a 1280 px window with a 15 px
+   scrollbar gives 1265), `crop` the region of the full-page render the file
+   covers. Ask whether a file is a partial capture when the vision pass sees
+   no page header; `crop.y` may be left for visual round 1 to measure.
 ```
 
 ### Step 1.1: Multi-Page Handling
@@ -222,7 +228,7 @@ Store extracted data in working memory for Step 4 (questions) and Step 5 (build-
    Read .claude/pipeline.config.json (screenshot, appTypes sections).
 ```
 
-### Step 4: Ask Targeted Questions (Max 6)
+### Step 4: Ask Targeted Questions (Max 7)
 
 Only ask what cannot be derived from captures or local scan. Use `AskUserQuestion` tool with multiple questions in one prompt where possible.
 
@@ -258,6 +264,12 @@ Only ask what cannot be derived from captures or local scan. Use `AskUserQuestio
 **Q6 — Integration (only if existing project detected):**
 > a) Standalone app (new project scaffold)
 > b) Integrate into the existing project at [detected path]
+
+**Q7 — Page title and description (always, with defaults):**
+> A `<title>` and a one-line meta description for each page, defaulting to the
+> main heading and the first paragraph the vision pass extracted. The quality
+> gate's Lighthouse SEO floor needs both, and a screenshot cannot supply them;
+> Phase 4 writes them into the page and the build report lists them as additions.
 
 ### Step 5: Generate build-spec.json
 
@@ -301,6 +313,12 @@ Write `.claude/plans/build-spec.json`. The schema is consumed by `canva-token-in
       "name": "Home",
       "route": "/",
       "screenshotPath": ".claude/visual-qa/screenshots/source/page-1-desktop.png",
+      "seo": {                   // Q7: written into <title> and <meta name="description"> in Phase 4
+        "title": "Example: build faster with AI",
+        "description": "Ship production apps in days, not months."
+      },
+      // Only for a screenshot taken at a non-standard width or covering part of the page:
+      // "reference": { "renderWidth": 1265, "crop": { "x": 0, "y": 180, "width": 1265, "height": 2400 } },
       "sections": ["nav", "hero", "features", "pricing", "footer"]
     }
   ],

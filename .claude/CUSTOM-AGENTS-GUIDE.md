@@ -120,7 +120,7 @@ Agents are auto-selected by Claude Code based on task context, or you can reques
 
 ## How Agents Work
 
-Agents are invoked through Claude Code's Agent tool. They are automatically selected based on task context:
+Agents are invoked through Claude Code's Agent tool. Claude Code delegates when a request matches an agent's description, and may handle a small task itself instead; name the agent to make the delegation certain:
 
 ```
 User: "Help me optimize this component's rendering"
@@ -129,11 +129,11 @@ Claude: [Uses performance-benchmarker agent]
 User: "Convert this Figma design to React"
 Claude: [Uses figma-react-converter agent]
 
-User: "Write tests for the auth hook"
+User: "Use the test-writer-fixer agent to write tests for the auth hook"
 Claude: [Uses test-writer-fixer agent]
 ```
 
-You can also request a specific agent:
+Naming the agent, as in the last example, is the sure way to get it:
 ```
 User: "Use the accessibility-auditor agent to check this page"
 ```

@@ -90,9 +90,15 @@ All scripts live in `scripts/` and are designed to run from the project root.
   - `--output-dir <path>` -- Save diff images (batch mode)
   - `--json` -- Output results as JSON
   - `--region-grid <n>` -- Grid size for region analysis (default: 4, meaning 4x4)
+  - `--crop <x,y,w,h>` -- Compare only this region of the actual capture, for a reference that covers part of the page (a screenshot that starts below the top, or one narrower than the viewport); the result carries `crop` with the capture's full size
   - `--antialiasing` -- Enable anti-aliasing detection
 - **Exit codes**: 0 = pass, 1 = fail (above threshold), 2 = error
 - **Config**: Reads defaults from `.claude/pipeline.config.json`
+
+### Responsive Screenshots (`check-responsive.sh`)
+- **Purpose**: Capture a URL at every `visualDiff.breakpoints` width with Playwright (Phase 8.5 of the build pipelines)
+- **Usage**: `./scripts/check-responsive.sh [url] [output-dir]`; from an app scaffolded beside the framework, `cd my-app && ../scripts/check-responsive.sh http://localhost:5173`
+- **Where things go**: `@playwright/test` and its Chromium are installed in the directory the script runs from when that holds a `package.json`, otherwise in the Aurelius checkout; the screenshots go to `.claude/visual-qa/screenshots/responsive/` in the Aurelius checkout either way
 
 ## Build Performance & Caching
 
@@ -159,6 +165,7 @@ All scripts live in `scripts/` and are designed to run from the project root.
 - **Usage**: `./scripts/setup-project.sh my-app --next` or `--vite`
 - **What it does**: Copies template configs, installs dependencies, sets up testing
 - **`--vite` / `--react`**: The app becomes its own pnpm root, so the repo's lockfile stays untouched. ESLint replaces create-vite's oxlint, and a starter test ships so that `lint-and-format.sh`, `check-types.sh`, `run-tests.sh` and `check-accessibility.sh` pass on a fresh scaffold
+- **Also for `--vite` / `--react`**: installs `@playwright/test` and points `playwright.config.ts` at Vite's port 5173 (`E2E_PORT` overrides it for one run; the browsers are a one-time `pnpm exec playwright install chromium`); ships `public/robots.txt` for the Lighthouse SEO floor; copies a Storybook 10 config to `.storybook/` without installing Storybook, prints the install command, and `generate-stories.sh` skips by design until it is installed
 
 ## Claude Code Configuration
 

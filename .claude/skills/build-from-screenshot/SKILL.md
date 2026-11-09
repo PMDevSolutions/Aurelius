@@ -106,7 +106,7 @@ Identical to `/build-from-figma` Phase 3.
 
 After Phase 3 confirms RED, resolve the renderer manifest (`node scripts/renderer-registry.js resolve <renderer> --json`) and run Phases 4-9 exactly as `/build-from-figma` describes (`.claude/skills/build-from-figma/SKILL.md` → Phases 4-9): the `component-lanes` workflow for Phases 4-5 when the Workflow tool is available, then `parallel-orchestration` for Phases 4.5-9. The screenshot differences:
 
-- **Workflow args:** `"source": "screenshot"`; `converter` is `manifest.converter` (`figma-react-converter`, the generic React builder, for React renderers; `react-native-converter` for expo); `testCommand` is `manifest.commands.test`. The page `references` are the source captures in `.claude/visual-qa/screenshots/source/`, keyed by the width they were captured at. Set `skipVisual` when the manifest excludes `visual-diff` (expo).
+- **Workflow args:** `"source": "screenshot"`; `converter` is `manifest.converter` (`figma-react-converter`, the generic React builder, for React renderers; `react-native-converter` for expo); `testCommand` is `manifest.commands.test`. The page `references` are the source captures in `.claude/visual-qa/screenshots/source/`, keyed by the width they were captured at. A page whose build-spec entry carries `reference` (a `renderWidth` and/or a `crop`, screenshot-intake Step 5) passes it through as an object, `"1280": { "path": "…", "renderWidth": 1265, "crop": { "x": 0, "y": 180, "width": 1265, "height": 2400 } }`, so the visual stage captures at that width and diffs only that region of the capture (issue #145). Set `skipVisual` when the manifest excludes `visual-diff` (expo).
 - **parallel-orchestration:** drop every phase in `manifest.phases.exclude` (expo excludes `visual-diff`, `dark-mode`, `cross-browser` and `responsive`), and also `cross-browser` for `appType: "chrome-extension"`. Context: pipeline source `"screenshot"`, test files `src/components/**/*.test.*`, reference screenshots `.claude/visual-qa/screenshots/source/`. `e2e-tests` follows `component-build` when `visual-diff` is excluded.
 
 Without the Workflow tool, invoke `parallel-orchestration` with all of `["component-build", "storybook", "visual-diff", "dark-mode", "e2e-tests", "cross-browser", "quality-gate", "responsive", "report"]` minus those exclusions. If `orchestration.enabled` is `false`, run the phases sequentially as documented below.
@@ -135,12 +135,13 @@ This phase:
 4. Uses source screenshots for layout/structure decisions
 5. Generates components (at `manifest.component.dir` with `manifest.component.ext`) that satisfy the test files from Phase 3
 6. Runs `manifest.commands.test` after each component batch to confirm GREEN
+7. Sets each page's `<title>` and `<meta name="description">` from `pages[].seo` in the build spec (`index.html` for Vite, the route's metadata for Next.js) and keeps `public/robots.txt`. The quality gate's SEO floor (`qualityGate.lighthouseThresholds.seo`, 90) applies to a screenshot build too; these come from the intake, not from the design, and the build report lists them as additions
 
 **Critical rule:** If tests fail, fix the component — never modify the test files.
 
 ## Phase 4.5: Storybook Generation (Non-Blocking)
 
-Identical to `/build-from-figma` Phase 4.5. Skipped when the renderer has no browser story (e.g. expo).
+Identical to `/build-from-figma` Phase 4.5. Skipped when the renderer has no browser story (e.g. expo), and skipped by design when the app's `package.json` lists no Storybook package: `generate-stories.sh` then exits 0 with `status: skipped` and the install command, and the phase is recorded as `skipped` in `pipeline-state.json`. Stories without Storybook installed would break `tsc` and the build. When the app is scaffolded beside the framework, run it from the app directory (`cd my-app && ../scripts/generate-stories.sh`).
 
 ```bash
 ./scripts/generate-stories.sh

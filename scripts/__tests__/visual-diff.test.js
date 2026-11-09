@@ -152,3 +152,71 @@ describe("visual-diff.js — responsive layout comparison", () => {
     expect(desktop.layoutAnalysis).toBeDefined();
   });
 });
+
+// =============================================================================
+// Cropping a partial reference out of a full-page capture (issue #145)
+// =============================================================================
+
+function runDiffRaw(args) {
+  try {
+    const stdout = execFileSync("node", [SCRIPT, ...args], {
+      encoding: "utf-8",
+      timeout: 30000,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return { status: 0, stdout, stderr: "" };
+  } catch (err) {
+    return { status: err.status, stdout: err.stdout || "", stderr: err.stderr || "" };
+  }
+}
+
+describe("visual-diff.js — --crop for a reference that covers part of the page", () => {
+  // A 60x40 checkerboard reference, found inside a 100x120 capture at (20, 50).
+  const checker = (x, y) =>
+    (Math.floor(x / 10) + Math.floor(y / 10)) % 2 ? [20, 40, 200, 255] : [230, 230, 230, 255];
+  let reference;
+  let capture;
+
+  beforeAll(() => {
+    reference = savePNG("crop-reference.png", createPNG(60, 40, checker));
+    capture = savePNG(
+      "crop-capture.png",
+      createPNG(100, 120, (x, y) =>
+        x >= 20 && x < 80 && y >= 50 && y < 90 ? checker(x - 20, y - 50) : [255, 255, 255, 255],
+      ),
+    );
+  });
+
+  it("without --crop the whole capture is compared, so the sizes differ and the diff fails", () => {
+    const r = runDiff([capture, reference, "--json", "--threshold", "0.02"]);
+    expect(r.dimensions.actualSize).toBe("100x120");
+    expect(r.pass).toBe(false);
+  });
+
+  it("--crop x,y,w,h compares only that region of the capture, at the reference's size", () => {
+    const r = runDiff([
+      capture,
+      reference,
+      "--json",
+      "--threshold",
+      "0.02",
+      "--crop",
+      "20,50,60,40",
+    ]);
+    expect(r.crop).toMatchObject({ x: 20, y: 50, width: 60, height: 40 });
+    expect(r.dimensions).toMatchObject({
+      width: 60,
+      height: 40,
+      actualSize: "60x40",
+      expectedSize: "60x40",
+    });
+    expect(r.mismatchPct).toBe(0);
+    expect(r.pass).toBe(true);
+  });
+
+  it("refuses a crop box that reaches outside the capture", () => {
+    const r = runDiffRaw([capture, reference, "--json", "--crop", "60,100,60,40"]);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/crop/i);
+  });
+});

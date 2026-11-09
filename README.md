@@ -178,7 +178,7 @@ All thresholds and behavior are configurable in `.claude/pipeline.config.json`:
 
 ## 56 Custom Agents
 
-Agents are auto-selected by Claude Code based on your task:
+Claude Code delegates to an agent when your request matches its description, and may handle a small task itself instead. Naming the agent makes the delegation certain ("Use the test-writer-fixer agent to write tests for Checklist"):
 
 | Category | Count | Key Agents |
 |----------|-------|------------|

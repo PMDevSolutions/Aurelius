@@ -9,7 +9,7 @@ allowed-tools: Bash(./scripts/generate-stories.sh *), Bash(pnpm build-storybook 
 
 ## Purpose
 
-Auto-generate Storybook 8 (CSF3) stories and MDX documentation from built React
+Auto-generate Storybook 10 (CSF3) stories and MDX documentation from built React
 components. The generator parses each component's TypeScript source with a
 `ts-morph` AST — not regex — so it can reliably extract prop types, string-literal
 unions, default values, callback props, and JSDoc comments, then emit:
@@ -24,7 +24,13 @@ unions, default values, callback props, and JSDoc comments, then emit:
 
 The skill wraps `scripts/generate-stories.sh` (a thin wrapper over
 `scripts/generate-stories.js`). It is a **non-blocking** step: a failure never
-fails the build.
+fails the build. When the project's `package.json` lists no Storybook package,
+the script exits 0 with `status: skipped` (in `--json` mode) and prints the
+install command, because stories without Storybook installed would break `tsc`
+and the build; the pipelines record the phase as `skipped`. Generated stories
+import their types from the framework package named in `.storybook/main.ts`
+(`@storybook/react-vite` when none is found), as Storybook 9+ recommends, and
+the MDX pages take their blocks from `@storybook/addon-docs/blocks`.
 
 ## When to Use
 
@@ -103,7 +109,7 @@ Emit CSF3 with `title: 'Components/<path-relative-to-src>'`, `tags: ['autodocs']
 `includeResponsiveViewports` is enabled.
 
 ```tsx
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite'; // the framework named in .storybook/main.ts
 import { Badge } from './Badge';
 
 const meta: Meta<typeof Badge> = {
@@ -126,12 +132,12 @@ export const Success: Story = { args: { variant: 'success' } };
 
 ### Step 5: Generate `.mdx` (unless `--no-mdx` or `generateMdx: false`)
 
-Emit an autodocs page importing `@storybook/blocks`, referencing the sibling
+Emit an autodocs page importing `@storybook/addon-docs/blocks`, referencing the sibling
 `.stories`, and embedding the component's JSDoc description, the `Default`
 `Canvas`, `Controls`, a `Canvas` per variant, and the full `ArgTypes` table.
 
 ```mdx
-import { Meta, Canvas, Controls, ArgTypes } from '@storybook/blocks';
+import { Meta, Canvas, Controls, ArgTypes } from '@storybook/addon-docs/blocks';
 import * as Stories from './Badge.stories';
 
 <Meta of={Stories} />

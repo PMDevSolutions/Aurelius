@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "child_process";
-import { readFileSync } from "fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -133,5 +134,81 @@ describe("setup-project.sh", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toMatch(/Framework: react/);
     expect(r.stdout).toMatch(/template:\s+templates\/vite/);
+  });
+});
+
+/**
+ * Follow-through for a `/build-from-screenshot` run on a fresh --vite scaffold
+ * (issue #145): the Playwright config must point at the app's own dev server
+ * and `@playwright/test` must be there to run it; the Storybook config must
+ * name packages that exist for the scaffold's Vite; and the quality gate's SEO
+ * floor needs a robots.txt the design cannot supply.
+ */
+describe("setup-project.sh — E2E, Storybook and SEO follow-through (issue #145)", () => {
+  const script = readFileSync(SCRIPT, "utf-8");
+  const tooling = () => {
+    const r = run(["my-app", "--vite", "--dry-run"]);
+    expect(r.exitCode).toBe(0);
+    return r.stdout
+      .match(/tooling:\s+(.*)/)[1]
+      .split(" ")
+      .map((dep) => dep.replace(/(?<=.)@.*$/, ""));
+  };
+
+  it("installs @playwright/test so the scaffolded Playwright config can run", () => {
+    expect(tooling()).toContain("@playwright/test");
+  });
+
+  it("derives every Playwright URL from one port that the scaffold sets per framework", () => {
+    const config = readFileSync(
+      join(PROJECT_ROOT, "templates/shared/playwright.config.ts"),
+      "utf-8",
+    );
+    expect(config).toMatch(/const PORT = Number\(process\.env\.E2E_PORT\) \|\| 3000;/);
+    expect(config).not.toMatch(/localhost:3000/);
+    expect(config.match(/\$\{PORT\}/g).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("points the Vite app's Playwright config at port 5173", () => {
+    // Run the script's own function on a copy of the template.
+    const fn = script.match(/^set_dev_server_port\(\) \{[\s\S]*?^\}/m)?.[0];
+    expect(fn).toBeTruthy();
+    const dir = mkdtempSync(join(tmpdir(), "aurelius-setup-"));
+    copyFileSync(
+      join(PROJECT_ROOT, "templates/shared/playwright.config.ts"),
+      join(dir, "playwright.config.ts"),
+    );
+    execFileSync("bash", ["-c", `${fn}\nset_dev_server_port 5173`], {
+      cwd: dir,
+      encoding: "utf-8",
+    });
+    const config = readFileSync(join(dir, "playwright.config.ts"), "utf-8");
+    const leftover = existsSync(join(dir, "playwright.config.ts.bak"));
+    rmSync(dir, { recursive: true, force: true });
+    expect(config).toContain("|| 5173;");
+    expect(config).not.toContain("|| 3000;");
+    expect(leftover).toBe(false);
+    expect(script).toMatch(/vite\|react\)[\s\S]*set_dev_server_port 5173/);
+  });
+
+  it("names only Storybook packages that exist for Storybook 10, and how to install them", () => {
+    const main = readFileSync(join(PROJECT_ROOT, "templates/shared/.storybook/main.ts"), "utf-8");
+    const addons = [...main.match(/addons: \[([\s\S]*?)\]/)[1].matchAll(/"([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    expect(addons.length).toBeGreaterThan(0);
+    expect(addons).not.toContain("@storybook/addon-essentials");
+    expect(addons).not.toContain("@storybook/addon-interactions");
+    expect(main).toContain('"@storybook/react-vite"');
+    for (const pkg of ["storybook", "@storybook/react-vite", ...addons]) {
+      expect(script).toContain(`${pkg}@^10`);
+    }
+  });
+
+  it("ships a robots.txt for the SEO floor and copies it into the Vite app", () => {
+    const robots = readFileSync(join(PROJECT_ROOT, "templates/vite/public/robots.txt"), "utf-8");
+    expect(robots).toMatch(/^User-agent: \*$/m);
+    expect(robots).toMatch(/^Allow: \/$/m);
+    expect(script).toMatch(/vite\/public\/robots\.txt/);
   });
 });
