@@ -150,7 +150,7 @@ These skills provide patterns and best practices. They trigger on relevant keywo
 
 #### 24. storybook-story-generation (Phase 4.5)
 
-- **Purpose:** Auto-generates Storybook 8 (CSF3) `.stories.tsx` and `.mdx` docs from built React components using a `ts-morph` AST. Emits prop-aware `argTypes`/controls, a `Default` story seeded with destructured defaults, one variant story per string-literal-union value, `True`/`False` stories for booleans, and action args for `on*` callbacks. Wraps `scripts/generate-stories.sh`. Non-blocking.
+- **Purpose:** Auto-generates Storybook 10 (CSF3) `.stories.tsx` and `.mdx` docs from built React components using a `ts-morph` AST. Emits prop-aware `argTypes`/controls, a `Default` story seeded with destructured defaults, one variant story per string-literal-union value, `True`/`False` stories for booleans, and action args for `on*` callbacks. Wraps `scripts/generate-stories.sh`. Non-blocking.
 - **Triggers:** Phase 4.5 of `/build-from-figma`, `/build-from-canva`, and `/build-from-screenshot` (after component build), "generate Storybook stories", "auto-generate stories", "add MDX docs"
 - **Output:** `src/components/**/*.stories.tsx` and `src/components/**/*.mdx`
 

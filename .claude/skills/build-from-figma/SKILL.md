@@ -173,7 +173,7 @@ Building components and fixing visual differences are per-item work, so they run
      "skipVisual": false
    }
    ```
-   `tier` follows the component's `category` in the build spec: `ui` 0, `layout` 1, `sections` 2, `pages` 3. `maxVisualIterations` and `diffPassThreshold` come from `pipeline.config.json → iterationLoop`. Set `skipVisual` when the manifest excludes `visual-diff`.
+   `tier` follows the component's `category` in the build spec: `ui` 0, `layout` 1, `sections` 2, `pages` 3. `maxVisualIterations` and `diffPassThreshold` come from `pipeline.config.json → iterationLoop`. Set `skipVisual` when the manifest excludes `visual-diff`. A reference may also be an object, `{ "path", "renderWidth", "crop": { "x", "y", "width", "height" } }`, for a source screenshot taken at a non-standard width or covering only part of the page: the visual check then captures at `renderWidth` and passes `--crop` to `visual-diff.js` (the screenshot pipeline fills it from the build spec's `reference`).
 3. **What it does:** each tier's components build in parallel lanes (the converter writes only inside its own directory; shared files such as barrels are applied once per tier), and a separate check reruns each component's tests and compares its test file's checksum. Then up to `maxVisualIterations` rounds: every page is diffed in parallel, the pass decision is made from the numbers, fixes are grouped so each component has one fixer per round, and every round re-checks every page.
 4. **Record the result** in `pipeline-state.json`: phases 4 and 5, each component's status, each page's status and worst mismatch. A `TEST_TAMPERED` component changed its test file: restore that file from the Phase 3 output (`git checkout -- <test>` when it is committed) and mark the component `needs-review`. Leave the dev server running for the phases below.
 
@@ -247,7 +247,7 @@ This phase:
 3. Runs `pnpm build-storybook --quiet` as a smoke test (if Storybook is installed)
 4. Skips components that already have story files
 
-Non-blocking: if Storybook is not installed or generation fails, log a warning and continue.
+Non-blocking. When the app's `package.json` lists no Storybook package, `generate-stories.sh` exits 0 with `status: skipped` and the install command, because stories without Storybook would break `tsc` and the build; record the phase as `skipped`. Any other failure logs a warning and the pipeline continues.
 
 ## Phase 5: Visual Verification (Automated Pixel Diff)
 

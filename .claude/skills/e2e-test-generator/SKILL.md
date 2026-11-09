@@ -44,9 +44,12 @@ Generate comprehensive Playwright E2E tests based on the build specification. Re
 Copy the shared Playwright config template and customize:
 
 1. Copy `templates/shared/playwright.config.ts` → project root `playwright.config.ts`
-2. Adjust `baseURL` and `webServer.command` based on framework:
-   - **Next.js:** `baseURL: "http://localhost:3000"`, `command: "pnpm dev"`
-   - **Vite:** `baseURL: "http://localhost:5173"`, `command: "pnpm dev"`
+2. The config reads the dev server port from `E2E_PORT` and falls back to the port
+   `setup-project.sh` set for the framework (Vite and SvelteKit 5173, Astro 4321,
+   Next.js 3000); `baseURL` and `webServer.url` both derive from it, and
+   `webServer.command` is `pnpm dev`, which a scaffolded app resolves itself since it
+   is its own pnpm root. For an app not scaffolded by `setup-project.sh`, set the
+   fallback (`|| 3000`) to its port before the first run.
 3. The template includes 5 browser projects by default:
    - Desktop: `chromium`, `firefox`, `webkit`
    - Mobile: `mobile-chrome` (Pixel 5), `mobile-safari` (iPhone 13)
