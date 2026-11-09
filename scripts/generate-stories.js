@@ -96,6 +96,47 @@ function loadConfig(configFilePath) {
 }
 
 // ---------------------------------------------------------------------------
+// Storybook in the project
+// ---------------------------------------------------------------------------
+
+const STORYBOOK_INSTALL =
+  "pnpm add -D storybook@^10 @storybook/react-vite@^10 @storybook/addon-docs@^10 @storybook/addon-a11y@^10";
+
+/**
+ * Whether package.json declares a Storybook package: true, false, or null when
+ * there is no package.json to tell (the generator then proceeds).
+ */
+function storybookInstalled(cwd) {
+  const pkgPath = join(cwd, "package.json");
+  if (!existsSync(pkgPath)) return null;
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+    return deps.some((name) => name === "storybook" || name.startsWith("@storybook/"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The Storybook framework package the project uses (`@storybook/react-vite`,
+ * `@storybook/nextjs-vite`, …), read from .storybook/main.*. Since Storybook 9,
+ * stories import their types from the framework package, so a story must name
+ * the one that is installed. Defaults to react-vite, the Vite template's.
+ */
+function storybookFramework(cwd) {
+  for (const name of ["main.ts", "main.mts", "main.js", "main.mjs", "main.cjs"]) {
+    const file = join(cwd, ".storybook", name);
+    if (!existsSync(file)) continue;
+    const match = readFileSync(file, "utf-8").match(
+      /framework:\s*(?:\{\s*name:\s*)?["'](@storybook\/[^"']+)["']/,
+    );
+    if (match) return match[1];
+  }
+  return "@storybook/react-vite";
+}
+
+// ---------------------------------------------------------------------------
 // File scanning — recursively find .tsx files
 // ---------------------------------------------------------------------------
 
@@ -458,7 +499,7 @@ function generateStoryContent(
   const breakpoints = (config.visualDiff && config.visualDiff.breakpoints) || {};
 
   // Imports
-  lines.push("import type { Meta, StoryObj } from '@storybook/react';");
+  lines.push(`import type { Meta, StoryObj } from '${config.storybookFramework}';`);
   if (isDefault) {
     lines.push(`import ${componentName} from './${componentBasename}';`);
   } else {
@@ -590,10 +631,7 @@ function generateStoryContent(
 function generateMdxContent(componentName, componentBasename, description, variantNames) {
   const lines = [];
 
-  lines.push("import { Meta } from '@storybook/blocks';");
-  lines.push("import { Canvas } from '@storybook/blocks';");
-  lines.push("import { Controls } from '@storybook/blocks';");
-  lines.push("import { ArgTypes } from '@storybook/blocks';");
+  lines.push("import { Meta, Canvas, Controls, ArgTypes } from '@storybook/addon-docs/blocks';");
   lines.push(`import * as Stories from './${componentBasename}.stories';`);
   lines.push("");
   lines.push("<Meta of={Stories} />");
@@ -641,8 +679,29 @@ function main() {
     process.exit(0);
   }
 
+  // Stories only compile when Storybook is installed (issue #145): a project
+  // whose package.json lists no Storybook package gets a skip, not stories that
+  // break tsc and the build.
+  if (storybookInstalled(cwd) === false) {
+    log("⊘ Storybook is not installed in this project; story generation skipped by design.");
+    log(`  Install it (config in .storybook/): ${STORYBOOK_INSTALL}`);
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          generated: 0,
+          skipped: 0,
+          files: [],
+          status: "skipped",
+          reason: "storybook-not-installed",
+        }),
+      );
+    }
+    process.exit(0);
+  }
+
   // Load config
   const config = loadConfig(fullConfigPath);
+  config.storybookFramework = storybookFramework(cwd);
   const skipPatterns = config.storybook.skipPatterns || [];
   const generateMdxFlag = !noMdx && config.storybook.generateMdx !== false;
 

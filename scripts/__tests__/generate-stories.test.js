@@ -546,10 +546,11 @@ export function Alert({ message, severity }: AlertProps) {
 
     const content = readFileSync(mdxFile, "utf-8");
     // MDX should contain standard Storybook doc blocks
-    expect(content).toContain("import { Meta");
-    expect(content).toContain("import { Canvas");
-    expect(content).toContain("import { Controls");
-    expect(content).toContain("import { ArgTypes");
+    for (const block of ["Meta", "Canvas", "Controls", "ArgTypes"]) {
+      expect(content).toMatch(
+        new RegExp(`import \\{[^}]*\\b${block}\\b[^}]*\\} from '@storybook/addon-docs/blocks'`),
+      );
+    }
     expect(content).toContain("<Meta");
     expect(content).toContain("<Canvas");
     expect(content).toContain("<Controls");
@@ -734,5 +735,108 @@ export function Icon({ name }: IconProps) {
     const storyExports = content.match(/export const \w+: Story/g) || [];
     expect(storyExports.length).toBeLessThanOrEqual(4); // Default + 3 capped variants
     expect(storyExports.length).toBeGreaterThanOrEqual(2); // At least Default + 1 variant
+  });
+});
+
+// =============================================================================
+// Storybook 10 imports and the skip without Storybook (issue #145)
+// =============================================================================
+
+function writeComponent(dir, name = "Badge") {
+  writeTsConfig(dir);
+  mkdirSync(join(dir, "src", "components"), { recursive: true });
+  writeFileSync(
+    join(dir, "src", "components", `${name}.tsx`),
+    `export interface ${name}Props {
+  label: string;
+}
+
+export function ${name}({ label }: ${name}Props) {
+  return <span>{label}</span>;
+}
+`,
+  );
+}
+
+describe("generate-stories.js — Storybook 10 imports", () => {
+  it("imports Meta and StoryObj from the framework package named in .storybook/main.ts", () => {
+    const dir = createTmpDir();
+    writeComponent(dir);
+    mkdirSync(join(dir, ".storybook"));
+    writeFileSync(
+      join(dir, ".storybook", "main.ts"),
+      `import type { StorybookConfig } from "@storybook/nextjs-vite";
+
+const config: StorybookConfig = {
+  stories: ["../src/**/*.stories.@(ts|tsx)"],
+  framework: { name: "@storybook/nextjs-vite", options: {} },
+};
+
+export default config;
+`,
+    );
+    const result = run(dir);
+    expect(result.exitCode).toBe(0);
+    const story = readFileSync(join(dir, "src", "components", "Badge.stories.tsx"), "utf-8");
+    expect(story).toContain("import type { Meta, StoryObj } from '@storybook/nextjs-vite';");
+  });
+
+  it("defaults to @storybook/react-vite and takes the doc blocks from @storybook/addon-docs", () => {
+    const dir = createTmpDir();
+    writeComponent(dir);
+    const result = run(dir);
+    expect(result.exitCode).toBe(0);
+    const story = readFileSync(join(dir, "src", "components", "Badge.stories.tsx"), "utf-8");
+    expect(story).toContain("import type { Meta, StoryObj } from '@storybook/react-vite';");
+    const mdx = readFileSync(join(dir, "src", "components", "Badge.mdx"), "utf-8");
+    expect(mdx).toContain("from '@storybook/addon-docs/blocks'");
+    expect(mdx).not.toContain("@storybook/blocks");
+  });
+});
+
+describe("generate-stories.js — skipped by design when Storybook is not installed", () => {
+  const withoutStorybook = (dir) =>
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({ name: "my-app", devDependencies: { vite: "^8.0.0", vitest: "^4.1.12" } }),
+    );
+
+  it("writes no story and says so in JSON", () => {
+    const dir = createTmpDir();
+    writeComponent(dir);
+    withoutStorybook(dir);
+    const result = run(dir, ["--json"]);
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      generated: 0,
+      status: "skipped",
+      reason: "storybook-not-installed",
+    });
+    expect(existsSync(join(dir, "src", "components", "Badge.stories.tsx"))).toBe(false);
+  });
+
+  it("names the install command in the human-readable output", () => {
+    const dir = createTmpDir();
+    writeComponent(dir);
+    withoutStorybook(dir);
+    const result = run(dir);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toMatch(/skipped/i);
+    expect(result.stdout).toContain("pnpm add -D storybook");
+  });
+
+  it("generates as usual when package.json declares a Storybook package", () => {
+    const dir = createTmpDir();
+    writeComponent(dir);
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({
+        name: "my-app",
+        devDependencies: { storybook: "^10.3.0", "@storybook/react-vite": "^10.3.0" },
+      }),
+    );
+    const result = run(dir);
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(join(dir, "src", "components", "Badge.stories.tsx"))).toBe(true);
   });
 });

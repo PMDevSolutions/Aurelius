@@ -17,6 +17,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 const CI = !!process.env.CI;
 
+// The dev server the tests run against. setup-project.sh sets the fallback to
+// the scaffolded framework's port (Vite and SvelteKit 5173, Astro 4321,
+// Next.js 3000); E2E_PORT overrides it for one run.
+const PORT = Number(process.env.E2E_PORT) || 3000;
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
@@ -28,7 +33,7 @@ export default defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -36,7 +41,7 @@ export default defineConfig({
 
   webServer: {
     command: "pnpm dev",
-    url: "http://localhost:3000",
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !CI,
     timeout: 30_000,
   },

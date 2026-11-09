@@ -30,7 +30,8 @@ These configs apply to any React project regardless of framework:
 | `tailwind.config.ts` | Base Tailwind config with design token structure |
 | `tsconfig.json` | TypeScript strict mode with path aliases |
 | `vitest.config.template.ts.tpl` | Vitest config with jsdom, RTL setup, and coverage thresholds |
-| `playwright.config.ts` | Shared cross-browser Playwright config (chromium, firefox, webkit, mobile) |
+| `playwright.config.ts` | Shared cross-browser Playwright config (chromium, firefox, webkit, mobile); the dev server port comes from `E2E_PORT`, with a fallback `setup-project.sh` sets per framework (Vite 5173, Astro 4321, Next.js 3000) |
+| `.storybook/` | Storybook 10 config for `@storybook/react-vite` with the docs and a11y addons; the scaffold copies it but does not install Storybook |
 | `css/cross-browser-reset.css` | Cross-browser CSS normalization (fonts, scrollbars, forms, focus) |
 
 ### Usage
@@ -66,6 +67,7 @@ Copies shared templates plus Next.js-specific config.
 | File | Purpose |
 |------|---------|
 | `vite.config.ts.tpl` | Vite config with React plugin, path aliases, and build optimizations |
+| `public/robots.txt` | Allows indexing; copied into the app because the Lighthouse SEO floor wants one and no design supplies it |
 
 ### Usage
 
@@ -73,7 +75,7 @@ Copies shared templates plus Next.js-specific config.
 ./scripts/setup-project.sh my-app --vite
 ```
 
-Copies shared templates plus Vite-specific config, then swaps create-vite's oxlint for the ESLint setup in `shared/`. The app gets its own pnpm root (`pnpm-workspace.yaml`), `src/test/setup.ts` and a starter test, `src/App.test.tsx`, so the quality checks pass on a fresh scaffold.
+Copies shared templates plus Vite-specific config, then swaps create-vite's oxlint for the ESLint setup in `shared/`. The app gets its own pnpm root (`pnpm-workspace.yaml`), `src/test/setup.ts` and a starter test, `src/App.test.tsx`, so the quality checks pass on a fresh scaffold. It also installs `@playwright/test` with `playwright.config.ts` pointed at Vite's port 5173, ships `public/robots.txt`, and copies the Storybook 10 config to `.storybook/` without installing Storybook (the install command is printed at the end).
 
 ## Astro Templates (`astro/`)
 
