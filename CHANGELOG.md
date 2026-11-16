@@ -4,6 +4,25 @@ All notable changes to the Aurelius framework will be documented in this file.
 
 This changelog is automatically generated from [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [2.2.0](https://github.com/PMDevSolutions/Aurelius/compare/v2.1.0...v2.2.0) (2026-11-16)
+
+
+### Features
+
+* **visual-qa:** crop and render width for partial source screenshots ([802b92a](https://github.com/PMDevSolutions/Aurelius/commit/802b92af28f949d44a5cdf4cd8c183ca02d2c76b)), closes [#145](https://github.com/PMDevSolutions/Aurelius/issues/145) [#145](https://github.com/PMDevSolutions/Aurelius/issues/145)
+
+
+### Bug Fixes
+
+* **agents:** read HAR files with a Node one-liner in performance-benchmarker ([d3fbad0](https://github.com/PMDevSolutions/Aurelius/commit/d3fbad0b8c15eaf985264d7ed1d0808ee307f43f))
+* **ci:** hand over the release PR when Actions may not create PRs ([1575241](https://github.com/PMDevSolutions/Aurelius/commit/15752418a3b79fb95188348deb70f1293441ca38)), closes [#144](https://github.com/PMDevSolutions/Aurelius/issues/144)
+* **scripts:** check referenced projects and report zero counts correctly ([197d4dd](https://github.com/PMDevSolutions/Aurelius/commit/197d4dda790be796fa21f9d0026c9ebb0b3d20b1)), closes [#141](https://github.com/PMDevSolutions/Aurelius/issues/141)
+* **scripts:** count the files Prettier flags in lint-and-format.sh ([af687da](https://github.com/PMDevSolutions/Aurelius/commit/af687da2ecca28f2d2d88ae7de03ce91faca9d6e)), closes [#141](https://github.com/PMDevSolutions/Aurelius/issues/141)
+* **scripts:** make a fresh --vite scaffold pass the quality checks ([de5daec](https://github.com/PMDevSolutions/Aurelius/commit/de5daeca31a057fe37bc817335cdff7d1b688a6c)), closes [#141](https://github.com/PMDevSolutions/Aurelius/issues/141)
+* **scripts:** make a fresh --vite scaffold ready for the pipeline ([73e0ebd](https://github.com/PMDevSolutions/Aurelius/commit/73e0ebd247ba49e458d04d18599198e3ddc449c4)), closes [#145](https://github.com/PMDevSolutions/Aurelius/issues/145) [#146](https://github.com/PMDevSolutions/Aurelius/issues/146) [#145](https://github.com/PMDevSolutions/Aurelius/issues/145)
+* **scripts:** run the build script with npm run when there is no pnpm lockfile ([c10afc2](https://github.com/PMDevSolutions/Aurelius/commit/c10afc2d3bb1185fcf0eaeef10b594cf0de4c67a))
+* **skills:** correct the dependency size check command (thanks, Aleksandr Churilov) ([628af89](https://github.com/PMDevSolutions/Aurelius/commit/628af8992d72421fea3b29a52b7860e66cde496b))
+
 ## [2.1.0](https://github.com/PMDevSolutions/Aurelius/compare/v2.0.0...v2.1.0) (2026-10-27)
 
 
