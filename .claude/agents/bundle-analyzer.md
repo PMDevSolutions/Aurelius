@@ -60,7 +60,7 @@ npx expo export --dump-sourcemap      # analyze source maps
 ### 2. Dependency Audit
 
 **Identify oversized dependencies:**
-- List all dependencies with their bundled sizes (use `bundlephobia` data or local analysis)
+- List all dependencies with their bundled sizes (`npx bundle-phobia-cli@0.15.0 <package>` for bundlephobia data, or local analysis)
 - Flag dependencies >50KB gzipped
 - Identify dependencies with poor tree-shaking (CJS-only, side-effects)
 - Find duplicate dependencies (same package, different versions)

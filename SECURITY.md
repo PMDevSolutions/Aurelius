@@ -32,6 +32,10 @@ Send an email to **paul@pmds.info** with the following details:
 
 Reporters will be credited in the release notes and changelog for the fix unless they prefer to remain anonymous. Please indicate your preference when submitting your report.
 
+Thank you to the people who have reported issues privately:
+
+- **Aleksandr Churilov** (November 2026): an incorrect package name in an agent skill.
+
 ## Scope
 
 ### In Scope
