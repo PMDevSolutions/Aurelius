@@ -150,8 +150,8 @@ ANALYZE=true pnpm build
 
 **Check dependency size before installing:**
 ```bash
-# Check size of a package
-npx bundlephobia-cli package-name
+# Check size of a package (queries the bundlephobia.com API, needs network)
+npx bundle-phobia-cli@0.15.0 package-name
 ```
 
 ## Code Splitting
