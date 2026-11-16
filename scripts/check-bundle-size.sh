@@ -43,9 +43,9 @@ elif [[ -f "vite.config.ts" ]] || [[ -f "vite.config.js" ]] || [[ -f "vite.confi
 elif [[ -f "package.json" ]] && grep -q '"build"' package.json 2>/dev/null; then
     FRAMEWORK="Generic"
     echo "Detected: build script in package.json"
-    echo "Running: $RUNNER build"
+    echo "Running: ${RUNNER/npx/npm run} build"
     echo ""
-    $RUNNER build 2>&1 || true
+    ${RUNNER/npx/npm run} build 2>&1 || true
     # Check common output directories
     if [[ -d "dist" ]]; then
         BUILD_DIR="dist"
