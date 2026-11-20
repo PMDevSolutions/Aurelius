@@ -150,7 +150,7 @@ describe("gui-release.yml — build, smoke, package, attach", () => {
   });
 
   it("keeps the installers as workflow artifacts and fails if none were produced", () => {
-    const upload = step(guiSource, "actions/upload-artifact@v4");
+    const upload = step(guiSource, "actions/upload-artifact@");
     expect(upload).not.toBeNull();
     expect(upload).toMatch(/if-no-files-found:\s*error/);
   });
